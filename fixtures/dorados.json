@@ -1,0 +1,2016 @@
+{
+  "_leeme": [
+    "Números dorados de las piezas YA PUBLICADAS de @fisicobuenfisico.",
+    "Generado por tools/fixtures.py -- no editar a mano.",
+    "Sirven para verificar el motor de Rust (R-0001 AC5 y AC6).",
+    "Las convenciones de origen NO están homologadas a propósito:",
+    "cada pieza mide desde su propio cero, y descubrir eso es parte",
+    "del trabajo del motor nuevo. Si se normalizara aquí, el fixture",
+    "dejaría de probar nada.",
+    "Unidades: torque en N·m, fuerza en N, largos en m, ángulos en",
+    "grados salvo donde el nombre diga otra cosa."
+  ],
+  "piezas": {
+    "reel04": {
+      "constantes": {
+        "MASA": 20.0,
+        "LF": 0.32,
+        "POLEA": [
+          0.42,
+          -0.85
+        ]
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "phi_grados": 0,
+            "modo": "barra"
+          },
+          "tau": 0.0
+        },
+        {
+          "entrada": {
+            "phi_grados": 20,
+            "modo": "barra"
+          },
+          "tau": 21.47339267855879
+        },
+        {
+          "entrada": {
+            "phi_grados": 45,
+            "modo": "barra"
+          },
+          "tau": 44.3949921500162
+        },
+        {
+          "entrada": {
+            "phi_grados": 70,
+            "modo": "barra"
+          },
+          "tau": 58.99766150342248
+        },
+        {
+          "entrada": {
+            "phi_grados": 90,
+            "modo": "barra"
+          },
+          "tau": 62.784000000000006
+        },
+        {
+          "entrada": {
+            "phi_grados": 110,
+            "modo": "barra"
+          },
+          "tau": 58.99766150342248
+        },
+        {
+          "entrada": {
+            "phi_grados": 130,
+            "modo": "barra"
+          },
+          "tau": 48.09533431678192
+        },
+        {
+          "entrada": {
+            "phi_grados": 0,
+            "modo": "polea"
+          },
+          "tau": 38.99398955962976
+        },
+        {
+          "entrada": {
+            "phi_grados": 20,
+            "modo": "polea"
+          },
+          "tau": 10.343173159443191
+        },
+        {
+          "entrada": {
+            "phi_grados": 45,
+            "modo": "polea"
+          },
+          "tau": 29.22876990418729
+        },
+        {
+          "entrada": {
+            "phi_grados": 70,
+            "modo": "polea"
+          },
+          "tau": 54.83152492064567
+        },
+        {
+          "entrada": {
+            "phi_grados": 90,
+            "modo": "polea"
+          },
+          "tau": 62.353967541807464
+        },
+        {
+          "entrada": {
+            "phi_grados": 110,
+            "modo": "polea"
+          },
+          "tau": 61.19642734055595
+        },
+        {
+          "entrada": {
+            "phi_grados": 130,
+            "modo": "polea"
+          },
+          "tau": 54.04368817797368
+        }
+      ],
+      "descripcion": "curl: barra contra polea baja",
+      "tema": "brazo"
+    },
+    "reel13": {
+      "constantes": {
+        "MASA": 10.0,
+        "BRAZO": 0.6,
+        "HOMBRO": 0.2
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "estilo": "mancuerna",
+            "theta_grados": 0
+          },
+          "resistencia": 20.223208930171506
+        },
+        {
+          "entrada": {
+            "estilo": "mancuerna",
+            "theta_grados": 15
+          },
+          "resistencia": 40.47599324398913
+        },
+        {
+          "entrada": {
+            "estilo": "mancuerna",
+            "theta_grados": 30
+          },
+          "resistencia": 52.75752252885293
+        },
+        {
+          "entrada": {
+            "estilo": "mancuerna",
+            "theta_grados": 45
+          },
+          "resistencia": 58.14028566651549
+        },
+        {
+          "entrada": {
+            "estilo": "mancuerna",
+            "theta_grados": 60
+          },
+          "resistencia": 58.51609836553445
+        },
+        {
+          "entrada": {
+            "estilo": "mancuerna",
+            "theta_grados": 75
+          },
+          "resistencia": 55.374286484707326
+        },
+        {
+          "entrada": {
+            "estilo": "mancuerna",
+            "theta_grados": 90
+          },
+          "resistencia": 49.71549752311777
+        },
+        {
+          "entrada": {
+            "estilo": "polea",
+            "theta_grados": 0
+          },
+          "resistencia": 20.223208930171506
+        },
+        {
+          "entrada": {
+            "estilo": "polea",
+            "theta_grados": 15
+          },
+          "resistencia": 40.47599324398913
+        },
+        {
+          "entrada": {
+            "estilo": "polea",
+            "theta_grados": 30
+          },
+          "resistencia": 52.75752252885293
+        },
+        {
+          "entrada": {
+            "estilo": "polea",
+            "theta_grados": 45
+          },
+          "resistencia": 58.14028566651549
+        },
+        {
+          "entrada": {
+            "estilo": "polea",
+            "theta_grados": 60
+          },
+          "resistencia": 58.51609836553445
+        },
+        {
+          "entrada": {
+            "estilo": "polea",
+            "theta_grados": 75
+          },
+          "resistencia": 55.374286484707326
+        },
+        {
+          "entrada": {
+            "estilo": "polea",
+            "theta_grados": 90
+          },
+          "resistencia": 49.71549752311777
+        }
+      ],
+      "descripcion": "elevaciones laterales: mancuerna contra polea",
+      "tema": "pierna"
+    },
+    "reel14": {
+      "constantes": {
+        "T_CABLE": 147.0,
+        "CADERA_H": 1.0,
+        "POLEA": [
+          0.6,
+          0.05
+        ],
+        "R_TOB": 0.85
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "psi_grados": -40
+          },
+          "tau": 62.14724222868124
+        },
+        {
+          "entrada": {
+            "psi_grados": -20
+          },
+          "tau": 86.70038653840984
+        },
+        {
+          "entrada": {
+            "psi_grados": 0
+          },
+          "tau": 123.24992078282638
+        },
+        {
+          "entrada": {
+            "psi_grados": 20
+          },
+          "tau": 122.91218869725252
+        },
+        {
+          "entrada": {
+            "psi_grados": 40
+          },
+          "tau": 112.88292115466838
+        },
+        {
+          "entrada": {
+            "psi_grados": 60
+          },
+          "tau": 97.72069747955385
+        },
+        {
+          "entrada": {
+            "psi_grados": 80
+          },
+          "tau": 78.93294903311273
+        }
+      ],
+      "descripcion": "patada de glúteo: la polea al ras del piso",
+      "tema": "pierna"
+    },
+    "reel20": {
+      "constantes": {
+        "POLEA": [
+          0.6,
+          0.05
+        ],
+        "R_TOB": 0.85
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "psi_grados": -45
+          },
+          "tau": -88.61610923097182
+        },
+        {
+          "entrada": {
+            "psi_grados": -30
+          },
+          "tau": 20.172561179452472
+        },
+        {
+          "entrada": {
+            "psi_grados": -15
+          },
+          "tau": 103.89718363562109
+        },
+        {
+          "entrada": {
+            "psi_grados": 0
+          },
+          "tau": 123.24992078282638
+        },
+        {
+          "entrada": {
+            "psi_grados": 20
+          },
+          "tau": 122.91218869725252
+        },
+        {
+          "entrada": {
+            "psi_grados": 40
+          },
+          "tau": 112.88292115466838
+        },
+        {
+          "entrada": {
+            "psi_grados": 60
+          },
+          "tau": 97.72069747955385
+        }
+      ],
+      "descripcion": "rango: hasta dónde sirve la patada",
+      "tema": "pierna"
+    },
+    "reel25": {
+      "constantes": {
+        "MASA": 12.0,
+        "L": 0.6,
+        "B": 0.2
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "ang_grados": 0,
+            "modo": "mancuerna"
+          },
+          "tau": 54.89835970781112
+        },
+        {
+          "entrada": {
+            "ang_grados": 20,
+            "modo": "mancuerna"
+          },
+          "tau": 64.56049449640096
+        },
+        {
+          "entrada": {
+            "ang_grados": 40,
+            "modo": "mancuerna"
+          },
+          "tau": 70.12215954993525
+        },
+        {
+          "entrada": {
+            "ang_grados": 60,
+            "modo": "mancuerna"
+          },
+          "tau": 68.54588077085565
+        },
+        {
+          "entrada": {
+            "ang_grados": 80,
+            "modo": "mancuerna"
+          },
+          "tau": 52.19906767260096
+        },
+        {
+          "entrada": {
+            "ang_grados": 0,
+            "modo": "polea"
+          },
+          "tau": 54.89835970781112
+        },
+        {
+          "entrada": {
+            "ang_grados": 20,
+            "modo": "polea"
+          },
+          "tau": 64.56049449640096
+        },
+        {
+          "entrada": {
+            "ang_grados": 40,
+            "modo": "polea"
+          },
+          "tau": 70.12215954993525
+        },
+        {
+          "entrada": {
+            "ang_grados": 60,
+            "modo": "polea"
+          },
+          "tau": 68.54588077085565
+        },
+        {
+          "entrada": {
+            "ang_grados": 80,
+            "modo": "polea"
+          },
+          "tau": 52.19906767260096
+        }
+      ],
+      "descripcion": "pecho: mancuerna contra polea",
+      "tema": "pecho"
+    },
+    "reel26": {
+      "constantes": {
+        "MASA": 50.0,
+        "TAU_REF": 130.0
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "beta_grados": 0
+          },
+          "tau": 117.72
+        },
+        {
+          "entrada": {
+            "beta_grados": 10
+          },
+          "tau": 131.71411046700618
+        },
+        {
+          "entrada": {
+            "beta_grados": 20
+          },
+          "tau": 138.40074990631496
+        },
+        {
+          "entrada": {
+            "beta_grados": 30
+          },
+          "tau": 136.88969957134745
+        },
+        {
+          "entrada": {
+            "beta_grados": 45
+          },
+          "tau": 120.10027963181597
+        }
+      ],
+      "descripcion": "jalón: a la barbilla o al pecho",
+      "tema": "espalda"
+    },
+    "reel29": {
+      "constantes": {
+        "MASA": 50.0,
+        "POLEA": [
+          0.24,
+          1.6
+        ],
+        "TAU_0": 118.0,
+        "BETA_R": 30.0
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "beta_grados": 0.0,
+            "u": 0.0
+          },
+          "tau": 117.72,
+          "largo_cable": 0.519788721357231
+        },
+        {
+          "entrada": {
+            "beta_grados": 0.0,
+            "u": 0.25
+          },
+          "tau": 117.72,
+          "largo_cable": 0.6898415410179233
+        },
+        {
+          "entrada": {
+            "beta_grados": 0.0,
+            "u": 0.5
+          },
+          "tau": 117.72,
+          "largo_cable": 0.8598943606786156
+        },
+        {
+          "entrada": {
+            "beta_grados": 0.0,
+            "u": 0.75
+          },
+          "tau": 117.72,
+          "largo_cable": 1.0299471803393079
+        },
+        {
+          "entrada": {
+            "beta_grados": 0.0,
+            "u": 1.0
+          },
+          "tau": 117.72,
+          "largo_cable": 1.2000000000000002
+        },
+        {
+          "entrada": {
+            "beta_grados": 30.0,
+            "u": 0.0
+          },
+          "tau": 252.60749999999996,
+          "largo_cable": 0.8525790379680962
+        },
+        {
+          "entrada": {
+            "beta_grados": 30.0,
+            "u": 0.25
+          },
+          "tau": 217.51384720792166,
+          "largo_cable": 0.9246550067513478
+        },
+        {
+          "entrada": {
+            "beta_grados": 30.0,
+            "u": 0.5
+          },
+          "tau": 186.911597571402,
+          "largo_cable": 0.9998452680935868
+        },
+        {
+          "entrada": {
+            "beta_grados": 30.0,
+            "u": 0.75
+          },
+          "tau": 160.22310630155866,
+          "largo_cable": 1.0774980518956907
+        },
+        {
+          "entrada": {
+            "beta_grados": 30.0,
+            "u": 1.0
+          },
+          "tau": 136.88969957134745,
+          "largo_cable": 1.157117693512614
+        },
+        {
+          "entrada": {
+            "beta_grados": 0.0,
+            "medida": "recorrido"
+          },
+          "recorrido": 0.6802112786427692
+        },
+        {
+          "entrada": {
+            "beta_grados": 30.0,
+            "medida": "recorrido"
+          },
+          "recorrido": 0.30453865554451776
+        }
+      ],
+      "descripcion": "jalón: derecho contra reclinado",
+      "tema": "espalda"
+    },
+    "reel31": {
+      "constantes": {
+        "CARGA": 30.0,
+        "T": 294.3,
+        "POLEA": [
+          0.0,
+          2.2
+        ],
+        "FLEX_MAX": 100.0,
+        "CODOS": {
+          "PEGADO Y RECTO": [
+            0.1,
+            1.13
+          ],
+          "ATRÁS E INCLINADO": [
+            0.45,
+            1.06
+          ]
+        }
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "lado": "PEGADO Y RECTO",
+            "flex_grados": 0
+          },
+          "tau": 6.087322373203753,
+          "brazo_mom": 0.0206840719442873
+        },
+        {
+          "entrada": {
+            "lado": "PEGADO Y RECTO",
+            "flex_grados": 20
+          },
+          "tau": 28.429638886157303,
+          "brazo_mom": 0.09660087966754095
+        },
+        {
+          "entrada": {
+            "lado": "PEGADO Y RECTO",
+            "flex_grados": 40
+          },
+          "tau": 48.9429189701414,
+          "brazo_mom": 0.16630281675209446
+        },
+        {
+          "entrada": {
+            "lado": "PEGADO Y RECTO",
+            "flex_grados": 60
+          },
+          "tau": 66.05567653073958,
+          "brazo_mom": 0.224450141117022
+        },
+        {
+          "entrada": {
+            "lado": "PEGADO Y RECTO",
+            "flex_grados": 80
+          },
+          "tau": 77.94782366169667,
+          "brazo_mom": 0.2648583882490543
+        },
+        {
+          "entrada": {
+            "lado": "PEGADO Y RECTO",
+            "flex_grados": 100
+          },
+          "tau": 82.40329589079761,
+          "brazo_mom": 0.2799976075120544
+        },
+        {
+          "entrada": {
+            "lado": "ATRÁS E INCLINADO",
+            "flex_grados": 0
+          },
+          "tau": 24.893842765881697,
+          "brazo_mom": 0.08458662169854467
+        },
+        {
+          "entrada": {
+            "lado": "ATRÁS E INCLINADO",
+            "flex_grados": 20
+          },
+          "tau": 46.281018680589156,
+          "brazo_mom": 0.15725796357658564
+        },
+        {
+          "entrada": {
+            "lado": "ATRÁS E INCLINADO",
+            "flex_grados": 40
+          },
+          "tau": 64.28735806179353,
+          "brazo_mom": 0.21844158362824848
+        },
+        {
+          "entrada": {
+            "lado": "ATRÁS E INCLINADO",
+            "flex_grados": 60
+          },
+          "tau": 77.03778762357555,
+          "brazo_mom": 0.26176618288676706
+        },
+        {
+          "entrada": {
+            "lado": "ATRÁS E INCLINADO",
+            "flex_grados": 80
+          },
+          "tau": 82.36942742085364,
+          "brazo_mom": 0.27988252606474223
+        },
+        {
+          "entrada": {
+            "lado": "ATRÁS E INCLINADO",
+            "flex_grados": 100
+          },
+          "tau": 77.88097127024012,
+          "brazo_mom": 0.2646312309556239
+        },
+        {
+          "entrada": {
+            "lado": "PEGADO Y RECTO",
+            "medida": "trabajo"
+          },
+          "trabajo": 93.27337902742343
+        },
+        {
+          "entrada": {
+            "lado": "ATRÁS E INCLINADO",
+            "medida": "trabajo"
+          },
+          "trabajo": 113.05039412606544
+        }
+      ],
+      "descripcion": "tríceps: pegado contra atrás e inclinado",
+      "tema": "brazo"
+    },
+    "reel27": {
+      "constantes": {
+        "CARGA": 504.04,
+        "ESTATURA": 1.78,
+        "MASA": 165.0
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "s": 0.0
+          },
+          "cadera": 2123.5237939891167,
+          "rodilla": 578.2050541860549,
+          "l5s1": 1677.3193758352518,
+          "barra_y": 0.225
+        },
+        {
+          "entrada": {
+            "s": 0.25
+          },
+          "cadera": 2180.6788624508777,
+          "rodilla": 269.1507041837243,
+          "l5s1": 1722.4647629646377,
+          "barra_y": 0.36722
+        },
+        {
+          "entrada": {
+            "s": 0.5
+          },
+          "cadera": 2008.6992565920054,
+          "rodilla": 12.109441628124436,
+          "l5s1": 1586.6222892555468,
+          "barra_y": 0.50944
+        },
+        {
+          "entrada": {
+            "s": 0.75
+          },
+          "cadera": 1524.8364207569662,
+          "rodilla": 97.01142066060748,
+          "l5s1": 1204.4308995993485,
+          "barra_y": 0.65166
+        },
+        {
+          "entrada": {
+            "s": 1.0
+          },
+          "cadera": 124.92187728486788,
+          "rodilla": 241.94424209355319,
+          "l5s1": 98.67272776916025,
+          "barra_y": 0.79388
+        },
+        {
+          "entrada": {
+            "medida": "pico de cadera"
+          },
+          "tau": 2190.199051065755,
+          "s": 0.17666666666666667,
+          "barra_y": 0.32550213333333333
+        }
+      ],
+      "descripcion": "peso muerto: los fixtures dorados de R-0001 AC6",
+      "tema": "pierna"
+    },
+    "reel37": {
+      "constantes": {
+        "CARGA": 140.0,
+        "ESTATURA": 1.75,
+        "MASA": 80.0,
+        "DEFICIT": 0.1,
+        "TARGET": "cadera",
+        "MEDICIONES": {
+          "sin déficit": {
+            "tau": 651.7934237099142,
+            "W": 762.9237
+          },
+          "déficit 10 cm": {
+            "tau": 684.1251527535688,
+            "W": 900.2637
+          }
+        }
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "variante": "piso",
+            "s": 0.0
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              0.056591428895033886,
+              0.4877163128900438
+            ],
+            "cadera": [
+              -0.36971078891088194,
+              0.5334654286602689
+            ],
+            "hombro": [
+              0.0,
+              0.876
+            ],
+            "barra": [
+              0.0,
+              0.225
+            ]
+          },
+          "torso_grados": 42.814899631153565,
+          "cadera": 632.6880879869918,
+          "rodilla": 217.56772934232606,
+          "l5s1": 495.91183659448745
+        },
+        {
+          "entrada": {
+            "variante": "piso",
+            "s": 0.25
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              0.006851404092071495,
+              0.4961655380826401
+            ],
+            "cadera": [
+              -0.37914166640419394,
+              0.6828093486654319
+            ],
+            "hombro": [
+              0.0,
+              1.014875
+            ],
+            "barra": [
+              0.0,
+              0.363875
+            ]
+          },
+          "torso_grados": 41.21301969797273,
+          "cadera": 648.827200039579,
+          "rodilla": 121.03239704952821,
+          "l5s1": 508.5619510046821
+        },
+        {
+          "entrada": {
+            "variante": "piso",
+            "s": 0.5
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              -0.03475318839947183,
+              0.49871490572662047
+            ],
+            "cadera": [
+              -0.3491254994004235,
+              0.7902566910266369
+            ],
+            "hombro": [
+              0.0,
+              1.15375
+            ],
+            "barra": [
+              0.0,
+              0.50275
+            ]
+          },
+          "torso_grados": 46.15504014172338,
+          "cadera": 597.4603698579165,
+          "rodilla": 29.55228705843553,
+          "l5s1": 468.2997434823727
+        },
+        {
+          "entrada": {
+            "variante": "piso",
+            "s": 0.75
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              -0.04025,
+              0.49875
+            ],
+            "cadera": [
+              -0.26496386315603937,
+              0.8638941389444568
+            ],
+            "hombro": [
+              0.0,
+              1.2926250000000001
+            ],
+            "barra": [
+              0.0,
+              0.641625
+            ]
+          },
+          "torso_grados": 58.283142655530966,
+          "cadera": 453.43410307198445,
+          "rodilla": 5.244388351913958,
+          "l5s1": 355.4094712679735
+        },
+        {
+          "entrada": {
+            "variante": "piso",
+            "s": 1.0
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              -0.04025,
+              0.49875
+            ],
+            "cadera": [
+              -0.02177011819970059,
+              0.927500928779532
+            ],
+            "hombro": [
+              0.0,
+              1.4315
+            ],
+            "barra": [
+              0.0,
+              0.7805
+            ]
+          },
+          "torso_grados": 87.5266601143309,
+          "cadera": 37.25532192229181,
+          "rodilla": 74.11327467968589,
+          "l5s1": 29.201363939354678
+        },
+        {
+          "entrada": {
+            "variante": "piso",
+            "medida": "pico de cadera"
+          },
+          "tau": 651.7934237099142,
+          "s": 0.175,
+          "barra_y": 0.3222125
+        },
+        {
+          "entrada": {
+            "variante": "piso",
+            "medida": "recorrido"
+          },
+          "recorrido": 0.5555,
+          "trabajo_barra": 762.9237,
+          "y0": 0.225,
+          "lock": 0.7805,
+          "F": 1373.4
+        },
+        {
+          "entrada": {
+            "variante": "deficit",
+            "s": 0.0
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              0.056591428895033886,
+              0.4877163128900438
+            ],
+            "cadera": [
+              -0.3685515459935243,
+              0.4322184444363207
+            ],
+            "hombro": [
+              0.0,
+              0.776
+            ],
+            "barra": [
+              0.0,
+              0.125
+            ]
+          },
+          "torso_grados": 43.00845376991419,
+          "cadera": 630.7042692646438,
+          "rodilla": 217.23944882377853,
+          "l5s1": 494.35688526104246
+        },
+        {
+          "entrada": {
+            "variante": "deficit",
+            "s": 0.25
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              0.006851404092071495,
+              0.4961655380826401
+            ],
+            "cadera": [
+              -0.39957687261189934,
+              0.6327035122709239
+            ],
+            "hombro": [
+              0.0,
+              0.939875
+            ],
+            "barra": [
+              0.0,
+              0.288875
+            ]
+          },
+          "torso_grados": 37.55099073380724,
+          "cadera": 683.7980797946991,
+          "rodilla": 126.81934643696293,
+          "l5s1": 535.9727297690882
+        },
+        {
+          "entrada": {
+            "variante": "deficit",
+            "s": 0.5
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              -0.03475318839947183,
+              0.49871490572662047
+            ],
+            "cadera": [
+              -0.371898306947973,
+              0.7635917290594991
+            ],
+            "hombro": [
+              0.0,
+              1.10375
+            ],
+            "barra": [
+              0.0,
+              0.45275
+            ]
+          },
+          "torso_grados": 42.447720969168095,
+          "cadera": 636.431599525839,
+          "rodilla": 36.00121071244639,
+          "l5s1": 498.84606551042765
+        },
+        {
+          "entrada": {
+            "variante": "deficit",
+            "s": 0.75
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              -0.04025,
+              0.49875
+            ],
+            "cadera": [
+              -0.28415416704333263,
+              0.8513649738722082
+            ],
+            "hombro": [
+              0.0,
+              1.267625
+            ],
+            "barra": [
+              0.0,
+              0.616625
+            ]
+          },
+          "torso_grados": 55.68113958027862,
+          "cadera": 486.27457470146555,
+          "rodilla": 0.19002303579123447,
+          "l5s1": 381.1503993961162
+        },
+        {
+          "entrada": {
+            "variante": "deficit",
+            "s": 1.0
+          },
+          "pose": {
+            "tobillo": [
+              -0.04025,
+              0.06825
+            ],
+            "rodilla": [
+              -0.04025,
+              0.49875
+            ],
+            "cadera": [
+              -0.02177011819970059,
+              0.927500928779532
+            ],
+            "hombro": [
+              0.0,
+              1.4315
+            ],
+            "barra": [
+              0.0,
+              0.7805
+            ]
+          },
+          "torso_grados": 87.5266601143309,
+          "cadera": 37.25532192229181,
+          "rodilla": 74.11327467968589,
+          "l5s1": 29.201363939354678
+        },
+        {
+          "entrada": {
+            "variante": "deficit",
+            "medida": "pico de cadera"
+          },
+          "tau": 684.1251527535688,
+          "s": 0.22833333333333333,
+          "barra_y": 0.2746725
+        },
+        {
+          "entrada": {
+            "variante": "deficit",
+            "medida": "recorrido"
+          },
+          "recorrido": 0.6555,
+          "trabajo_barra": 900.2637,
+          "y0": 0.125,
+          "lock": 0.7805,
+          "F": 1373.4
+        }
+      ],
+      "descripcion": "peso muerto: piso contra déficit",
+      "tema": "pierna"
+    },
+    "reel38": {
+      "constantes": {
+        "CARGA": 60.0,
+        "ESTATURA": 1.75,
+        "MASA": 80.0,
+        "BETA_BARRA": 30.0,
+        "TOQUE": 0.45,
+        "GROSOR": 0.12,
+        "POLEA": [
+          1.1,
+          -0.25
+        ],
+        "CADERA_PIE": 0.95,
+        "CADERA_BANCO": 0.44,
+        "TARGET": "hombro",
+        "MEDICIONES": {
+          "remo con barra": {
+            "tau": 105.98463559943671,
+            "W": 240.42953367989747
+          },
+          "remo en polea baja": {
+            "tau": 115.81523340990327,
+            "W": 239.69199017580462
+          }
+        },
+        "PICO": {
+          "barra": 105.98463559943671,
+          "polea": 115.81523340990327
+        },
+        "TRABAJO": {
+          "barra": 240.42953367989747,
+          "polea": 239.69199017580462
+        },
+        "TAU_BARRA": 399.3102489337067,
+        "TAU_POLEA": 266.0545809187352,
+        "TAU_CUERPO": 142.40000238927627,
+        "FRAC_CUERPO": 0.3566149448193038
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "variante": "barra",
+            "u": 0.0
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.4364768035073571,
+              1.202
+            ],
+            "codo": [
+              0.43077545335791084,
+              0.8634759990781522
+            ],
+            "mano": [
+              0.4364768035073571,
+              0.5509999999999999
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 0.0,
+          "codo": 3.355814697964082,
+          "l5s1": 399.3102489337067,
+          "hombro_grados": 59.03512773130543,
+          "codo_grados": 177.98984086171734
+        },
+        {
+          "entrada": {
+            "variante": "barra",
+            "u": 0.25
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.4364768035073571,
+              1.202
+            ],
+            "codo": [
+              0.2399164913481085,
+              0.9263918831313948
+            ],
+            "mano": [
+              0.39146124302509555,
+              0.6531192378864668
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 26.496158899859164,
+          "codo": 89.19924083707458,
+          "l5s1": 364.44157906792094,
+          "hombro_grados": 24.50400245543225,
+          "codo_grados": 115.49321751403174
+        },
+        {
+          "entrada": {
+            "variante": "barra",
+            "u": 0.5
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.4364768035073571,
+              1.202
+            ],
+            "codo": [
+              0.16030739629428406,
+              1.0062290907218852
+            ],
+            "mano": [
+              0.3464456825428339,
+              0.7552384757729336
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 52.99231779971836,
+          "codo": 109.56099528589645,
+          "l5s1": 333.93835398148764,
+          "hombro_grados": 5.332056751069044,
+          "codo_grados": 88.77088817888648
+        },
+        {
+          "entrada": {
+            "variante": "barra",
+            "u": 0.75
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.4364768035073571,
+              1.202
+            ],
+            "codo": [
+              0.11191171807230685,
+              1.1058059476030946
+            ],
+            "mano": [
+              0.3014301220605723,
+              0.8573577136594004
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 79.48847669957756,
+          "codo": 111.55053258749304,
+          "l5s1": 304.6599433715361,
+          "hombro_grados": -13.49131877262385,
+          "codo_grados": 69.17198818654757
+        },
+        {
+          "entrada": {
+            "variante": "barra",
+            "u": 1.0
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.4364768035073571,
+              1.202
+            ],
+            "codo": [
+              0.09907181089276143,
+              1.2294528934494098
+            ],
+            "mano": [
+              0.2564145615783107,
+              0.9594769515458672
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 105.98463559943671,
+          "codo": 92.61194305351431,
+          "l5s1": 276.7767412172896,
+          "hombro_grados": -34.65161340867489,
+          "codo_grados": 55.11463202627141
+        },
+        {
+          "entrada": {
+            "variante": "barra",
+            "medida": "balance de energía"
+          },
+          "trabajo_musculos": 240.37057602979291,
+          "trabajo_carga": 240.42953367989747
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "u": 0.0
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.44
+            ],
+            "hombro": [
+              0.0,
+              0.944
+            ],
+            "codo": [
+              0.2760008885142425,
+              0.7479017742736807
+            ],
+            "mano": [
+              0.5369635245195689,
+              0.5759359113747682
+            ]
+          },
+          "fuerza_unitaria": [
+            0.8248287627028708,
+            -0.5653826246163312
+          ],
+          "hombro": 8.526512829121202e-14,
+          "codo": 3.355814697964064,
+          "l5s1": 266.0545809187352,
+          "hombro_grados": 54.60626206709097,
+          "codo_grados": 177.98984086171734
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "u": 0.25
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.44
+            ],
+            "hombro": [
+              0.0,
+              0.944
+            ],
+            "codo": [
+              0.12163203618311305,
+              0.6280863437995282
+            ],
+            "mano": [
+              0.43272264338967664,
+              0.5986519335310762
+            ]
+          },
+          "fuerza_unitaria": [
+            0.8527859756006044,
+            -0.5222605478292662
+          ],
+          "hombro": 40.32735393230416,
+          "codo": 80.85545147553076,
+          "l5s1": 225.9182173510386,
+          "hombro_grados": 21.057539346961395,
+          "codo_grados": 116.46259397967418
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "u": 0.5
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.44
+            ],
+            "hombro": [
+              0.0,
+              0.944
+            ],
+            "codo": [
+              0.016385983880099042,
+              0.6058768124894698
+            ],
+            "mano": [
+              0.3284817622597844,
+              0.6213679556873841
+            ]
+          },
+          "fuerza_unitaria": [
+            0.8728348659493017,
+            -0.4880156726819996
+          ],
+          "hombro": 71.39732654702277,
+          "codo": 97.60685588542596,
+          "l5s1": 194.6207750932398,
+          "hombro_grados": 2.7744733843859186,
+          "codo_grados": 89.93288003831204
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "u": 0.75
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.44
+            ],
+            "hombro": [
+              0.0,
+              0.944
+            ],
+            "codo": [
+              -0.08705131573997074,
+              0.6168641584479928
+            ],
+            "mano": [
+              0.2242408811298922,
+              0.6440839778436921
+            ]
+          },
+          "fuerza_unitaria": [
+            0.887760058724888,
+            -0.46030650455189487
+          ],
+          "hombro": 95.96177076919372,
+          "codo": 98.56371369728481,
+          "l5s1": 168.3798692539347,
+          "hombro_grados": -14.901177417991384,
+          "codo_grados": 70.10151113892451
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "u": 1.0
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.44
+            ],
+            "hombro": [
+              0.0,
+              0.944
+            ],
+            "codo": [
+              -0.19247739944187442,
+              0.6655251517567642
+            ],
+            "mano": [
+              0.12,
+              0.6668000000000001
+            ]
+          },
+          "fuerza_unitaria": [
+            0.8992194791705312,
+            -0.4374978037433769
+          ],
+          "hombro": 115.81523340990327,
+          "codo": 81.14118480356595,
+          "l5s1": 145.74376849764397,
+          "hombro_grados": -34.65161340867497,
+          "codo_grados": 55.11463202627136
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "medida": "balance de energía"
+          },
+          "trabajo_musculos": 239.63302751292835,
+          "trabajo_carga": 239.69199017580462
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "polea": [
+              1.1,
+              -0.45
+            ]
+          },
+          "pico_hombro": 94.11745029005013,
+          "l5s1_arranque": 243.6492319678497,
+          "trabajo": 227.15759343742894
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "polea": [
+              1.1,
+              -0.05
+            ]
+          },
+          "pico_hombro": 137.81807302715077,
+          "l5s1_arranque": 288.12014657599264,
+          "trabajo": 257.63580396183426
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "polea": [
+              0.9,
+              -0.25
+            ]
+          },
+          "pico_hombro": 102.37224915431506,
+          "l5s1_arranque": 247.2280040661254,
+          "trabajo": 230.19262607584187
+        },
+        {
+          "entrada": {
+            "variante": "polea",
+            "polea": [
+              1.3,
+              -0.25
+            ]
+          },
+          "pico_hombro": 124.815505949239,
+          "l5s1_arranque": 279.04257729959556,
+          "trabajo": 247.7143037140897
+        }
+      ],
+      "descripcion": "remo: barra contra polea baja (objetivo hombro)",
+      "tema": "espalda"
+    },
+    "reel39": {
+      "constantes": {
+        "CARGA": 40.0,
+        "ESTATURA": 1.75,
+        "MASA": 80.0,
+        "X_MILITAR": 0.12,
+        "CLARO": 0.26,
+        "X_SMITH": 0.1,
+        "ALCANCE": 0.63147,
+        "CADERA_PIE": 0.95,
+        "TARGET": "hombro",
+        "MEDICIONES": {
+          "press militar": {
+            "tau": 47.088,
+            "W": 247.78882800000002
+          },
+          "press en smith": {
+            "tau": 39.24000000000001,
+            "W": 244.66206424702133
+          }
+        },
+        "PICO": {
+          "militar": 47.088,
+          "smith": 39.24000000000001
+        },
+        "FIN": {
+          "militar": 0.0,
+          "smith": 39.24000000000001
+        },
+        "TRABAJO": {
+          "militar": 247.78882800000002,
+          "smith": 244.66206424702133
+        }
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "variante": "militar",
+            "u": 0.0
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.13063350000000018,
+              1.1417009781031167
+            ],
+            "mano": [
+              0.12,
+              1.454
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 47.088,
+          "codo": 4.172585400000073,
+          "l5s1": 54.56845854000001,
+          "hombro_grados": 22.69937375215396,
+          "codo_grados": 20.749257524638978
+        },
+        {
+          "entrada": {
+            "variante": "militar",
+            "u": 0.25
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.3317900598367083,
+              1.386834930257212
+            ],
+            "mano": [
+              0.12,
+              1.6165928919350687
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 47.088,
+          "codo": 83.10641947992434,
+          "l5s1": 62.46184194799244,
+          "hombro_grados": 78.55612248108437,
+          "codo_grados": 35.88637243898345
+        },
+        {
+          "entrada": {
+            "variante": "militar",
+            "u": 0.5
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.3225577948906788,
+              1.5567241907014253
+            ],
+            "mano": [
+              0.09996192676198978,
+              1.776029525547697
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 39.2250600614048,
+          "codo": 87.34661865369759,
+          "l5s1": 53.843480935985276,
+          "hombro_grados": 107.66498917719896,
+          "codo_grados": 62.23835493474594
+        },
+        {
+          "entrada": {
+            "variante": "militar",
+            "u": 0.75
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.2455445787769636,
+              1.6870314361480947
+            ],
+            "mano": [
+              0.04998096338099489,
+              1.9307497627738486
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 19.6125300307024,
+          "codo": 76.73916268137812,
+          "l5s1": 30.22832580344557,
+          "hombro_grados": 133.50225058135035,
+          "codo_grados": 94.75811660196825
+        },
+        {
+          "entrada": {
+            "variante": "militar",
+            "u": 1.0
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.07906334059187822,
+              1.7831576804123712
+            ],
+            "mano": [
+              0.0,
+              2.08547
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 0.0,
+          "codo": 31.02445484825302,
+          "l5s1": 3.102445484825302,
+          "hombro_grados": 166.49348716173833,
+          "codo_grados": 151.83726083716297
+        },
+        {
+          "entrada": {
+            "variante": "militar",
+            "medida": "balance de energía"
+          },
+          "trabajo_musculos": 247.78857102988624,
+          "trabajo_carga": 247.78882800000002
+        },
+        {
+          "entrada": {
+            "variante": "smith",
+            "u": 0.0
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.13476020000000025,
+              1.143459376415967
+            ],
+            "mano": [
+              0.1,
+              1.454
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 39.24000000000001,
+          "codo": 13.639902480000096,
+          "l5s1": 46.48999024800002,
+          "hombro_grados": 23.458602986422736,
+          "codo_grados": 17.07181579778238
+        },
+        {
+          "entrada": {
+            "variante": "smith",
+            "u": 0.25
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.33475240061220457,
+              1.4036351244976606
+            ],
+            "mano": [
+              0.1,
+              1.6098754231950951
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 39.24000000000001,
+          "codo": 92.11684200022908,
+          "l5s1": 54.33768420002292,
+          "hombro_grados": 81.4437898694507,
+          "codo_grados": 32.74451657908842
+        },
+        {
+          "entrada": {
+            "variante": "smith",
+            "u": 0.5
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.3249555476556034,
+              1.5488666561434885
+            ],
+            "mano": [
+              0.1,
+              1.76575084639019
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 39.24000000000001,
+          "codo": 88.27255690005879,
+          "l5s1": 53.95325569000589,
+          "hombro_grados": 106.27449591190792,
+          "codo_grados": 60.227955178139304
+        },
+        {
+          "entrada": {
+            "variante": "smith",
+            "u": 0.75
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.26936860596380163,
+              1.659027667696626
+            ],
+            "mano": [
+              0.1,
+              1.9216262695852853
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 39.24000000000001,
+          "codo": 66.46024098019576,
+          "l5s1": 51.772024098019585,
+          "hombro_grados": 127.27627432756044,
+          "codo_grados": 94.4554127075264
+        },
+        {
+          "entrada": {
+            "variante": "smith",
+            "u": 1.0
+          },
+          "pose": {
+            "l5": [
+              0.0,
+              0.95
+            ],
+            "hombro": [
+              0.0,
+              1.454
+            ],
+            "codo": [
+              0.13019129133156757,
+              1.766483628469427
+            ],
+            "mano": [
+              0.1,
+              2.0775016927803804
+            ]
+          },
+          "fuerza_unitaria": [
+            0.0,
+            -1.0
+          ],
+          "hombro": 39.24000000000001,
+          "codo": 11.847062718507111,
+          "l5s1": 46.31070627185072,
+          "hombro_grados": 157.38173184871252,
+          "codo_grados": 151.83726083716297
+        },
+        {
+          "entrada": {
+            "variante": "smith",
+            "medida": "balance de energía"
+          },
+          "trabajo_musculos": 244.66181208880238,
+          "trabajo_carga": 244.66206424702133
+        },
+        {
+          "entrada": {
+            "variante": "smith",
+            "x": 0.06
+          },
+          "tau_hombro_medio": 23.544,
+          "pico_hombro": 23.544
+        },
+        {
+          "entrada": {
+            "variante": "smith",
+            "x": 0.15
+          },
+          "tau_hombro_medio": 58.86,
+          "pico_hombro": 58.86
+        },
+        {
+          "entrada": {
+            "variante": "militar",
+            "x0": 0.1,
+            "claro": 0.2
+          },
+          "pico_hombro": 39.24000000000001,
+          "tau_hombro_final": 0.0
+        },
+        {
+          "entrada": {
+            "variante": "militar",
+            "x0": 0.15,
+            "claro": 0.32
+          },
+          "pico_hombro": 58.86,
+          "tau_hombro_final": 1.0891287871572787e-14
+        }
+      ],
+      "descripcion": "press de hombro: Smith contra militar",
+      "tema": "hombro"
+    }
+  }
+}

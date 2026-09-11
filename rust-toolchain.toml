@@ -1,0 +1,6 @@
+# Pinned toolchain = the project MSRV. The committed Cargo.lock selects
+# dependency versions (e.g. indexmap 2.6.x) that build on 1.83; bumping this
+# channel and re-running `cargo update` should be a deliberate, reviewed change.
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]

@@ -1,0 +1,11 @@
+# Rust build artifacts
+/target
+**/*.rs.bk
+
+# rendered output (frame sequences, videos) — never committed
+/out
+*.mp4
+
+# editor / OS cruft
+.DS_Store
+*.swp
