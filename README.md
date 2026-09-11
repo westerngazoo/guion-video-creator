@@ -1,13 +1,38 @@
 # guion video creator
 
-La fábrica de video de **@fisicobuenfisico**, en Rust, manejada por datos.
+El productor de video del **motor de mecánica**: `garust` (álgebra
+geométrica) + `physics-lab/mecanica` (la máquina humana y sus
+afirmaciones). En Rust, manejado por datos, con dos formatos de salida
+(reel vertical 1080×1920 e YouTube horizontal 1920×1080).
 
-Hoy los reels los produce una fábrica de Python (`fisicobuenfisico/tools/`)
-que dibuja con Pillow y calcula la mecánica a mano, un módulo por pieza.
-Funciona y está publicada, pero cada pieza reimplementa lo mismo con su
-propia convención. Este repo es el destino: **un motor, dos formatos**
-(reel vertical 1080×1920 e YouTube horizontal 1920×1080), con la física
-en un solo lugar y verificada.
+## Esto no es un proyecto aparte — léelo antes que nada
+
+> **UN SOLO MOTOR.**
+>
+> `garust` + `physics-lab/mecanica` es el motor, y es **el mismo** que
+> consume la app **Goose Physics** (`westerngazoo/sargentAI`, requerimiento
+> R-0045: modelo biomecánico de levantamientos, torque articular y
+> comparación de variantes).
+>
+> **Instagram no es el producto: es el banco de pruebas público y el
+> embudo.** Decisión del dueño, 6 sep 2026, registrada en el `ROADMAP.md`
+> de esa app: *«la física es el embudo; la app es el destino»*. Los 7 mil
+> seguidores de [@fisicobuenfisico](https://instagram.com/fisicobuenfisico)
+> llegaron por mecánica de levantamientos, no por un registrador de
+> series.
+>
+> De ahí sale todo lo demás de este repo. Cada reel es **una verificación
+> del motor frente a una audiencia que corrige** —y que incluye
+> fisioterapeutas— y al mismo tiempo lo que trae a esa audiencia a la app.
+>
+> Por eso **ninguna pieza puede calcular su física por su cuenta.** Si el
+> reel y la app dan números distintos, uno de los dos miente, y el que
+> queda en evidencia en público es el reel.
+
+Hoy los reels los produce una fábrica de Python
+(`fisicobuenfisico/tools/`) que dibuja con Pillow y calcula la mecánica a
+mano, un módulo por pieza — exactamente el problema que esto resuelve.
+Esa fábrica **se retira**; el motor no se reinventa aquí, se consume.
 
 ## Por dónde empezar
 
