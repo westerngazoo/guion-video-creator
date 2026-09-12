@@ -6,6 +6,7 @@ use std::process::ExitCode;
 
 mod check;
 mod encode;
+mod narrate;
 mod path;
 mod render;
 
@@ -14,12 +15,17 @@ fn main() -> ExitCode {
     match args.get(1).map(String::as_str) {
         None | Some("-h") | Some("--help") | Some("help") => {
             eprintln!(
-                "uso:\n  guion check <screenplay.toml>\n  guion render <screenplay.toml> [--out DIR] [--fps N] [--no-brand]\n  guion encode <screenplay.toml> [--out FILE.mp4] [--frames DIR] [--fps N] [--no-brand]"
+                "uso:\n\
+  guion check <screenplay.toml>\n\
+  guion render <screenplay.toml> [--out DIR] [--fps N] [--no-brand]\n\
+  guion narrate <screenplay.toml> [--out WAV] [--engine scaffold|piper] [--piper-model PATH] [--with-bed]\n\
+  guion encode <screenplay.toml> [--out FILE.mp4] [--frames DIR] [--fps N] [--no-brand] [--narrate]"
             );
             ExitCode::SUCCESS
         }
         Some("check") => check::run(args.get(2)),
         Some("render") => render::run(&args[2..]),
+        Some("narrate") => narrate::run(&args[2..]),
         Some("encode") => encode::run(&args[2..]),
         Some(cmd) => {
             eprintln!("comando desconocido: {cmd}");

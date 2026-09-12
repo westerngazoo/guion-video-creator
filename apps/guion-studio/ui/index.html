@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>guion studio</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --panel: #171a21;
+      --accent: #6ee7b7;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --border: #2a2f3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+    header span { color: var(--muted); font-size: 0.85rem; }
+    main {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      gap: 1rem;
+      padding: 1rem;
+      height: calc(100vh - 64px);
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      overflow: auto;
+    }
+    .preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    .phone {
+      width: min(100%, 360px);
+      aspect-ratio: 9 / 16;
+      border-radius: 24px;
+      border: 2px solid var(--border);
+      background: linear-gradient(180deg, #1a2030, #0b0d12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1rem;
+      color: var(--muted);
+    }
+    button {
+      background: var(--accent);
+      color: #04120d;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0.25rem 0.25rem 0.25rem 0;
+    }
+    button.secondary {
+      background: #2a2f3a;
+      color: var(--text);
+    }
+    input, select {
+      width: 100%;
+      background: #0f1115;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    #log {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      color: var(--muted);
+      min-height: 120px;
+    }
+    .template {
+      padding: 0.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .template:hover, .template.active {
+      border-color: var(--accent);
+      background: #12161d;
+    }
+    label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>guion studio</h1>
+    <span>vertical · 1080×1920 · YouTube-first</span>
+  </header>
+  <main>
+    <section class="panel">
+      <label>Plantillas</label>
+      <div id="templates"></div>
+      <label style="margin-top:1rem">Ruta screenplay</label>
+      <input id="path" placeholder="templates/reel-39-shoulder-press.screenplay.toml" />
+      <button id="load">Cargar</button>
+    </section>
+
+    <section class="panel preview">
+      <div class="phone" id="preview">Selecciona un screenplay</div>
+      <input type="range" id="scrub" min="0" max="100" value="0" style="width:min(100%,360px)" />
+      <div>
+        <button id="check" class="secondary">Check</button>
+        <button id="previewBtn" class="secondary">Preview</button>
+        <button id="render">Render</button>
+        <button id="narrate">Narrate</button>
+        <button id="export">Export MP4</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <label>Estado</label>
+      <div id="meta">—</div>
+      <label style="margin-top:1rem">Log</label>
+      <div id="log"></div>
+    </section>
+  </main>
+
+  <script>
+    const invoke = window.__TAURI__?.core?.invoke;
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent = `${new Date().toLocaleTimeString()}  ${msg}\n` + el.textContent;
+    };
+
+    let current = null;
+    let duration = 15;
+
+    async function call(cmd, args = {}) {
+      if (!invoke) {
+        log(`(sin Tauri) ${cmd} ${JSON.stringify(args)}`);
+        return null;
+      }
+      try {
+        const res = await invoke(cmd, args);
+        log(`${cmd}: ${typeof res === 'string' ? res : JSON.stringify(res)}`);
+        return res;
+      } catch (e) {
+        log(`${cmd} ERROR: ${e}`);
+        throw e;
+      }
+    }
+
+    async function loadTemplates() {
+      const items = await call('cmd_list_templates') || [];
+      const box = document.getElementById('templates');
+      box.innerHTML = '';
+      for (const t of items) {
+        const div = document.createElement('div');
+        div.className = 'template';
+        div.textContent = t.name;
+        div.onclick = () => {
+          document.querySelectorAll('.template').forEach(x => x.classList.remove('active'));
+          div.classList.add('active');
+          document.getElementById('path').value = t.path;
+          loadScreenplay();
+        };
+        box.appendChild(div);
+      }
+    }
+
+    async function loadScreenplay() {
+      const path = document.getElementById('path').value.trim();
+      if (!path) return;
+      current = await call('cmd_load_screenplay', { path });
+      if (current) {
+        duration = current.duration_secs || 15;
+        document.getElementById('scrub').max = Math.round(duration * 100);
+        document.getElementById('meta').textContent =
+          `${current.title}\n${current.slug} · ${current.fps} fps · ${duration.toFixed(1)}s`;
+        document.getElementById('preview').textContent = current.title;
+      }
+    }
+
+    document.getElementById('load').onclick = loadScreenplay;
+    document.getElementById('check').onclick = loadScreenplay;
+    document.getElementById('previewBtn').onclick = async () => {
+      if (!current) return;
+      const t = document.getElementById('scrub').value / 100 * duration;
+      const msg = await call('cmd_preview', { path: current.path, t });
+      if (msg) document.getElementById('preview').textContent = msg;
+    };
+    document.getElementById('render').onclick = () => current && call('cmd_render', { path: current.path });
+    document.getElementById('narrate').onclick = () => current && call('cmd_narrate', { path: current.path, engine: 'scaffold' });
+    document.getElementById('export').onclick = () => current && call('cmd_encode', { path: current.path });
+    document.getElementById('scrub').oninput = () => document.getElementById('previewBtn').click();
+
+    loadTemplates();
+  </script>
+</body>
+</html>

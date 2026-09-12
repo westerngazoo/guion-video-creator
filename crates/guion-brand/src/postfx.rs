@@ -13,6 +13,9 @@ pub fn process_frame(rgb: &mut [u8], width: u32, height: u32, grain: f64, halfto
 fn apply_grain(rgb: &mut [u8], amount: f64) {
     let mut state = 0x9e37_79b9_u32;
     for i in (0..rgb.len()).step_by(3) {
+        if i + 2 >= rgb.len() {
+            break;
+        }
         state ^= state << 13;
         state ^= state >> 17;
         state ^= state << 5;

@@ -2,6 +2,9 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use guion_assemble::{assemble_at, duration};
+use guion_audio::{
+    default_narration_path, mix_for_encode, timeline_duration, write_narration, NarrateOptions,
+};
 use guion_brand::{default_theme, postfx_dir, Theme};
 use guion_core::load_and_check;
 use guion_encode::{default_mp4, encode_ppm_dir};
@@ -17,6 +20,7 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut out_mp4: Option<PathBuf> = None;
     let mut fps: Option<f64> = None;
     let mut brand = true;
+    let mut auto_narrate = false;
 
     let mut i = 0;
     while i < args.len() {
@@ -34,6 +38,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 fps = args.get(i).and_then(|s| s.parse().ok());
             }
             "--no-brand" => brand = false,
+            "--narrate" => auto_narrate = true,
             flag if flag.starts_with('-') => {
                 eprintln!("flag desconocido: {flag}");
                 return ExitCode::from(2);
@@ -72,7 +77,7 @@ pub fn run(args: &[String]) -> ExitCode {
 
     let theme = theme_for(&sp);
     let fps = fps.unwrap_or(sp.meta.fps);
-    let dur = duration(&sp);
+    let dur = timeline_duration(&sp).max(duration(&sp));
     let frames = frame_count(dur, fps);
     let dir = frames_dir.unwrap_or_else(|| default_out(&sp.meta.slug));
     let mp4 = out_mp4.unwrap_or_else(|| default_mp4(&sp.meta.slug));
@@ -83,11 +88,27 @@ pub fn run(args: &[String]) -> ExitCode {
         }
     }
 
-    let audio_path = sp
-        .audio
-        .as_ref()
-        .and_then(|a| a.path.as_ref())
-        .map(PathBuf::from);
+    let screenplay_dir = path.parent().unwrap_or(Path::new(".")).to_path_buf();
+    let narration_path = default_narration_path(&sp.meta.slug);
+    if auto_narrate && !narration_path.exists() {
+        let opts = NarrateOptions::default();
+        if let Err(e) = write_narration(&sp, &screenplay_dir, &narration_path, &opts) {
+            eprintln!("narrate: {e}");
+            return ExitCode::from(1);
+        }
+    }
+
+    let audio_path = match mix_for_encode(
+        &sp,
+        &screenplay_dir,
+        narration_path.exists().then_some(narration_path.as_path()),
+    ) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("audio: {e}");
+            return ExitCode::from(1);
+        }
+    };
     match encode_ppm_dir(&dir, fps, &mp4, audio_path.as_deref()) {
         Ok(()) => {
             println!("{} → {}", frames, mp4.display());

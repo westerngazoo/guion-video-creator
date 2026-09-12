@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use guion_assemble::{assemble_at, duration};
+use guion_audio::timeline_duration;
 use guion_brand::{default_theme, postfx_dir};
 use guion_core::{load_and_check, Format};
 use guion_motion::ModelRuntime;
@@ -73,7 +74,7 @@ pub fn run(args: &[String]) -> ExitCode {
     };
 
     let theme = default_theme();
-    let dur = duration(&sp);
+    let dur = timeline_duration(&sp).max(duration(&sp));
     let fps = fps.unwrap_or(sp.meta.fps);
     let frames = frame_count(dur, fps);
     let dir = out.unwrap_or_else(|| default_out(&sp.meta.slug));

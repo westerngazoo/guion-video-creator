@@ -7,8 +7,10 @@ members = [
     "crates/guion-brand",
     "crates/guion-assemble",
     "crates/guion-encode",
+    "crates/guion-audio",
     "crates/guion-fisica",
     "crates/guion-cli",
+    "apps/guion-studio",
 ]
 
 [workspace.package]
@@ -26,6 +28,7 @@ guion-motion = { path = "crates/guion-motion" }
 guion-brand = { path = "crates/guion-brand" }
 guion-assemble = { path = "crates/guion-assemble" }
 guion-encode = { path = "crates/guion-encode" }
+guion-audio = { path = "crates/guion-audio" }
 guion-fisica = { path = "crates/guion-fisica" }
 motoreel = { path = "../motoreel/crates/motoreel" }
 serde_json = "1"
