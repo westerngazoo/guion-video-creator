@@ -42,6 +42,8 @@ Esa fábrica **se retira**; el motor no se reinventa aquí, se consume.
 | [`docs/DISENO.md`](docs/DISENO.md) | **el diseño**: por qué NO es un archivo por reel. `Ejercicio` y `Comparacion`, y el examen que dice si ya está |
 | [`docs/FISICA.md`](docs/FISICA.md) | la física exactamente como se calcula hoy. El motor tiene que reproducirla, no reinventarla |
 | [`docs/VERIFICACION.md`](docs/VERIFICACION.md) | las compuertas que hay que portar. Ninguna pieza sale sin pasarlas |
+| [`docs/PLAN.md`](docs/PLAN.md) | **el plan por fases**: qué corre al final de cada una |
+| [`docs/COORDINACION.md`](docs/COORDINACION.md) | **temporal**: qué árbol está congelado mientras se hace la mudanza |
 | [`fixtures/dorados.json`](fixtures/dorados.json) | 135 muestras de 12 piezas **ya publicadas**. Es el listón: si el motor no las reproduce al 2 %, dos piezas se contradicen en público |
 
 ## La regla que manda sobre todas
