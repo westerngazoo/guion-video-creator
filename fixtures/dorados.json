@@ -1593,6 +1593,161 @@
       "descripcion": "remo: barra contra polea baja (objetivo hombro)",
       "tema": "espalda"
     },
+    "reel40": {
+      "constantes": {
+        "CARGA": 100.0,
+        "TORSO": 0.53,
+        "FEMUR": 0.46,
+        "PHI_RUMANO_GRADOS": 72.0,
+        "PHI_HT_GRADOS": 40.0,
+        "TARGET": "cadera",
+        "MEDICIONES": {
+          "peso muerto rumano": {
+            "tau": 494.4828145173392,
+            "W": 359.26279115981555
+          },
+          "hip thrust": {
+            "tau": 451.26000000000005,
+            "W": 290.0643360108256
+          }
+        },
+        "PICO": {
+          "rumano": 494.4828145173392,
+          "hipthrust": 451.26000000000005
+        },
+        "INICIO": {
+          "rumano": 494.4828145173392,
+          "hipthrust": 345.68521540187004
+        },
+        "FIN": {
+          "rumano": 0.0,
+          "hipthrust": 451.26000000000005
+        },
+        "TRABAJO": {
+          "rumano": 359.26279115981555,
+          "hipthrust": 290.0643360108256
+        },
+        "CRUCE": 0.30384637467489395,
+        "_fuente": "physics-lab/mecanica/src/gluteo.rs (6 claims en Rust)"
+      },
+      "muestras": [
+        {
+          "entrada": {
+            "variante": "rumano",
+            "s": 0.0
+          },
+          "flexion_grados": 72.0,
+          "brazo_momento": 0.5040599536364314,
+          "cadera": 494.4828145173392
+        },
+        {
+          "entrada": {
+            "variante": "rumano",
+            "s": 0.25
+          },
+          "flexion_grados": 54.0,
+          "brazo_momento": 0.4287790070187222,
+          "cadera": 420.63220588536643
+        },
+        {
+          "entrada": {
+            "variante": "rumano",
+            "s": 0.5
+          },
+          "flexion_grados": 36.0,
+          "brazo_momento": 0.3115261837150108,
+          "cadera": 305.60718622442556
+        },
+        {
+          "entrada": {
+            "variante": "rumano",
+            "s": 0.75
+          },
+          "flexion_grados": 18.0,
+          "brazo_momento": 0.16377900701872214,
+          "cadera": 160.66720588536643
+        },
+        {
+          "entrada": {
+            "variante": "rumano",
+            "s": 1.0
+          },
+          "flexion_grados": 0.0,
+          "brazo_momento": 0.0,
+          "cadera": 0.0
+        },
+        {
+          "entrada": {
+            "variante": "rumano",
+            "medida": "trabajo"
+          },
+          "trabajo": 359.26279115981555,
+          "trabajo_forma_cerrada": 359.2627941146336
+        },
+        {
+          "entrada": {
+            "variante": "hipthrust",
+            "s": 0.0
+          },
+          "flexion_grados": 40.0,
+          "brazo_momento": 0.3523804438347299,
+          "cadera": 345.68521540187004
+        },
+        {
+          "entrada": {
+            "variante": "hipthrust",
+            "s": 0.25
+          },
+          "flexion_grados": 29.999999999999996,
+          "brazo_momento": 0.3983716857408418,
+          "cadera": 390.8026237117658
+        },
+        {
+          "entrada": {
+            "variante": "hipthrust",
+            "s": 0.5
+          },
+          "flexion_grados": 20.0,
+          "brazo_momento": 0.4322586055615179,
+          "cadera": 424.0456920558491
+        },
+        {
+          "entrada": {
+            "variante": "hipthrust",
+            "s": 0.75
+          },
+          "flexion_grados": 10.0,
+          "brazo_momento": 0.4530115663856157,
+          "cadera": 444.40434662428896
+        },
+        {
+          "entrada": {
+            "variante": "hipthrust",
+            "s": 1.0
+          },
+          "flexion_grados": 0.0,
+          "brazo_momento": 0.46,
+          "cadera": 451.26000000000005
+        },
+        {
+          "entrada": {
+            "variante": "hipthrust",
+            "medida": "trabajo"
+          },
+          "trabajo": 290.0643360108256,
+          "trabajo_forma_cerrada": 290.0643367471477
+        },
+        {
+          "entrada": {
+            "medida": "cruce de las curvas"
+          },
+          "s": 0.30384637467489395,
+          "tau_ahi": 399.00637933383183
+        }
+      ],
+      "descripcion": "glúteo: hip thrust contra rumano (CONGELADO: spec de la primera comparación declarativa, nunca publicado en Python)",
+      "tema": "pierna"
+    },
     "reel39": {
       "constantes": {
         "CARGA": 40.0,

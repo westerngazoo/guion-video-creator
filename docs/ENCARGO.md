@@ -33,6 +33,28 @@ Antes de escribir código, lee [`FISICA.md`](FISICA.md) y
 [`VERIFICACION.md`](VERIFICACION.md). Este archivo dice **qué** hacer y
 **cuándo está terminado**; esos dos dicen **qué tiene que ser cierto**.
 
+## 0.2 Consolidación — decidida el 12 sep 2026
+
+La misma idea vivía en tres repos: `westerngazoo/guion` (privado, con la
+narración), `fisicobuenfisico/guion` (el studio Tauri y `guion-fisica`), y
+éste. **Éste queda como la única casa.** La razón no es gusto: una
+herramienta que otros creadores van a reusar **no puede vivir dentro del
+repo de contenido personal del dueño**.
+
+Se mueven aquí: los crates de `fisicobuenfisico/guion` (incluido
+`apps/guion-studio`) y la narración de `westerngazoo/guion`
+(`guion-narrate`, seis proveedores incluida la voz propia grabada, con
+subtítulos). `fisicobuenfisico` se queda **sólo con contenido**.
+
+## 0.3 El error a no repetir
+
+Ver [`DISENO.md`](DISENO.md). En corto: hoy hay `reel04.rs`, `reel26.rs`,
+`reel29.rs`, `reel39.rs` — **un struct por reel**, con `enum Variante {
+Militar, Smith }` y constantes duras. Eso es el Python transliterado, no
+una abstracción. **Portar reel por reel no es migrar.** Lo que falta son
+las dos capas de en medio, `Ejercicio` y `Comparacion`, y el examen es:
+*si para un ejercicio nuevo hay que tocar Rust, el diseño todavía no está.*
+
 ## 0.1 El encargo, en una línea
 
 Construir el productor de video de ese motor, con **dos formatos de
