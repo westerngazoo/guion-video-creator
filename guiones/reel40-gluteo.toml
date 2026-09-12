@@ -1,0 +1,32 @@
+# El primer guion declarativo. Nada aquí menciona un reel, un color, un
+# pixel ni un número de salida: sólo qué se compara y cómo se juzga.
+#
+# Los números que produce están congelados en `fixtures/dorados.json`
+# como `reel40`, y el test `reproduce_los_dorados_del_reel40` los exige.
+
+[comparacion]
+titulo   = "Glúteo: hip thrust vs rumano"
+objetivo = "cadera"
+carga_kg = 100.0
+
+[[opcion]]
+nombre       = "rumano"
+modelo       = "bisagra_de_cadera"   # la palanca es el torso
+palanca_m    = 0.53
+rango_grados = 72.0
+
+[[opcion]]
+nombre       = "hip thrust"
+modelo       = "puente_de_cadera"    # la palanca es el fémur
+palanca_m    = 0.46
+rango_grados = 40.0
+
+[[criterio]]
+etiqueta = "Pico en la cadera"
+medida   = "pico"
+sentido  = "informativo"
+
+[[criterio]]
+etiqueta = "Trabajo por repetición"
+medida   = "trabajo"
+sentido  = "informativo"

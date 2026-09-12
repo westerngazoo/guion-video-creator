@@ -1,0 +1,15 @@
+[package]
+name = "guion-comparacion"
+version = "0.1.0"
+description = "Un reel es una comparación: opciones, articulación objetivo y criterios"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+mecanica = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

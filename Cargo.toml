@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = ["crates/guion-comparacion"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/westerngazoo/guion-video-creator"
+
+[workspace.dependencies]
+# El motor. No se reimplementa aquí: se consume (ver docs/ENCARGO.md §0).
+mecanica = { path = "../physics-lab/mecanica" }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+serde_json = "1"
