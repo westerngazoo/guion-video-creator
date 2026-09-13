@@ -9,6 +9,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "garust"
+version = "0.1.0"
+dependencies = [
+ "garust-core",
+ "garust-geo",
+ "garust-physics",
+]
+
+[[package]]
+name = "garust-core"
+version = "0.1.0"
+
+[[package]]
+name = "garust-geo"
+version = "0.1.0"
+dependencies = [
+ "garust-core",
+]
+
+[[package]]
+name = "garust-physics"
+version = "0.1.0"
+dependencies = [
+ "garust-core",
+ "garust-geo",
+]
+
+[[package]]
 name = "guion-comparacion"
 version = "0.1.0"
 dependencies = [
@@ -43,6 +71,9 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 [[package]]
 name = "mecanica"
 version = "0.1.0"
+dependencies = [
+ "garust",
+]
 
 [[package]]
 name = "memchr"
