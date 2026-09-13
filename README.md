@@ -39,6 +39,7 @@ Esa fábrica **se retira**; el motor no se reinventa aquí, se consume.
 | archivo | qué es |
 |---|---|
 | [`docs/ENCARGO.md`](docs/ENCARGO.md) | **el encargo completo**: qué construir, en qué orden, y cuándo está terminado |
+| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | **qué existe hoy y dónde**: el mapa capa por capa, con las afirmaciones que corren |
 | [`docs/DISENO.md`](docs/DISENO.md) | **el diseño**: por qué NO es un archivo por reel. `Ejercicio` y `Comparacion`, y el examen que dice si ya está |
 | [`docs/FISICA.md`](docs/FISICA.md) | la física exactamente como se calcula hoy. El motor tiene que reproducirla, no reinventarla |
 | [`docs/VERIFICACION.md`](docs/VERIFICACION.md) | las compuertas que hay que portar. Ninguna pieza sale sin pasarlas |

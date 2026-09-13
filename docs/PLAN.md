@@ -16,6 +16,11 @@ módulos del motor, y `IGUALES` rotulando dos números que difieren 19%.
 
 ## Fase 1 — `Mecanico`: el ejercicio general
 
+**En curso.** Hechos los pasos 1 y 2 (ver [`ARQUITECTURA.md`](ARQUITECTURA.md)):
+el árbol por arreglo de padres con 5 afirmaciones, y las cargas con línea
+de acción más la dinámica inversa con 5 más — incluida la que amarra el
+árbol a la forma cerrada de `mecanica`. Faltan los pasos 3 y 4.
+
 Hoy el catálogo sólo sabe de formas cerradas (`τ = mgL·sen φ`). La mayoría
 de los ejercicios no tienen forma cerrada: hay que resolver la postura y
 sumar momentos.
