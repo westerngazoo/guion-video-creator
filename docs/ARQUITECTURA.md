@@ -28,17 +28,22 @@ de las dos le está mintiendo a alguien que paga.
 | capa | dónde vive | estado |
 |---|---|---|
 | **`Mecanismo`** — árbol cinemático | `garust/crates/garust-geo/src/tree.rs` | **hecho** · 5 afirmaciones |
+| **IK de dos eslabones** — la rama como dato | `garust/crates/garust-geo/src/twolink.rs` | **hecho** · 7 afirmaciones |
 | **`Carga`** — fuerzas con línea de acción | `garust/crates/garust-physics/src/load.rs` | **hecho** · `Weight`, `Cable` |
 | **Dinámica inversa** — τ de lo distal | `garust/crates/garust-physics/src/multibody.rs` | **hecho** · 5 afirmaciones |
 | **`Lift`** — ejercicio de forma cerrada | `physics-lab/mecanica/src/lib.rs` | **hecho** · 31 afirmaciones |
-| **`MaquinaHumana`** — articulaciones con nombre | `physics-lab/mecanica/src/maquina_humana.rs` | **falta** |
+| **`MaquinaHumana`** — articulaciones con nombre | `physics-lab/mecanica/src/maquina_humana.rs` | **hecho** · 4 afirmaciones + poses doradas |
 | **`Ejercicio::Mecanico`** — el caso general | `physics-lab/mecanica/` | **falta** |
 | **`Comparacion`** — lo que es un reel | `guion-video-creator/crates/guion-comparacion/` | **hecho** · 5 afirmaciones |
 | **Guion TOML** — lo que escribe el creador | `guion-video-creator/guiones/` | **hecho** · un caso |
 | **Render** | — | **falta** (fase 3) |
 | **Narración y subtítulos** | `westerngazoo/guion` → `guion-narrate` | existe, **sin conectar** |
 
-**86 afirmaciones corriendo** entre las cuatro capas construidas.
+**247 afirmaciones corriendo** entre las capas construidas (157 `garust-geo`,
+48 `garust-physics`, 35 `mecanica`, 7 `guion-comparacion`), y entre ellas la
+que cierra el paso: el codo de los reels 38 y 39 cae **donde cayó en el
+video publicado**, al 2%, resuelto por la máquina y no por el módulo que
+los dibujó.
 
 ## Ramas vivas
 
