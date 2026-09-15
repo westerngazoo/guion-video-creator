@@ -1,0 +1,12 @@
+[package]
+name = "guion-render"
+version = "0.1.0"
+description = "Una comparación, dibujada: la gráfica sale del modelo, no de un guion de animación"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+guion-comparacion = { path = "../guion-comparacion" }
+motoreel = { path = "../../../motoreel/crates/motoreel" }
+garust = { path = "../../../garust" }
