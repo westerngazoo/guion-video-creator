@@ -1,0 +1,13 @@
+@startuml
+title guion-video-creator — secuencia principal
+
+participant "Spec" as Spec0
+participant "Physics" as Physics1
+participant "Verify" as Verify2
+participant "Pipeline" as Pipeline3
+
+Spec0 -> Physics1: FISICA.md — exact physics to reproduce, not reinvent.
+Physics1 -> Verify2: dorados.json golden samples, 2% tolerance gate.
+Verify2 -> Pipeline3: guion-cli check → assemble → motoreel → ffmpeg → mp4.
+
+@enduml

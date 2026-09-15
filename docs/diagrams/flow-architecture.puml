@@ -1,0 +1,15 @@
+@startuml
+title guion-video-creator — flujo de componentes
+start
+:TOMLscreenplay;
+:GUIONguion;
+:GUION;
+:MRmotoreel;
+:MR;
+:FFffmpeg;
+:FIXdorados.json;
+:FF;
+:PHYphysics-lab;
+stop
+
+@enduml

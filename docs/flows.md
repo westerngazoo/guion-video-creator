@@ -1,6 +1,6 @@
 # Flujos — guion-video-creator
 
-## Flujo principal
+## Flujo principal (Mermaid)
 
 ```mermaid
 flowchart TB
@@ -14,21 +14,49 @@ PHY[physics-lab + garust] --> GUION
 ## Descripción paso a paso
 
 1. **Spec** — ENCARGO.md defines mandate, decisions, acceptance criteria.
-1. **Physics** — FISICA.md — exact physics to reproduce, not reinvent.
-1. **Verify** — dorados.json golden samples, 2% tolerance gate.
-1. **Pipeline** — guion-cli check → assemble → motoreel → ffmpeg → mp4.
+2. **Physics** — FISICA.md — exact physics to reproduce, not reinvent.
+3. **Verify** — dorados.json golden samples, 2% tolerance gate.
+4. **Pipeline** — guion-cli check → assemble → motoreel → ffmpeg → mp4.
 
-## Diagrama PlantUML
+## Secuencia (PlantUML)
 
-Equivalente PlantUML del flujo principal (misma topología que el diagrama Mermaid):
+Fuente: [`diagrams/flow-sequence.puml`](./diagrams/flow-sequence.puml)
 
 ```plantuml
 @startuml
-title guion-video-creator — flujo principal
-note as N1
-Ver flows.md Mermaid para detalle;
-exportar con herramientas mermaid→plantuml si se prefiere editar en PlantUML.
-end note
+title guion-video-creator — secuencia principal
+
+participant "Spec" as Spec0
+participant "Physics" as Physics1
+participant "Verify" as Verify2
+participant "Pipeline" as Pipeline3
+
+Spec0 -> Physics1: FISICA.md — exact physics to reproduce, not reinvent.
+Physics1 -> Verify2: dorados.json golden samples, 2% tolerance gate.
+Verify2 -> Pipeline3: guion-cli check → assemble → motoreel → ffmpeg → mp4.
+
+@enduml
+```
+
+## Componentes / estados (PlantUML)
+
+Fuente: [`diagrams/flow-architecture.puml`](./diagrams/flow-architecture.puml)
+
+```plantuml
+@startuml
+title guion-video-creator — flujo de componentes
+start
+:TOMLscreenplay;
+:GUIONguion;
+:GUION;
+:MRmotoreel;
+:MR;
+:FFffmpeg;
+:FIXdorados.json;
+:FF;
+:PHYphysics-lab;
+stop
+
 @enduml
 ```
 

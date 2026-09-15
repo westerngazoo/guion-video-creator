@@ -2,8 +2,26 @@
 use guion_comparacion::{guion, Medida, Veredicto};
 
 fn main() {
-    let ruta = concat!(env!("CARGO_MANIFEST_DIR"), "/../../guiones/reel40-gluteo.toml");
-    let c = guion::cargar(&std::fs::read_to_string(ruta).unwrap()).unwrap();
+    // Toma el guion que le pases, o el de ejemplo si no le pasas ninguno.
+    // La gracia es editar el TOML y volver a correr: nada que compilar.
+    let ruta = std::env::args().nth(1).unwrap_or_else(|| {
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../../guiones/reel40-gluteo.toml")
+            .to_string()
+    });
+    let texto = match std::fs::read_to_string(&ruta) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("no pude leer {ruta}: {e}");
+            std::process::exit(1);
+        }
+    };
+    let c = match guion::cargar(&texto) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("el guion no carga: {e}");
+            std::process::exit(1);
+        }
+    };
     println!("\n{}  ·  objetivo: {}\n", c.titulo, c.objetivo);
     print!("{:<26}", "");
     for o in &c.opciones {
