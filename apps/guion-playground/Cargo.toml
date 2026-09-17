@@ -1,0 +1,31 @@
+[package]
+name = "guion-playground"
+version = "0.1.0"
+description = "Physics Playground — simulate, scrub, and export rigid-body scenes"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "guion_playground"
+path = "src/lib.rs"
+
+[[bin]]
+name = "guion-playground"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+base64 = "0.22"
+garust = { path = "../../../garust", features = ["physics"] }
+garust-physics = { path = "../../../garust/crates/garust-physics" }
+guion-brand = { workspace = true }
+guion-encode = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["png", "pnm"] }
+motoreel = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tauri = { version = "2", features = [] }

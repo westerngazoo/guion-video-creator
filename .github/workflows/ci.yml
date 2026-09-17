@@ -56,13 +56,13 @@ jobs:
             | xargs -0 rustfmt --check --edition 2021
         working-directory: guion-video-creator
 
-      # `apps/guion-studio` es una app Tauri de escritorio: pide la pila
+      # `apps/guion-studio` y `apps/guion-playground` son Tauri de escritorio: piden la pila
       # de webkit del sistema y no se construye en un runner pelón. Se
       # excluye aquí, no se deja de formatear arriba.
       - name: Clippy
-        run: cargo clippy --workspace --exclude guion-studio --all-targets -- -D warnings
+        run: cargo clippy --workspace --exclude guion-studio --exclude guion-playground --all-targets -- -D warnings
         working-directory: guion-video-creator
 
       - name: Test
-        run: cargo test --workspace --exclude guion-studio
+        run: cargo test --workspace --exclude guion-studio --exclude guion-playground
         working-directory: guion-video-creator

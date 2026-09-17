@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Physics Playground</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --panel: #171a21;
+      --accent: #6ee7b7;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --border: #2a2f3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+    header span { color: var(--muted); font-size: 0.85rem; }
+    main {
+      display: grid;
+      grid-template-columns: 300px 1fr 280px;
+      gap: 1rem;
+      padding: 1rem;
+      height: calc(100vh - 64px);
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      overflow: auto;
+    }
+    .preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    #viewport {
+      width: min(100%, 720px);
+      min-height: 240px;
+      aspect-ratio: 4 / 3;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: #0b0d12;
+      object-fit: contain;
+    }
+    #viewport:not([src]) {
+      display: block;
+      background:
+        radial-gradient(circle at 50% 45%, #1a2332 0%, #0b0d12 70%);
+    }
+    button {
+      background: var(--accent);
+      color: #04120d;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0.25rem 0.25rem 0.25rem 0;
+    }
+    button.secondary {
+      background: #2a2f3a;
+      color: var(--text);
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    input[type="range"] {
+      width: min(100%, 720px);
+      accent-color: var(--accent);
+    }
+    label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 0.25rem; }
+    .row { margin-bottom: 0.85rem; }
+    .row span { float: right; color: var(--text); font-variant-numeric: tabular-nums; }
+    #log {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      color: var(--muted);
+      min-height: 100px;
+    }
+    #meta { font-size: 0.85rem; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Physics Playground</h1>
+    <span>garust-physics · motoreel · Fase 1 spike</span>
+  </header>
+  <main>
+    <section class="panel">
+      <div class="row">
+        <label>Longitud del péndulo (m) <span id="lenVal">1.0</span></label>
+        <input type="range" id="length" min="0.3" max="2.0" step="0.05" value="1.0" />
+      </div>
+      <div class="row">
+        <label>Gravedad (m/s²) <span id="gravVal">9.81</span></label>
+        <input type="range" id="gravity" min="1" max="20" step="0.1" value="9.81" />
+      </div>
+      <div class="row">
+        <label>Ángulo inicial (°) <span id="angVal">30</span></label>
+        <input type="range" id="angle" min="-80" max="80" step="1" value="30" />
+      </div>
+      <div class="row">
+        <label>Duración simulación (s) <span id="durVal">4.0</span></label>
+        <input type="range" id="duration" min="1" max="12" step="0.5" value="4" />
+      </div>
+      <button id="apply" class="secondary">Aplicar parámetros</button>
+      <button id="reset" class="secondary">Reset</button>
+    </section>
+
+    <section class="panel preview">
+      <img id="viewport" alt="Vista previa del péndulo" />
+      <input type="range" id="scrub" min="0" max="1000" value="0" />
+      <div>
+        <button id="play">Play</button>
+        <button id="pause" class="secondary" disabled>Pausa</button>
+        <button id="export">Export MP4</button>
+      </div>
+      <div id="timeLabel" style="color:var(--muted);font-size:0.85rem">t = 0.00 s</div>
+    </section>
+
+    <section class="panel">
+      <label>Estado</label>
+      <div id="meta">—</div>
+      <label style="margin-top:1rem">Log</label>
+      <div id="log"></div>
+    </section>
+  </main>
+
+  <script>
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent = `${new Date().toLocaleTimeString()}  ${msg}\n` + el.textContent;
+    };
+
+    function tauriInvoke() {
+      return window.__TAURI__?.core?.invoke ?? null;
+    }
+
+    /** Tauri injects __TAURI__ after parse on some platforms (macOS); poll briefly. */
+    async function waitForTauri(timeoutMs = 8000) {
+      const start = performance.now();
+      while (performance.now() - start < timeoutMs) {
+        const fn = tauriInvoke();
+        if (fn) return fn;
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      return null;
+    }
+
+    let invoke = null;
+    let duration = 4;
+    let playing = false;
+    let playStart = 0;
+    let playFrom = 0;
+    let raf = null;
+
+    async function call(cmd, args = {}) {
+      const fn = invoke ?? tauriInvoke();
+      if (!fn) {
+        log(`(sin Tauri) ${cmd}`);
+        return null;
+      }
+      try {
+        return await fn(cmd, args);
+      } catch (e) {
+        log(`${cmd} ERROR: ${e}`);
+        throw e;
+      }
+    }
+
+    function readParams() {
+      return {
+        length: parseFloat(document.getElementById('length').value),
+        gravity: parseFloat(document.getElementById('gravity').value),
+        angle_deg: parseFloat(document.getElementById('angle').value),
+        duration: parseFloat(document.getElementById('duration').value),
+      };
+    }
+
+    function updateLabels() {
+      const p = readParams();
+      document.getElementById('lenVal').textContent = p.length.toFixed(2);
+      document.getElementById('gravVal').textContent = p.gravity.toFixed(2);
+      document.getElementById('angVal').textContent = p.angle_deg.toFixed(0);
+      document.getElementById('durVal').textContent = p.duration.toFixed(1);
+    }
+
+    ['length', 'gravity', 'angle', 'duration'].forEach((id) => {
+      document.getElementById(id).oninput = updateLabels;
+    });
+
+    async function refreshMeta() {
+      const info = await call('cmd_sim_info');
+      if (!info) return;
+      duration = info.duration;
+      document.getElementById('scrub').max = Math.round(duration * 1000);
+      document.getElementById('meta').textContent =
+        `ℓ = ${info.params.length.toFixed(2)} m\n` +
+        `g = ${info.params.gravity.toFixed(2)} m/s²\n` +
+        `θ₀ = ${info.params.angle_deg.toFixed(0)}°\n` +
+        `${info.duration.toFixed(2)} s · ${info.fps} fps export`;
+    }
+
+    async function showFrame(t) {
+      const clamped = Math.max(0, Math.min(duration, t));
+      const frame = await call('cmd_state_at', { t: clamped });
+      const png = await call('cmd_preview', { t: clamped });
+      if (png) document.getElementById('viewport').src = png;
+      if (frame) {
+        document.getElementById('timeLabel').textContent =
+          `t = ${frame.t.toFixed(2)} s · θ ≈ ${frame.angle_deg.toFixed(1)}°`;
+        document.getElementById('scrub').value = Math.round(frame.t * 1000);
+      }
+    }
+
+    async function applyParams() {
+      const p = readParams();
+      await call('cmd_set_params', {
+        length: p.length,
+        gravity: p.gravity,
+        angle_deg: p.angle_deg,
+      });
+      await call('cmd_simulate_to', { duration: p.duration });
+      await refreshMeta();
+      await showFrame(0);
+      log('parámetros aplicados');
+    }
+
+    document.getElementById('apply').onclick = applyParams;
+    document.getElementById('reset').onclick = async () => {
+      await call('cmd_reset_sim');
+      await refreshMeta();
+      await showFrame(0);
+      log('simulación reiniciada');
+    };
+
+    document.getElementById('scrub').oninput = (e) => {
+      if (playing) pause();
+      showFrame(e.target.value / 1000);
+    };
+
+    function pause() {
+      playing = false;
+      document.getElementById('play').disabled = false;
+      document.getElementById('pause').disabled = true;
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+    }
+
+    function tick() {
+      if (!playing) return;
+      const elapsed = (performance.now() - playStart) / 1000;
+      let t = playFrom + elapsed;
+      if (t >= duration) {
+        t = duration;
+        showFrame(t).then(pause);
+        return;
+      }
+      showFrame(t);
+      raf = requestAnimationFrame(tick);
+    }
+
+    document.getElementById('play').onclick = () => {
+      playing = true;
+      playStart = performance.now();
+      playFrom = document.getElementById('scrub').value / 1000;
+      document.getElementById('play').disabled = true;
+      document.getElementById('pause').disabled = false;
+      raf = requestAnimationFrame(tick);
+    };
+
+    document.getElementById('pause').onclick = pause;
+
+    document.getElementById('export').onclick = async () => {
+      const msg = await call('cmd_export_mp4', { path: null });
+      if (msg) log(`export: ${msg}`);
+    };
+
+    async function boot() {
+      invoke = await waitForTauri();
+      if (!invoke) {
+        log('Tauri no disponible — ejecuta: cargo run -p guion-playground');
+        document.getElementById('meta').textContent =
+          'Vista previa requiere la app Tauri (no el HTML suelto).';
+        return;
+      }
+      try {
+        await refreshMeta();
+        await showFrame(0);
+        log('vista previa lista');
+      } catch (e) {
+        log(`inicio ERROR: ${e}`);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => boot());
+    } else {
+      boot();
+    }
+  </script>
+</body>
+</html>
