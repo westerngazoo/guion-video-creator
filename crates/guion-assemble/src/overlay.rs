@@ -1,5 +1,5 @@
-use guion_core::Screenplay;
 use guion_brand::Theme;
+use guion_core::Screenplay;
 use motoreel::{Align, Anchor, Label, Pt2, ScreenAnchor};
 
 /// Hook + footer screen labels for the current time `t`.
@@ -7,10 +7,7 @@ pub fn labels(sp: &Screenplay, theme: &Theme, t: f64) -> Vec<Label> {
     let mut out = Vec::new();
     if let Some(hook) = &sp.hook {
         if t >= hook.at.start && t <= hook.at.end {
-            let mut lbl = Label::new(
-                hook.text.clone(),
-                Anchor::Screen(ScreenAnchor::TopCentre),
-            );
+            let mut lbl = Label::new(hook.text.clone(), Anchor::Screen(ScreenAnchor::TopCentre));
             lbl = lbl
                 .with_align(Align::Center)
                 .with_size(0.12)
@@ -21,10 +18,7 @@ pub fn labels(sp: &Screenplay, theme: &Theme, t: f64) -> Vec<Label> {
     }
     for cue in &sp.narration {
         if t >= cue.at.start && t <= cue.at.end {
-            let mut lbl = Label::new(
-                cue.text.clone(),
-                Anchor::Screen(ScreenAnchor::Centre),
-            );
+            let mut lbl = Label::new(cue.text.clone(), Anchor::Screen(ScreenAnchor::Centre));
             lbl = lbl
                 .with_align(Align::Center)
                 .with_size(0.055)

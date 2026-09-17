@@ -8,7 +8,9 @@ pub use error::MotionError;
 pub use wasm::{physics_lab_root, wasm_path_for_source, WasmLesson};
 
 use guion_core::{ModelRef, Screenplay, Token};
-use guion_models::{resolve_point as native_point, resolve_token as native_token, LeverParams, LeverState};
+use guion_models::{
+    resolve_point as native_point, resolve_token as native_token, LeverParams, LeverState,
+};
 
 /// Cached wasm lesson per model id.
 pub struct ModelRuntime {
@@ -31,30 +33,24 @@ impl ModelRuntime {
     }
 
     pub fn with_root(root: std::path::PathBuf) -> Self {
-        ModelRuntime {
-            root,
-            lever: None,
-        }
+        ModelRuntime { root, lever: None }
     }
 
     fn lever_lesson(&mut self) -> Result<&mut WasmLesson, MotionError> {
         if self.lever.is_none() {
-            let path = wasm::wasm_path_for_source("physics-lab:lever", &self.root)
-                .ok_or_else(|| MotionError::Io(std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    "lesson.wasm no encontrado para lever",
-                )))?;
+            let path =
+                wasm::wasm_path_for_source("physics-lab:lever", &self.root).ok_or_else(|| {
+                    MotionError::Io(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "lesson.wasm no encontrado para lever",
+                    ))
+                })?;
             self.lever = Some(WasmLesson::load(&path, 5)?);
         }
         Ok(self.lever.as_mut().unwrap())
     }
 
-    pub fn resolve_token(
-        &mut self,
-        sp: &Screenplay,
-        token: &Token,
-        phi: f64,
-    ) -> Option<f64> {
+    pub fn resolve_token(&mut self, sp: &Screenplay, token: &Token, phi: f64) -> Option<f64> {
         let model = sp.model.iter().find(|m| m.id == token.id())?;
         if model.source == "physics-lab:lever" {
             if let Ok(lesson) = self.lever_lesson() {

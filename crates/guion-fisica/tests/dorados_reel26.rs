@@ -7,7 +7,11 @@ fn reel26_matches_dorados() {
 
     for (i, muestra) in pieza.muestras.iter().enumerate() {
         let got = eval_reel26(muestra).expect("eval reel26");
-        let expected = muestra.salida.get("tau").and_then(|v| v.as_f64()).expect("tau");
+        let expected = muestra
+            .salida
+            .get("tau")
+            .and_then(|v| v.as_f64())
+            .expect("tau");
         assert!(
             within_tol(got, expected, DORADOS_TOL),
             "muestra {i}: got {got}, expected {expected}"

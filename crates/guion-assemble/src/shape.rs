@@ -36,12 +36,18 @@ pub fn build(
                 .iter()
                 .map(|(a, b)| {
                     Ok((
-                        verts.get(*a).copied().ok_or_else(|| AssembleError::Unsupported {
-                            what: format!("índice de vértice {a} fuera de rango en {at}"),
-                        })?,
-                        verts.get(*b).copied().ok_or_else(|| AssembleError::Unsupported {
-                            what: format!("índice de vértice {b} fuera de rango en {at}"),
-                        })?,
+                        verts
+                            .get(*a)
+                            .copied()
+                            .ok_or_else(|| AssembleError::Unsupported {
+                                what: format!("índice de vértice {a} fuera de rango en {at}"),
+                            })?,
+                        verts
+                            .get(*b)
+                            .copied()
+                            .ok_or_else(|| AssembleError::Unsupported {
+                                what: format!("índice de vértice {b} fuera de rango en {at}"),
+                            })?,
                     ))
                 })
                 .collect::<Result<Vec<(pga::Point, pga::Point)>, AssembleError>>()?;
@@ -81,10 +87,12 @@ fn arrow_direction(
     phi: f64,
     site: &str,
 ) -> Result<[f64; 3], AssembleError> {
-    let ins = runtime.resolve_point(sp, at, phi).ok_or_else(|| AssembleError::Unresolved {
-        token: at.as_str().to_string(),
-        at: format!("{site}.at"),
-    })?;
+    let ins = runtime
+        .resolve_point(sp, at, phi)
+        .ok_or_else(|| AssembleError::Unresolved {
+            token: at.as_str().to_string(),
+            at: format!("{site}.at"),
+        })?;
     let shoulder = runtime
         .resolve_point(sp, &Token::parse("@lever.shoulder").unwrap(), phi)
         .ok_or_else(|| AssembleError::Unresolved {
@@ -118,10 +126,12 @@ fn point(
     phi: f64,
     at: &str,
 ) -> Result<pga::Point, AssembleError> {
-    let p = runtime.resolve_point(sp, token, phi).ok_or_else(|| AssembleError::Unresolved {
-        token: token.as_str().to_string(),
-        at: at.to_string(),
-    })?;
+    let p = runtime
+        .resolve_point(sp, token, phi)
+        .ok_or_else(|| AssembleError::Unresolved {
+            token: token.as_str().to_string(),
+            at: at.to_string(),
+        })?;
     Ok(pga::Point::new(p[0], p[1], p[2]))
 }
 
@@ -132,8 +142,10 @@ fn scalar(
     phi: f64,
     at: &str,
 ) -> Result<f64, AssembleError> {
-    runtime.resolve_token(sp, token, phi).ok_or_else(|| AssembleError::Unresolved {
-        token: token.as_str().to_string(),
-        at: at.to_string(),
-    })
+    runtime
+        .resolve_token(sp, token, phi)
+        .ok_or_else(|| AssembleError::Unresolved {
+            token: token.as_str().to_string(),
+            at: at.to_string(),
+        })
 }

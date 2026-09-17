@@ -41,4 +41,3 @@ pub(crate) fn default_out(slug: &str) -> PathBuf {
 pub(crate) fn frame_count(duration: f64, fps: f64) -> usize {
     (duration * fps).ceil() as usize
 }
-

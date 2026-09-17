@@ -6,7 +6,7 @@ use crate::bed::timeline_duration;
 use crate::engine::{engine_by_name, NarrationEngine};
 use crate::error::AudioError;
 use crate::script::{collect_cues, Cue};
-use crate::wav::{SAMPLE_RATE, WavBuffer};
+use crate::wav::{WavBuffer, SAMPLE_RATE};
 
 pub struct NarrateOptions {
     pub engine: String,
@@ -188,7 +188,10 @@ pub fn mix_for_encode(
 fn read_wav_file(path: &Path) -> Result<WavBuffer, AudioError> {
     let data = std::fs::read(path)?;
     if data.len() < 44 {
-        return Err(AudioError::Engine(format!("wav demasiado corto: {}", path.display())));
+        return Err(AudioError::Engine(format!(
+            "wav demasiado corto: {}",
+            path.display()
+        )));
     }
     let sample_rate = u32::from_le_bytes([data[24], data[25], data[26], data[27]]);
     let channels = u16::from_le_bytes([data[22], data[23]]) as usize;

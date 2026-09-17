@@ -11,10 +11,7 @@ fn implemented_pieces_match_dorados() {
     let dorados = load_dorados(&default_dorados_path()).expect("dorados.json");
 
     for name in IMPLEMENTED {
-        let pieza = dorados
-            .piezas
-            .get(*name)
-            .expect("pieza en dorados.json");
+        let pieza = dorados.piezas.get(*name).expect("pieza en dorados.json");
 
         for (i, muestra) in pieza.muestras.iter().enumerate() {
             let (got, expected) = match *name {

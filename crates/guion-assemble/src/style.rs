@@ -4,12 +4,7 @@ use motoreel::Style;
 
 use guion_brand::Theme;
 
-pub fn build(
-    spec: &SpStyle,
-    theme: &Theme,
-    meta: &Meta,
-    heat_value: Option<f64>,
-) -> Style {
+pub fn build(spec: &SpStyle, theme: &Theme, meta: &Meta, heat_value: Option<f64>) -> Style {
     let stroke = theme.stroke_color(&spec.stroke, heat_value);
     let view = crate::camera::view_for(meta);
     let canvas_h = match meta.format {

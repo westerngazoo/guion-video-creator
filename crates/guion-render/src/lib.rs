@@ -18,8 +18,8 @@
 
 #![forbid(unsafe_code)]
 
-use guion_comparacion::Comparacion;
 use garust::{pga, Motor3};
+use guion_comparacion::Comparacion;
 use motoreel::{Camera, Object, Rgb, Scene, Shape, Style, Track};
 
 /// **Por qué todavía no hay texto.**
@@ -47,14 +47,22 @@ pub const VISTA: (f64, f64) = (2.0, 1.2);
 const PROFUNDIDAD: f64 = -1.0;
 
 /// El papel de la marca, para que el fondo no sea negro de fábrica.
-pub const PAPEL: Rgb = Rgb { r: 0xe8, g: 0xe2, b: 0xd4 };
+pub const PAPEL: Rgb = Rgb {
+    r: 0xe8,
+    g: 0xe2,
+    b: 0xd4,
+};
 
 fn punto(x: f64, y: f64) -> pga::Point {
     pga::Point::new(x, y, PROFUNDIDAD)
 }
 
 fn trazo(color: Rgb, ancho: f64) -> Style {
-    Style { stroke: color, width: ancho, alpha: 1.0 }
+    Style {
+        stroke: color,
+        width: ancho,
+        alpha: 1.0,
+    }
 }
 
 /// Los colores de una opción, por orden de declaración.
@@ -65,8 +73,16 @@ fn trazo(color: Rgb, ancho: f64) -> Style {
 /// una comparación de tres no es más difícil de dibujar — es más difícil
 /// de leer, y eso lo decide quien escribe el guion.
 fn color_de(i: usize, n: usize) -> Rgb {
-    const TINTA: Rgb = Rgb { r: 0x1a, g: 0x18, b: 0x14 };
-    const ACENTO: Rgb = Rgb { r: 0xc4, g: 0x45, b: 0x1e };
+    const TINTA: Rgb = Rgb {
+        r: 0x1a,
+        g: 0x18,
+        b: 0x14,
+    };
+    const ACENTO: Rgb = Rgb {
+        r: 0xc4,
+        g: 0x45,
+        b: 0x1e,
+    };
     if i == 0 {
         return TINTA;
     }
@@ -99,7 +115,9 @@ impl Ejes {
             }
         }
         // 10% de aire arriba para que el pico no toque el marco
-        Ejes { tau_max: if tau_max > 0.0 { tau_max * 1.10 } else { 1.0 } }
+        Ejes {
+            tau_max: if tau_max > 0.0 { tau_max * 1.10 } else { 1.0 },
+        }
     }
 
     fn en(&self, s: f64, tau: f64) -> pga::Point {
@@ -121,7 +139,11 @@ pub fn escena_grafica(c: &Comparacion, hasta: f64, muestras: usize) -> Scene {
     let mut objects = Vec::new();
 
     // el marco: sólo los dos ejes, que es lo que se usa para leer
-    let gris = Rgb { r: 0x78, g: 0x6e, b: 0x5e };
+    let gris = Rgb {
+        r: 0x78,
+        g: 0x6e,
+        b: 0x5e,
+    };
     objects.push(Object {
         shape: Shape::Polyline(vec![
             ejes.en(0.0, ejes.tau_max),
@@ -162,7 +184,14 @@ pub fn escena_grafica(c: &Comparacion, hasta: f64, muestras: usize) -> Scene {
                 let tau = c.valor(0, guion_comparacion::Medida::EnProgreso(s));
                 objects.push(Object {
                     shape: Shape::Segment(ejes.en(s, 0.0), ejes.en(s, tau)),
-                    style: trazo(Rgb { r: 0xe0, g: 0x8a, b: 0x3c }, 0.008),
+                    style: trazo(
+                        Rgb {
+                            r: 0xe0,
+                            g: 0x8a,
+                            b: 0x3c,
+                        },
+                        0.008,
+                    ),
                     track: Track::hold(Motor3::identity()),
                 });
             }
@@ -184,8 +213,10 @@ mod tests {
     use guion_comparacion::guion;
 
     fn comparacion() -> Comparacion {
-        let ruta = concat!(env!("CARGO_MANIFEST_DIR"),
-                           "/../../guiones/reel40-gluteo.toml");
+        let ruta = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../guiones/reel40-gluteo.toml"
+        );
         guion::cargar(&std::fs::read_to_string(ruta).expect("guion")).expect("carga")
     }
 
@@ -206,8 +237,7 @@ mod tests {
         for (k, p) in pts.iter().enumerate().step_by(37) {
             let (_, y, _) = p.to_euclidean();
             // deshacer el mapeo vertical
-            let tau_dibujado = (y + VISTA.1 / 2.0 * 0.80) / (VISTA.1 * 0.80)
-                * ejes.tau_max;
+            let tau_dibujado = (y + VISTA.1 / 2.0 * 0.80) / (VISTA.1 * 0.80) * ejes.tau_max;
             let s = k as f64 / (pts.len() - 1) as f64;
             let tau_modelo = c.valor(0, guion_comparacion::Medida::EnProgreso(s));
             assert!(

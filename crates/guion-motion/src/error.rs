@@ -32,4 +32,3 @@ impl From<std::io::Error> for MotionError {
         MotionError::Io(e)
     }
 }
-

@@ -70,7 +70,10 @@ impl NarrationEngine for PiperEngine {
     }
 }
 
-pub fn engine_by_name(name: &str, piper_model: Option<&str>) -> Result<Box<dyn NarrationEngine>, AudioError> {
+pub fn engine_by_name(
+    name: &str,
+    piper_model: Option<&str>,
+) -> Result<Box<dyn NarrationEngine>, AudioError> {
     match name {
         "scaffold" => Ok(Box::new(ScaffoldEngine)),
         "piper" => Ok(Box::new(PiperEngine::new(

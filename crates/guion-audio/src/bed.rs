@@ -1,7 +1,7 @@
 use guion_assemble::duration;
 
 use crate::error::AudioError;
-use crate::wav::{SAMPLE_RATE, WavBuffer};
+use crate::wav::{WavBuffer, SAMPLE_RATE};
 
 /// Generate a simple 8-bit-style bed for known generator names.
 pub fn generate_bed(generator: &str, total_secs: f64, fps: f64) -> Result<WavBuffer, AudioError> {

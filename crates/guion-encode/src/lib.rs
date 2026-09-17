@@ -41,7 +41,9 @@ pub fn encode_ppm_dir(
     audio: Option<&Path>,
 ) -> Result<(), EncodeError> {
     if !(fps.is_finite() && fps > 0.0) {
-        return Err(EncodeError::InvalidInput("fps debe ser finito y > 0".into()));
+        return Err(EncodeError::InvalidInput(
+            "fps debe ser finito y > 0".into(),
+        ));
     }
     let ffmpeg = which_ffmpeg()?;
     let pattern = frames_dir.join("frame_%05d.ppm");

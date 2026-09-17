@@ -29,7 +29,10 @@ fn dist(a: [f64; 2], b: [f64; 2]) -> f64 {
 }
 
 /// Las muestras con pose de una pieza, como (variante, u, l5, hombro, codo, mano).
-fn muestras(d: &serde_json::Value, pieza: &str) -> Vec<(String, f64, [f64; 2], [f64; 2], [f64; 2], [f64; 2])> {
+fn muestras(
+    d: &serde_json::Value,
+    pieza: &str,
+) -> Vec<(String, f64, [f64; 2], [f64; 2], [f64; 2], [f64; 2])> {
     d["piezas"][pieza]["muestras"]
         .as_array()
         .unwrap()
@@ -50,7 +53,10 @@ fn muestras(d: &serde_json::Value, pieza: &str) -> Vec<(String, f64, [f64; 2], [
 }
 
 fn persona() -> Persona {
-    Persona { estatura_m: 1.75, masa_kg: 80.0 }
+    Persona {
+        estatura_m: 1.75,
+        masa_kg: 80.0,
+    }
 }
 
 /// Los largos de segmento que el reel usó son los que salen de Winter.

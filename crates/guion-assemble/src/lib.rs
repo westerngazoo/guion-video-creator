@@ -34,8 +34,13 @@ pub fn assemble_at(
     let mut ids = Vec::new();
     for obj in &sp.object {
         let heat = heat_for_object(sp, runtime, &obj.style, phi);
-        let mr_shape =
-            shape::build(sp, runtime, &obj.shape, phi, &format!("object[{}].shape", obj.id))?;
+        let mr_shape = shape::build(
+            sp,
+            runtime,
+            &obj.shape,
+            phi,
+            &format!("object[{}].shape", obj.id),
+        )?;
         let mr_style = obj
             .style
             .as_ref()

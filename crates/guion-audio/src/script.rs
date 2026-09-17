@@ -9,7 +9,10 @@ pub struct Cue {
 }
 
 /// Collect narration cues from `[[narration]]` or an external script file.
-pub fn collect_cues(sp: &Screenplay, script_path: Option<&std::path::Path>) -> Result<Vec<Cue>, AudioError> {
+pub fn collect_cues(
+    sp: &Screenplay,
+    script_path: Option<&std::path::Path>,
+) -> Result<Vec<Cue>, AudioError> {
     if !sp.narration.is_empty() {
         return Ok(sp
             .narration
@@ -80,7 +83,9 @@ fn parse_span_header(inner: &str) -> Result<Span, AudioError> {
     let normalized = inner.replace('–', "-");
     let parts: Vec<&str> = normalized.split('-').collect();
     if parts.len() < 2 {
-        return Err(AudioError::InvalidScript(format!("span mal formado: [{inner}]")));
+        return Err(AudioError::InvalidScript(format!(
+            "span mal formado: [{inner}]"
+        )));
     }
     let start = parts[0]
         .trim()
@@ -91,7 +96,9 @@ fn parse_span_header(inner: &str) -> Result<Span, AudioError> {
         .parse::<f64>()
         .map_err(|_| AudioError::InvalidScript(format!("end inválido en [{inner}]")))?;
     if !(start.is_finite() && end.is_finite() && end > start) {
-        return Err(AudioError::InvalidScript(format!("rango inválido [{inner}]")));
+        return Err(AudioError::InvalidScript(format!(
+            "rango inválido [{inner}]"
+        )));
     }
     Ok(Span { start, end })
 }

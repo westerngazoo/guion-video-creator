@@ -107,9 +107,7 @@ pub fn eval_reel39_field(muestra: &Muestra, field: &str) -> Result<f64, String> 
 
 fn json_f64(v: Option<&serde_json::Value>, key: &str) -> Result<f64, String> {
     match v {
-        Some(serde_json::Value::Number(n)) => n
-            .as_f64()
-            .ok_or_else(|| format!("{key}: no es f64")),
+        Some(serde_json::Value::Number(n)) => n.as_f64().ok_or_else(|| format!("{key}: no es f64")),
         _ => Err(format!("{key}: falta o tipo inválido")),
     }
 }

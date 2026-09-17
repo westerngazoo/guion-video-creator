@@ -29,7 +29,13 @@ pub fn build(
 
     let heat = biceps_heat(sp, runtime, phi);
     let text = interpolate(&lbl.text, sp, runtime, phi);
-    let mut label = Label::new(text, Anchor::Pose { object: oid, at: anchor_pt });
+    let mut label = Label::new(
+        text,
+        Anchor::Pose {
+            object: oid,
+            at: anchor_pt,
+        },
+    );
     label = label.with_align(Align::Center);
     label.style.stroke = theme.stroke_color("ink", None);
     if lbl.style.as_deref() == Some("callout") {
@@ -46,14 +52,14 @@ fn anchor_point(
     phi: f64,
 ) -> Result<pga::Point, AssembleError> {
     let object = &lbl.anchor.pose.object;
-    let obj = sp
-        .object
-        .iter()
-        .find(|o| o.id == *object)
-        .ok_or_else(|| AssembleError::UnknownObject {
-            id: object.clone(),
-            at: "label.anchor.object".to_string(),
-        })?;
+    let obj =
+        sp.object
+            .iter()
+            .find(|o| o.id == *object)
+            .ok_or_else(|| AssembleError::UnknownObject {
+                id: object.clone(),
+                at: "label.anchor.object".to_string(),
+            })?;
     let mr_shape = shape::build(sp, runtime, &obj.shape, phi, "label.anchor")?;
     let at = lbl.anchor.pose.at;
     let p = shape_midpoint(&mr_shape, at)?;

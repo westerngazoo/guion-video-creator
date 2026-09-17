@@ -29,9 +29,8 @@ fn parse_p6_header(data: &[u8]) -> Option<(usize, u32, u32)> {
 /// Read a binary P6 PPM into RGB bytes.
 pub fn read_ppm(path: &Path) -> io::Result<(u32, u32, Vec<u8>)> {
     let data = std::fs::read(path)?;
-    let (header_end, w, h) = parse_p6_header(&data).ok_or_else(|| {
-        io::Error::new(io::ErrorKind::InvalidData, "cabecera PPM inválida")
-    })?;
+    let (header_end, w, h) = parse_p6_header(&data)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "cabecera PPM inválida"))?;
     let rgb = data[header_end..].to_vec();
     Ok((w, h, rgb))
 }

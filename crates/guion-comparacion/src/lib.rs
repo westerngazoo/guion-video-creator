@@ -194,9 +194,9 @@ impl Comparacion {
     #[must_use]
     pub fn recorrido_relativo(&self, i: usize, n: usize) -> f64 {
         let v: Vec<f64> = self.curva(i, n).into_iter().map(|(_, t)| t).collect();
-        let (lo, hi) = v.iter().fold((f64::MAX, f64::MIN), |(a, b), x| {
-            (a.min(*x), b.max(*x))
-        });
+        let (lo, hi) = v
+            .iter()
+            .fold((f64::MAX, f64::MIN), |(a, b), x| (a.min(*x), b.max(*x)));
         let pico = v.iter().fold(0.0_f64, |a, x| a.max(x.abs()));
         if pico == 0.0 {
             0.0

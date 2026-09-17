@@ -74,14 +74,14 @@ pub fn preview_frame(path: &Path, t: f64) -> Result<String, String> {
     let mut runtime = ModelRuntime::new();
     let scene = assemble_at(&sp, &theme, t, &mut runtime).map_err(|e| e.to_string())?;
     let _ = scene.eval(0.0);
-    Ok(format!(
-        "preview t={:.2}s · {} objetos",
-        t,
-        sp.object.len()
-    ))
+    Ok(format!("preview t={:.2}s · {} objetos", t, sp.object.len()))
 }
 
-pub fn render_screenplay(path: &Path, out_dir: Option<PathBuf>, fps: Option<f64>) -> Result<String, String> {
+pub fn render_screenplay(
+    path: &Path,
+    out_dir: Option<PathBuf>,
+    fps: Option<f64>,
+) -> Result<String, String> {
     let sp = load_and_check(path).map_err(|e| e.to_string())?;
     let theme = default_theme();
     let fps = fps.unwrap_or(sp.meta.fps);
@@ -93,7 +93,8 @@ pub fn render_screenplay(path: &Path, out_dir: Option<PathBuf>, fps: Option<f64>
     for index in 0..frames {
         let t = index as f64 / fps;
         let scene = assemble_at(&sp, &theme, t, &mut runtime).map_err(|e| e.to_string())?;
-        sink.frame(index, &scene.eval(0.0)).map_err(|e| e.to_string())?;
+        sink.frame(index, &scene.eval(0.0))
+            .map_err(|e| e.to_string())?;
     }
     postfx_dir(&dir, frames, theme.grain, theme.halftone_alpha).map_err(|e| e.to_string())?;
     Ok(format!("{} frames → {}", frames, dir.display()))
@@ -122,12 +123,8 @@ pub fn encode_screenplay(path: &Path, out_mp4: Option<PathBuf>) -> Result<String
         render_screenplay(path, Some(dir.clone()), Some(fps))?;
     }
     let narr = default_narration_path(&sp.meta.slug);
-    let audio = mix_for_encode(
-        &sp,
-        screenplay_dir,
-        narr.exists().then_some(narr.as_path()),
-    )
-    .map_err(|e| e.to_string())?;
+    let audio = mix_for_encode(&sp, screenplay_dir, narr.exists().then_some(narr.as_path()))
+        .map_err(|e| e.to_string())?;
     let mp4 = out_mp4.unwrap_or_else(|| default_mp4(&sp.meta.slug));
     encode_ppm_dir(&dir, fps, &mp4, audio.as_deref()).map_err(|e| e.to_string())?;
     Ok(mp4.display().to_string())

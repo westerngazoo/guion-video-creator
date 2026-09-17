@@ -19,4 +19,4 @@ pub use narrate::{
     resolve_narration_script, resolve_relative, write_narration, NarrateOptions,
 };
 pub use script::{collect_cues, parse_script, Cue};
-pub use wav::{mix_buffers, SAMPLE_RATE, WavBuffer};
+pub use wav::{mix_buffers, WavBuffer, SAMPLE_RATE};

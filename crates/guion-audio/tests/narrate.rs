@@ -1,4 +1,6 @@
-use guion_audio::{fit_to_window, parse_script, timeline_duration, NarrationEngine, ScaffoldEngine};
+use guion_audio::{
+    fit_to_window, parse_script, timeline_duration, NarrationEngine, ScaffoldEngine,
+};
 use guion_core::load_and_check;
 
 #[test]

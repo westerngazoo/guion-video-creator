@@ -19,7 +19,10 @@ fn dorados() -> serde_json::Value {
 }
 
 fn comparacion() -> guion_comparacion::Comparacion {
-    let ruta = concat!(env!("CARGO_MANIFEST_DIR"), "/../../guiones/reel40-gluteo.toml");
+    let ruta = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../guiones/reel40-gluteo.toml"
+    );
     let texto = std::fs::read_to_string(ruta).expect("el guion");
     guion::cargar(&texto).expect("el guion carga")
 }
@@ -107,7 +110,11 @@ fn sin_ganador_cuando_los_numeros_no_lo_dan() {
     }
     // y "empatan" no se usa a la ligera: 359 J contra 290 J difieren un
     // 19%, así que ese renglón NO puede rotularse "iguales" en pantalla
-    let trabajo = c.renglones().into_iter().find(|r| r.etiqueta.contains("Trabajo")).unwrap();
+    let trabajo = c
+        .renglones()
+        .into_iter()
+        .find(|r| r.etiqueta.contains("Trabajo"))
+        .unwrap();
     assert_eq!(trabajo.veredicto, Veredicto::SinGanador);
 }
 
@@ -135,6 +142,9 @@ rango_grados = 40.0
         Err(e) => e,
         Ok(_) => panic!("un modelo inventado debe fallar, no cargar"),
     };
-    assert!(e.contains("bisagra_de_kadera"), "el error nombra el modelo: {e}");
+    assert!(
+        e.contains("bisagra_de_kadera"),
+        "el error nombra el modelo: {e}"
+    );
     assert!(e.contains("El catálogo tiene"), "y dice qué sí hay: {e}");
 }

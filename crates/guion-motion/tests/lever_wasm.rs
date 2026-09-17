@@ -7,8 +7,9 @@ fn wasm_biceps_force_matches_native_at_90_deg() {
         env!("CARGO_MANIFEST_DIR"),
         "/../guion-core/tests/fixtures/reel-09-biceps.screenplay.toml"
     ));
-    let wasm = std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../physics-lab"))
-        .join("public/lessons/lever/lesson.wasm");
+    let wasm =
+        std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../physics-lab"))
+            .join("public/lessons/lever/lesson.wasm");
     if !wasm.exists() {
         eprintln!("skip: lever wasm not built at {}", wasm.display());
         return;

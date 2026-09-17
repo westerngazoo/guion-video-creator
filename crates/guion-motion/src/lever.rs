@@ -20,9 +20,12 @@ pub fn scalar_from_readouts(field: Option<&str>, read: &[f64; 8], phi: f64) -> O
     }
 }
 
-pub fn eval_wasm(lesson: &mut WasmLesson, model: &ModelRef, phi: f64) -> Result<[f64; 8], crate::error::MotionError> {
-    let params = params_from_model(model, phi).ok_or_else(|| {
-        crate::error::MotionError::UnknownField("lever params".into())
-    })?;
+pub fn eval_wasm(
+    lesson: &mut WasmLesson,
+    model: &ModelRef,
+    phi: f64,
+) -> Result<[f64; 8], crate::error::MotionError> {
+    let params = params_from_model(model, phi)
+        .ok_or_else(|| crate::error::MotionError::UnknownField("lever params".into()))?;
     lesson.eval(&params)
 }

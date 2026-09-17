@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use guion_assemble::{assemble_at, duration};
 use guion_brand::default_theme;
-use guion_motion::ModelRuntime;
 use guion_core::load_and_check;
+use guion_motion::ModelRuntime;
 
 fn fixture() -> PathBuf {
     PathBuf::from(concat!(

@@ -76,11 +76,7 @@ pub fn run(args: &[String]) -> ExitCode {
 
     match write_narration(&sp, &screenplay_dir, &out, &opts) {
         Ok(written) => {
-            println!(
-                "narración ({}) → {}",
-                opts.engine,
-                written.display()
-            );
+            println!("narración ({}) → {}", opts.engine, written.display());
             ExitCode::SUCCESS
         }
         Err(e) => {
