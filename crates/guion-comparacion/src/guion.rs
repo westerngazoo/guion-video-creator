@@ -76,7 +76,10 @@ pub fn cargar(texto: &str) -> Result<Comparacion, String> {
             "pico" => Medida::Pico,
             "trabajo" => Medida::Trabajo,
             "en_progreso" => Medida::EnProgreso(c.en.ok_or_else(|| {
-                format!("el criterio {:?} es 'en_progreso' y le falta `en`", c.etiqueta)
+                format!(
+                    "el criterio {:?} es 'en_progreso' y le falta `en`",
+                    c.etiqueta
+                )
             })?),
             otro => return Err(format!("medida desconocida: {otro:?}")),
         };

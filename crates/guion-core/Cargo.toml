@@ -1,0 +1,12 @@
+[package]
+name = "guion-core"
+version = "0.1.0"
+description = "guion screenplay schema, loader & validator (RFC-0001 / R-0001)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+toml = { workspace = true }

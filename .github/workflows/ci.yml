@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt · clippy · test
+    runs-on: ubuntu-latest
+    steps:
+      # Este workspace consume el motor por RUTA RELATIVA a repos hermanos
+      # (../garust, ../physics-lab/mecanica, ../motoreel). Eso es a
+      # propósito: el motor no se reimplementa aquí, se consume
+      # (docs/ENCARGO.md §0). Así que CI tiene que reproducir esa
+      # vecindad, no sólo clonar este repo: con un solo checkout, `cargo
+      # fmt` ni siquiera logra leer los metadatos del workspace y sale
+      # escupiendo su propia ayuda.
+      - uses: actions/checkout@v4
+        with:
+          path: guion-video-creator
+      - uses: actions/checkout@v4
+        with:
+          repository: westerngazoo/garust
+          path: garust
+      - uses: actions/checkout@v4
+        with:
+          repository: westerngazoo/physics-lab
+          path: physics-lab
+      - uses: actions/checkout@v4
+        with:
+          repository: westerngazoo/motoreel
+          path: motoreel
+
+      - name: Install pinned toolchain
+        run: rustup show
+        working-directory: guion-video-creator
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: guion-video-creator
+
+      # `cargo fmt --all` NO se queda en este workspace: su propia ayuda
+      # dice que formatea «all packages, and also their local path-based
+      # dependencies», y las nuestras son los repos hermanos. Con él, el
+      # CI de este repo acababa reprobando el formato de physics-lab, que
+      # no es asunto suyo. Se revisa lo que este repo escribe y ya.
+      - name: Format
+        run: |
+          find crates apps -name '*.rs' -not -path '*/target/*' -print0 \
+            | xargs -0 rustfmt --check --edition 2021
+        working-directory: guion-video-creator
+
+      # `apps/guion-studio` es una app Tauri de escritorio: pide la pila
+      # de webkit del sistema y no se construye en un runner pelón. Se
+      # excluye aquí, no se deja de formatear arriba.
+      - name: Clippy
+        run: cargo clippy --workspace --exclude guion-studio --all-targets -- -D warnings
+        working-directory: guion-video-creator
+
+      - name: Test
+        run: cargo test --workspace --exclude guion-studio
+        working-directory: guion-video-creator

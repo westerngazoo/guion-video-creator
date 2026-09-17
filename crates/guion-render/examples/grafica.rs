@@ -9,9 +9,16 @@ use motoreel::PpmSink;
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let toml = args.get(1).cloned().unwrap_or_else(|| {
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../guiones/reel40-gluteo.toml").to_string()
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../guiones/reel40-gluteo.toml"
+        )
+        .to_string()
     });
-    let dir = args.get(2).cloned().unwrap_or_else(|| "out/grafica".to_string());
+    let dir = args
+        .get(2)
+        .cloned()
+        .unwrap_or_else(|| "out/grafica".to_string());
 
     let c = match guion::cargar(&std::fs::read_to_string(&toml)?) {
         Ok(c) => c,
@@ -29,8 +36,7 @@ fn main() -> std::io::Result<()> {
         let escena = escena_grafica(&c, hasta, 200);
         let sub = format!("{dir}/f{k:04}");
         std::fs::create_dir_all(&sub)?;
-        let mut sink =
-            PpmSink::with_view(&sub, (1080, 648), VISTA)?.with_background(PAPEL);
+        let mut sink = PpmSink::with_view(&sub, (1080, 648), VISTA)?.with_background(PAPEL);
         escena.render(1.0, &mut sink)?;
     }
     println!("{} · {} cuadros en {dir}", c.titulo, cuadros + 1);

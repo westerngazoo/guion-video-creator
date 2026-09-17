@@ -1,0 +1,15 @@
+[package]
+name = "guion-assemble"
+version = "0.1.0"
+description = "Screenplay → motoreel::Scene assembly (R-0002)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+guion-brand = { workspace = true }
+guion-core = { workspace = true }
+guion-motion = { workspace = true }
+motoreel = { workspace = true }
+garust = { path = "../../../garust" }

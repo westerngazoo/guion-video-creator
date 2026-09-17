@@ -1,0 +1,31 @@
+[package]
+name = "guion-studio"
+version = "0.1.0"
+description = "YouTube-first creator studio for guion screenplays"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "guion_studio"
+path = "src/lib.rs"
+
+[[bin]]
+name = "guion-studio"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+guion-assemble = { workspace = true }
+guion-audio = { workspace = true }
+guion-brand = { workspace = true }
+guion-core = { workspace = true }
+guion-encode = { workspace = true }
+guion-motion = { workspace = true }
+motoreel = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tauri = { version = "2", features = [] }

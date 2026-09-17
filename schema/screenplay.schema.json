@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/westerngazoo/guion-video-creator/schema/screenplay.schema.json",
+  "title": "guion screenplay",
+  "description": "Schema for a guion screenplay (M1). Mirrors guion-core's typed model exactly: every object rejects unknown fields, enum values are snake_case, and binding tokens must match the @id / @id.field grammar. Associate a *.screenplay.toml file with this schema for editor autocompletion.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "camera", "motion"],
+  "properties": {
+    "meta": { "$ref": "#/$defs/Meta" },
+    "camera": { "$ref": "#/$defs/Camera" },
+    "model": { "type": "array", "items": { "$ref": "#/$defs/ModelRef" } },
+    "object": { "type": "array", "items": { "$ref": "#/$defs/ObjectSpec" } },
+    "label": { "type": "array", "items": { "$ref": "#/$defs/LabelSpec" } },
+    "motion": { "$ref": "#/$defs/Motion" },
+    "hook": { "$ref": "#/$defs/Hook" },
+    "footer": { "$ref": "#/$defs/Footer" },
+    "audio": { "$ref": "#/$defs/Audio" },
+    "narration": { "type": "array", "items": { "$ref": "#/$defs/Narration" } }
+  },
+  "$defs": {
+    "Token": {
+      "type": "string",
+      "description": "A binding token: @id or @id.field, ASCII identifiers, at most one dot.",
+      "pattern": "^@[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?$"
+    },
+    "Meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "slug", "format", "fps", "lang"],
+      "properties": {
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "format": { "type": "string", "enum": ["vertical"] },
+        "fps": { "type": "number", "exclusiveMinimum": 0 },
+        "theme": { "type": "string" },
+        "lang": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ModelRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source"],
+      "properties": {
+        "id": { "type": "string" },
+        "source": { "type": "string" },
+        "params": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        }
+      }
+    },
+    "Camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["orthographic", "perspective"] },
+        "pose": { "$ref": "#/$defs/Pose" }
+      }
+    },
+    "Pose": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "translate": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      }
+    },
+    "ObjectSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "shape"],
+      "properties": {
+        "id": { "type": "string" },
+        "shape": { "$ref": "#/$defs/Shape" },
+        "style": { "$ref": "#/$defs/Style" }
+      }
+    },
+    "Shape": {
+      "description": "Internally tagged by `kind`. Every endpoint is a binding token.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "at"],
+          "properties": {
+            "kind": { "const": "point" },
+            "at": { "$ref": "#/$defs/Token" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "from", "to"],
+          "properties": {
+            "kind": { "const": "segment" },
+            "from": { "$ref": "#/$defs/Token" },
+            "to": { "$ref": "#/$defs/Token" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "points"],
+          "properties": {
+            "kind": { "const": "polyline" },
+            "points": { "type": "array", "items": { "$ref": "#/$defs/Token" } }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "verts", "edges"],
+          "properties": {
+            "kind": { "const": "edges" },
+            "verts": { "type": "array", "items": { "$ref": "#/$defs/Token" } },
+            "edges": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": { "type": "integer", "minimum": 0 },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "at", "value", "scale"],
+          "properties": {
+            "kind": { "const": "arrow" },
+            "at": { "$ref": "#/$defs/Token" },
+            "value": { "$ref": "#/$defs/Token" },
+            "scale": { "type": "string", "enum": ["auto"] }
+          }
+        }
+      ]
+    },
+    "Style": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stroke", "width"],
+      "properties": {
+        "stroke": {
+          "type": "string",
+          "description": "A theme color name (\"skin\") or a value-bound paint (\"heat:@lever.force_N\")."
+        },
+        "width": { "type": "number" }
+      }
+    },
+    "LabelSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anchor", "text"],
+      "properties": {
+        "anchor": { "$ref": "#/$defs/Anchor" },
+        "text": { "type": "string" },
+        "style": { "type": "string" }
+      }
+    },
+    "Anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pose"],
+      "properties": { "pose": { "$ref": "#/$defs/PoseAnchor" } }
+    },
+    "PoseAnchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["object", "at"],
+      "properties": {
+        "object": { "type": "string" },
+        "at": { "type": "string", "enum": ["start", "mid", "end"] }
+      }
+    },
+    "Motion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["drive", "from", "to", "ease"],
+      "properties": {
+        "drive": { "$ref": "#/$defs/Token" },
+        "from": { "type": "number" },
+        "to": { "type": "number" },
+        "ease": {
+          "type": "string",
+          "enum": ["linear", "smoothstep", "smootherstep", "ease_in", "ease_out", "ease_in_out"]
+        },
+        "hold": { "$ref": "#/$defs/Hold" }
+      }
+    },
+    "Hold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "number", "minimum": 0, "maximum": 1 },
+        "end": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "Hook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "at"],
+      "properties": {
+        "text": { "type": "string" },
+        "at": { "$ref": "#/$defs/Span" }
+      }
+    },
+    "Span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "number" },
+        "end": { "type": "number" }
+      }
+    },
+    "Footer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["concept", "detail", "credit"],
+      "properties": {
+        "concept": { "type": "string" },
+        "detail": { "type": "string" },
+        "credit": { "type": "string" }
+      }
+    },
+    "Audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generator": { "type": "string" },
+        "path": { "type": "string" },
+        "narration_script": { "type": "string" }
+      }
+    },
+    "Narration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "at"],
+      "properties": {
+        "text": { "type": "string" },
+        "at": { "$ref": "#/$defs/Span" }
+      }
+    }
+  }
+}
