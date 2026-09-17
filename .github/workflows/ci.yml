@@ -45,8 +45,15 @@ jobs:
         with:
           workspaces: guion-video-creator
 
+      # `cargo fmt --all` NO se queda en este workspace: su propia ayuda
+      # dice que formatea «all packages, and also their local path-based
+      # dependencies», y las nuestras son los repos hermanos. Con él, el
+      # CI de este repo acababa reprobando el formato de physics-lab, que
+      # no es asunto suyo. Se revisa lo que este repo escribe y ya.
       - name: Format
-        run: cargo fmt --all --check
+        run: |
+          find crates apps -name '*.rs' -not -path '*/target/*' -print0 \
+            | xargs -0 rustfmt --check --edition 2021
         working-directory: guion-video-creator
 
       # `apps/guion-studio` es una app Tauri de escritorio: pide la pila
