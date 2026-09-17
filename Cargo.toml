@@ -15,6 +15,7 @@ members = [
     "crates/guion-fisica",
     "crates/guion-cli",
     "apps/guion-studio",
+    "apps/guion-playground",
 ]
 
 [workspace.package]
