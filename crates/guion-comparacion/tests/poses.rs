@@ -28,11 +28,15 @@ fn dist(a: [f64; 2], b: [f64; 2]) -> f64 {
     ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2)).sqrt()
 }
 
-/// Las muestras con pose de una pieza, como (variante, u, l5, hombro, codo, mano).
-fn muestras(
-    d: &serde_json::Value,
-    pieza: &str,
-) -> Vec<(String, f64, [f64; 2], [f64; 2], [f64; 2], [f64; 2])> {
+/// Un punto del plano sagital.
+type Punto = [f64; 2];
+/// Una muestra dorada con postura: variante, avance, y las cuatro
+/// articulaciones. Tiene nombre porque una tupla de seis campos sin
+/// nombre no se lee, y clippy tiene razón en decirlo.
+type MuestraPose = (String, f64, Punto, Punto, Punto, Punto);
+
+/// Las muestras con pose de una pieza.
+fn muestras(d: &serde_json::Value, pieza: &str) -> Vec<MuestraPose> {
     d["piezas"][pieza]["muestras"]
         .as_array()
         .unwrap()

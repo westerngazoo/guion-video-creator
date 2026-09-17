@@ -22,10 +22,10 @@ fn synth_fbf_default(total_secs: f64, fps: f64) -> WavBuffer {
     let arps = [246.94, 293.66, 369.99];
     let patron = [0usize, 1, 2, 1, 0, 1, 2, 1];
 
-    for barra in 0..4 {
+    for (barra, &bajo) in bajos.iter().enumerate() {
         for e in 0..8 {
             let t = (barra * 8 + e) as f64 * octava;
-            let f = bajos[barra] * if e % 2 == 0 { 1.0 } else { 2.0 };
+            let f = bajo * if e % 2 == 0 { 1.0 } else { 2.0 };
             mix_samples(&mut buf, &square(f, octava * 0.92, 0.16, 0.5, 3.0), t, sr);
             let fa = arps[patron[e]];
             mix_samples(&mut buf, &square(fa, octava * 0.82, 0.13, 0.25, 4.0), t, sr);

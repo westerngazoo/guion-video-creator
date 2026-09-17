@@ -76,7 +76,7 @@ pub fn eval_reel39_field(muestra: &Muestra, field: &str) -> Result<f64, String> 
         return Err(format!("medida reel39 no implementada: {medida}"));
     }
 
-    if muestra.entrada.get("x").is_some() {
+    if muestra.entrada.contains_key("x") {
         let x = json_f64(muestra.entrada.get("x"), "x")?;
         return match field {
             "tau_hombro_medio" | "pico_hombro" => Ok(reel.tau_hombro_offset(x)),
