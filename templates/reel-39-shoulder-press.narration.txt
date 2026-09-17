@@ -1,0 +1,14 @@
+# Guion de voz en off — reel 39 (press militar vs Smith)
+# Sincronizado con [[narration]] en reel-39-shoulder-press.screenplay.toml
+
+[0.4–3.8]
+Misma carga: cuarenta kilos. En el press militar el torque en hombro empieza en cuarenta y siete newton-metros…
+
+[3.9–7.2]
+…y cae a cero cuando la barra pasa sobre tu cabeza. El hombro tiene que moverse: esa es la noticia.
+
+[7.3–11.0]
+En la Smith el brazo de palanca no cambia: treinta y nueve newton-metros todo el recorrido. Parejo a propósito.
+
+[11.1–15.5]
+El trabajo por repetición casi empata — doscientos cuarenta y ocho contra doscientos cuarenta y cinco julios. No compiten: se complementan.

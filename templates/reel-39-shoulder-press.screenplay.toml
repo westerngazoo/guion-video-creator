@@ -1,0 +1,70 @@
+# reel-39 — press militar vs Smith (voz en off)
+# Valida: cargo run -p guion-cli -- check templates/reel-39-shoulder-press.screenplay.toml
+
+[meta]
+title  = "Press militar vs Smith: ¿cuál entrena el hombro?"
+slug   = "reel-39-shoulder-press"
+format = "vertical"
+fps    = 30
+theme  = "fbf"
+lang   = "es"
+
+[[model]]
+id     = "press"
+source = "guion-fisica:reel39"
+params = { variante = 0, carga = 40.0 }
+
+[camera]
+kind = "orthographic"
+pose = { translate = [0, 0, 6] }
+
+[[object]]
+id    = "upper_arm"
+shape = { kind = "segment", from = "@press.shoulder", to = "@press.elbow" }
+style = { stroke = "skin", width = 30 }
+
+[[object]]
+id    = "forearm"
+shape = { kind = "segment", from = "@press.elbow", to = "@press.hand" }
+style = { stroke = "skin", width = 26 }
+
+[[label]]
+anchor = { pose = { object = "upper_arm", at = "mid" } }
+text   = "τ hombro {tau_hombro:.0f} N·m"
+style  = "callout"
+
+[motion]
+drive = "@press.u"
+from  = 0.0
+to    = 1.0
+ease  = "smootherstep"
+hold  = { start = 0.8, end = 0.6 }
+
+[hook]
+text = "¿EL SMITH ENTRENA IGUAL?"
+at   = { start = 0.0, end = 2.2 }
+
+[[narration]]
+text = "Misma carga: cuarenta kilos. En el press militar el torque en hombro empieza en cuarenta y siete newton-metros…"
+at   = { start = 0.4, end = 3.8 }
+
+[[narration]]
+text = "…y cae a cero cuando la barra pasa sobre tu cabeza. El hombro tiene que moverse: esa es la noticia."
+at   = { start = 3.9, end = 7.2 }
+
+[[narration]]
+text = "En la Smith el brazo de palanca no cambia: treinta y nueve newton-metros todo el recorrido. Parejo a propósito."
+at   = { start = 7.3, end = 11.0 }
+
+[[narration]]
+text = "El trabajo por repetición casi empata — doscientos cuarenta y ocho contra doscientos cuarenta y cinco julios. No compiten: se complementan."
+at   = { start = 11.1, end = 15.5 }
+
+[footer]
+concept = "BRAZO DE PALANCA — en hombro manda dónde está la mano, no solo el peso."
+detail  = "Militar: τ hombro se mueve. Smith: τ fijo. Mismo W, distinta historia."
+credit  = "mecánica fbf · reel 39 · @fisicobuenfisico"
+
+[audio]
+generator = "fbf-default"
+narration_script = "templates/reel-39-shoulder-press.narration.txt"

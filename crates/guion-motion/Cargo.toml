@@ -1,0 +1,13 @@
+[package]
+name = "guion-motion"
+version = "0.1.0"
+description = "physics-lab wasm model resolver (M4 InPlace source)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+guion-core = { workspace = true }
+guion-models = { workspace = true }
+wasmi = "0.32"

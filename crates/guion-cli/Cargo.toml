@@ -1,0 +1,21 @@
+[package]
+name = "guion-cli"
+version = "0.1.0"
+description = "guion command-line interface: check + render (R-0003)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "guion"
+path = "src/main.rs"
+
+[dependencies]
+guion-assemble = { workspace = true }
+guion-audio = { workspace = true }
+guion-brand = { workspace = true }
+guion-core = { workspace = true }
+guion-encode = { workspace = true }
+guion-motion = { workspace = true }
+motoreel = { workspace = true }

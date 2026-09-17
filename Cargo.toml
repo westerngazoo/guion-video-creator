@@ -1,17 +1,48 @@
 [workspace]
 resolver = "2"
-members = ["crates/guion-comparacion", "crates/guion-render"]
+members = [
+    # el productor de video (ya vivía en este repo)
+    "crates/guion-comparacion",
+    "crates/guion-render",
+    # el marco declarativo (venía del repo de contenido, PRs #4 y #5)
+    "crates/guion-core",
+    "crates/guion-models",
+    "crates/guion-motion",
+    "crates/guion-brand",
+    "crates/guion-assemble",
+    "crates/guion-encode",
+    "crates/guion-audio",
+    "crates/guion-fisica",
+    "crates/guion-cli",
+    "apps/guion-studio",
+]
 
 [workspace.package]
 edition = "2021"
 license = "MIT OR Apache-2.0"
+authors = ["físico buen físico"]
 repository = "https://github.com/westerngazoo/guion-video-creator"
 
 [workspace.dependencies]
 # El motor. No se reimplementa aquí: se consume (ver docs/ENCARGO.md §0).
-mecanica = { path = "../physics-lab/mecanica" }
-serde = { version = "1", features = ["derive"] }
-toml = "0.8"
-serde_json = "1"
-motoreel = { path = "../motoreel/crates/motoreel" }
+# Al vivir el workspace en la RAÍZ de este repo, estas rutas relativas
+# apuntan a los repos hermanos de verdad. Mientras `guion/` colgaba dentro
+# del repo de contenido resolvían a clones anidados dentro de él: por eso
+# existen `fisicobuenfisico/garust` y `fisicobuenfisico/motoreel`, que con
+# esta mudanza ya no hacen falta.
 garust = { path = "../garust" }
+mecanica = { path = "../physics-lab/mecanica" }
+motoreel = { path = "../motoreel/crates/motoreel" }
+
+guion-core = { path = "crates/guion-core" }
+guion-models = { path = "crates/guion-models" }
+guion-motion = { path = "crates/guion-motion" }
+guion-brand = { path = "crates/guion-brand" }
+guion-assemble = { path = "crates/guion-assemble" }
+guion-encode = { path = "crates/guion-encode" }
+guion-audio = { path = "crates/guion-audio" }
+guion-fisica = { path = "crates/guion-fisica" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"

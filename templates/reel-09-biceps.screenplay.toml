@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# reel-09 "biceps" — a complete, valid guion screenplay you can copy and edit.
+#
+# This is the RFC-0001 §4 lever example in the final schema: every shape carries
+# an internal `kind`, and every model output is referenced by a *qualified*
+# binding token `@lever.<output>` so it resolves against the declared model id
+# `lever`. It loads and validates clean against guion-core today, and is the
+# byte-for-byte golden fixture behind acceptance test AC9.
+#
+# Editor autocompletion: associate this file with ../schema/screenplay.schema.json.
+# Validate it:  cargo run -p guion-cli -- check <this file>   (once guion-cli lands)
+# ─────────────────────────────────────────────────────────────────────────────
+
+[meta]
+title  = "Levantas 20 kg, tu bíceps jala 160"
+slug   = "reel-09-biceps"
+format = "vertical"          # 1080x1920 (M1 ships `vertical` only)
+fps    = 30
+theme  = "fbf"               # themes/fbf (M3)
+lang   = "es"
+
+[[model]]                     # references a physics-lab model, not inline math
+id     = "lever"
+source = "physics-lab:lever"  # resolves to the model's compiled .wasm + manifest (M4)
+params = { load_mass = 20.0, forearm = 0.32, insertion = 0.04, upper_arm = 0.30 }
+
+[camera]
+kind = "orthographic"
+pose = { translate = [0, 0, 6] }
+
+[[object]]
+id    = "forearm"
+shape = { kind = "segment", from = "@lever.elbow", to = "@lever.hand" }
+style = { stroke = "skin", width = 34 }
+
+[[object]]
+id    = "biceps_force"
+shape = { kind = "arrow", at = "@lever.insertion", value = "@lever.biceps_force_N", scale = "auto" }
+style = { stroke = "heat:@lever.biceps_force_N", width = 13 }
+
+[[label]]
+anchor = { pose = { object = "biceps_force", at = "mid" } }
+text   = "bíceps {biceps_force_N:.0f} N"
+style  = "callout"
+
+[motion]                      # the timeline: drive the model's angle over time
+drive = "@lever.phi"
+from  = 0.0
+to    = 2.53                  # 145°
+ease  = "smootherstep"
+hold  = { start = 1.0, end = 0.87 }   # dwell in/out, like the current seq[]
+
+[hook]
+text = "¿POR QUÉ TANTO?"
+at   = { start = 0.0, end = 2.05 }
+
+[footer]
+concept = "PALANCA DE TERCER GÉNERO — pierdes fuerza, ganas velocidad."
+detail  = "Tu cuerpo cambió fuerza por rango y rapidez. El precio: 8× de tensión."
+credit  = "mecánica fbf · reel 09 · @fisicobuenfisico"
+
+[audio]
+generator = "fbf-default"     # or a path to a wav

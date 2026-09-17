@@ -1,0 +1,13 @@
+[package]
+name = "guion-brand"
+version = "0.1.0"
+description = "Themes, palettes, and post-fx for guion (M3)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+motoreel = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }

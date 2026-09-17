@@ -1,0 +1,12 @@
+[package]
+name = "guion-models"
+version = "0.1.0"
+description = "Native physics models for guion M1 (until wasm models land in M4)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+guion-core = { workspace = true }
+guion-fisica = { workspace = true }

@@ -1,0 +1,11 @@
+[package]
+name = "guion-encode"
+version = "0.1.0"
+description = "PPM frame sequences → mp4 via ffmpeg (M2)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+guion-core = { workspace = true }
