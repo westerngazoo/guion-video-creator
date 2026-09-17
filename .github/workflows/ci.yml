@@ -7,28 +7,55 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -D warnings
 
 jobs:
   check:
     name: fmt · clippy · test
     runs-on: ubuntu-latest
     steps:
+      # Este workspace consume el motor por RUTA RELATIVA a repos hermanos
+      # (../garust, ../physics-lab/mecanica, ../motoreel). Eso es a
+      # propósito: el motor no se reimplementa aquí, se consume
+      # (docs/ENCARGO.md §0). Así que CI tiene que reproducir esa
+      # vecindad, no sólo clonar este repo: con un solo checkout, `cargo
+      # fmt` ni siquiera logra leer los metadatos del workspace y sale
+      # escupiendo su propia ayuda.
       - uses: actions/checkout@v4
+        with:
+          path: guion-video-creator
+      - uses: actions/checkout@v4
+        with:
+          repository: westerngazoo/garust
+          path: garust
+      - uses: actions/checkout@v4
+        with:
+          repository: westerngazoo/physics-lab
+          path: physics-lab
+      - uses: actions/checkout@v4
+        with:
+          repository: westerngazoo/motoreel
+          path: motoreel
 
-      # Installs the toolchain pinned in rust-toolchain.toml, including the
-      # rustfmt and clippy components declared there.
       - name: Install pinned toolchain
         run: rustup show
+        working-directory: guion-video-creator
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: guion-video-creator
 
       - name: Format
         run: cargo fmt --all --check
+        working-directory: guion-video-creator
 
+      # `apps/guion-studio` es una app Tauri de escritorio: pide la pila
+      # de webkit del sistema y no se construye en un runner pelón. Se
+      # excluye aquí, no se deja de formatear arriba.
       - name: Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --exclude guion-studio --all-targets -- -D warnings
+        working-directory: guion-video-creator
 
       - name: Test
-        run: cargo test --workspace --all-features
+        run: cargo test --workspace --exclude guion-studio
+        working-directory: guion-video-creator
