@@ -59,7 +59,7 @@ impl ModelRuntime {
                 }
             }
         }
-        if model.source == "guion-fisica:reel39" {
+        if es_press(&model.source) {
             return native_token(sp, token, phi);
         }
         native_token(sp, token, phi)
@@ -84,4 +84,11 @@ pub fn resolve_token(sp: &Screenplay, token: &Token, phi: f64) -> Option<f64> {
 pub fn resolve_point(sp: &Screenplay, token: &Token, phi: f64) -> Option<[f64; 3]> {
     let mut rt = ModelRuntime::new();
     rt.resolve_point(sp, token, phi)
+}
+
+// El nombre nuevo dice de dónde sale la física de verdad. El viejo se
+// sigue aceptando: hay guiones escritos con él, y romperlos por un
+// renombre sería cobrarle al autor un problema nuestro.
+fn es_press(fuente: &str) -> bool {
+    fuente == "mecanica:press" || fuente == "guion-fisica:reel39"
 }

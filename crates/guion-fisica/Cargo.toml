@@ -8,6 +8,8 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
+# El motor. Aquí NO se hace física: se llama (ENCARGO §0).
+mecanica = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 

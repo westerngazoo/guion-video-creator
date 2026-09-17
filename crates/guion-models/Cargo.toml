@@ -9,4 +9,4 @@ repository.workspace = true
 
 [dependencies]
 guion-core = { workspace = true }
-guion-fisica = { workspace = true }
+mecanica = { workspace = true }

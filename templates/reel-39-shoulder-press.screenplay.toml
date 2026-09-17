@@ -11,7 +11,7 @@ lang   = "es"
 
 [[model]]
 id     = "press"
-source = "guion-fisica:reel39"
+source = "mecanica:press"
 params = { variante = 0, carga = 40.0 }
 
 [camera]
