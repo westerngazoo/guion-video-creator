@@ -1,120 +1,202 @@
-//! `guion-fisica` — physics ported from published reels, verified against
-//! `fixtures/dorados.json` (ENCARGO §3, tolerancia 2 %).
+//! `guion-fisica` — el puente entre los valores dorados y el motor.
+//!
+//! **Aquí no se hace física.** Cada función toma una muestra dorada, la
+//! traduce a una llamada de `mecanica` y devuelve lo que el motor
+//! contesta. Si algo no cuadra, el que está mal es el motor o el dorado,
+//! y las dos cosas son noticias útiles.
+//!
+//! No siempre fue así. Este crate tuvo un archivo por reel con su propia
+//! `G`, su propio producto cruz y su propia geometría, y sólo una de las
+//! cuatro copias era física de verdad: el jalón era un ajuste de tres
+//! coeficientes y el press una tabla de cuatro nudos interpolados, los
+//! dos ajustados a estos mismos valores dorados. Pasaban la prueba al 2 %
+//! por construcción. Un ajuste a los dorados pasa los dorados siempre,
+//! así que la compuerta estaba midiendo cero.
+//!
+//! Lo que se perdió al quitarlos no fue nada: las constantes que parecían
+//! irreducibles se derivan todas. El arranque del jalón, que vivía como
+//! `1.080_211_278_642_769`, es el brazo al 97 % de extensión proyectado
+//! desde el hombro; el tope de la Smith, que vivía como `alcance - 0.008`,
+//! es `sqrt(alcance² − x²)`.
 
 mod dorados;
-mod reel04;
-mod reel26;
-mod reel29;
-mod reel39;
 
 pub use dorados::{
     default_dorados_path, load as load_dorados, within_tol, Dorados, Muestra, Pieza,
 };
-pub use reel04::{Modo, Reel04};
-pub use reel26::Reel26;
-pub use reel29::Reel29;
-pub use reel39::{Pose2, Reel39, Variante as Reel39Variante};
 
-/// Default relative tolerance for golden comparisons (R-0001 Q5).
+use mecanica::curl::{Agarre, Curl};
+use mecanica::jalon::Jalon;
+use mecanica::maquina_humana::Persona;
+use mecanica::press::{Press, Variante};
+use mecanica::Lift;
+
+/// Tolerancia de la casa contra los dorados (ENCARGO §3).
 pub const DORADOS_TOL: f64 = 0.02;
 
-/// Evaluate one `reel04` golden sample (`tau` in N·m).
-pub fn eval_reel04(muestra: &Muestra) -> Result<f64, String> {
-    let phi_grados = json_f64(muestra.entrada.get("phi_grados"), "phi_grados")?;
-    let modo = json_str(muestra.entrada.get("modo"), "modo")?;
-    let modo = Modo::parse(&modo).ok_or_else(|| format!("modo desconocido: {modo}"))?;
-    let phi = phi_grados.to_radians();
-    Ok(Reel04::default().tau(phi, modo))
+/// Las piezas que ya pasan por el motor.
+pub const CON_PUENTE: &[&str] = &["reel04", "reel26", "reel29", "reel39"];
+
+/// Una salida con nombre: la que el dorado trae y el motor tiene que dar.
+pub type Salida = (&'static str, f64);
+
+/// Evalúa una muestra con el motor y devuelve sus salidas con nombre.
+///
+/// # Errors
+/// Si la pieza no tiene puente o la muestra no trae sus entradas.
+pub fn evalua(pieza: &str, m: &Muestra) -> Result<Vec<Salida>, String> {
+    match pieza {
+        "reel04" => reel04(m),
+        "reel26" => reel26(m),
+        "reel29" => reel29(m),
+        "reel39" => reel39(m),
+        otro => Err(format!("pieza sin puente al motor: {otro}")),
+    }
 }
 
-/// Evaluate one `reel26` golden sample (`tau` in N·m at stroke end).
-pub fn eval_reel26(muestra: &Muestra) -> Result<f64, String> {
-    let beta_grados = json_f64(muestra.entrada.get("beta_grados"), "beta_grados")?;
-    Ok(Reel26::default().tau(beta_grados.to_radians()))
+// ------------------------------------------------------------- reel 04
+fn reel04(m: &Muestra) -> Result<Vec<Salida>, String> {
+    let phi = num(m, "phi_grados")?.to_radians();
+    let agarre = match texto(m, "modo")?.as_str() {
+        "barra" => Agarre::Barra,
+        "polea" => Agarre::Polea((0.42, -0.85)),
+        otro => return Err(format!("modo desconocido: {otro}")),
+    };
+    let curl = Curl {
+        carga_kg: 20.0,
+        antebrazo_m: 0.32,
+        agarre,
+        rango_rad: (0.0, core::f64::consts::PI),
+    };
+    Ok(vec![("tau", curl.tau(phi))])
 }
 
-/// Evaluate one `reel29` golden sample (`tau`, `largo_cable`, or `recorrido`).
-pub fn eval_reel29(muestra: &Muestra) -> Result<f64, String> {
-    let reel = Reel29::default();
-    let beta_grados = json_f64(muestra.entrada.get("beta_grados"), "beta_grados")?;
-    let beta = beta_grados.to_radians();
+// ------------------------------------------------------- reels 26 y 29
+/// El jalón publicado. Un solo modelo para las dos piezas, porque es un
+/// solo ejercicio: el 26 lo mira al cierre, el 29 a lo largo del tirón.
+fn jalon(beta_grados: f64) -> Jalon {
+    Jalon {
+        carga_kg: 50.0,
+        torso_m: 0.55,
+        humero_m: 0.32,
+        antebrazo_m: 0.28,
+        esternon_fwd: 0.24,
+        esternon_up: 0.15,
+        polea: (0.24, 1.60),
+        reclinado_rad: beta_grados.to_radians(),
+        extension: 0.97,
+    }
+}
 
-    if let Some(medida) = muestra.entrada.get("medida") {
-        let medida = json_str(Some(medida), "medida")?;
-        if medida == "recorrido" {
-            return Ok(reel.recorrido(beta));
+fn reel26(m: &Muestra) -> Result<Vec<Salida>, String> {
+    // El reel 26 mide el CIERRE del jalón, que es `u = 1`.
+    Ok(vec![("tau", jalon(num(m, "beta_grados")?).tau(1.0))])
+}
+
+fn reel29(m: &Muestra) -> Result<Vec<Salida>, String> {
+    let j = jalon(num(m, "beta_grados")?);
+    if let Ok(medida) = texto(m, "medida") {
+        return match medida.as_str() {
+            "recorrido" => Ok(vec![("tau", j.recorrido())]),
+            otro => Err(format!("medida desconocida: {otro}")),
+        };
+    }
+    let u = num(m, "u")?;
+    Ok(vec![("tau", j.tau(u)), ("largo_cable", j.largo_cable(u))])
+}
+
+// ------------------------------------------------------------- reel 39
+fn prensa(m: &Muestra) -> Result<(Press, Variante), String> {
+    let variante = match texto(m, "variante")?.as_str() {
+        "militar" => Variante::Militar,
+        "smith" => Variante::Smith,
+        otro => return Err(format!("variante desconocida: {otro}")),
+    };
+    let mut p = Press::reel39(
+        Persona {
+            estatura_m: 1.75,
+            masa_kg: 80.0,
+        },
+        40.0,
+    );
+    // Las muestras de SENSIBILIDAD mueven la máquina: dónde te paras en
+    // la Smith, y dónde arranca y cuándo se va atrás la barra libre. Que
+    // el motor las reproduzca es lo que distingue un modelo de un ajuste
+    // al caso central.
+    if let Ok(x) = num(m, "x") {
+        p.x_smith = x;
+    }
+    if let Ok(x0) = num(m, "x0") {
+        p.x_militar = x0;
+    }
+    if let Ok(claro) = num(m, "claro") {
+        p.claro = claro;
+    }
+    Ok((p, variante))
+}
+
+fn reel39(m: &Muestra) -> Result<Vec<Salida>, String> {
+    let (p, variante) = prensa(m)?;
+
+    if let Ok(medida) = texto(m, "medida") {
+        if medida == "balance de energía" {
+            let (musculos, carga) = p.balance(variante, 800).map_err(|e| format!("{e:?}"))?;
+            return Ok(vec![
+                ("trabajo_musculos", musculos),
+                ("trabajo_carga", carga),
+            ]);
         }
         return Err(format!("medida desconocida: {medida}"));
     }
 
-    let u = json_f64(muestra.entrada.get("u"), "u")?;
+    // Muestras de sensibilidad: no traen `u`, traen agregados.
+    if !m.entrada.contains_key("u") {
+        let fin = p.pose(variante, 1.0).map_err(|e| format!("{e:?}"))?;
+        let medio = p.pose(variante, 0.5).map_err(|e| format!("{e:?}"))?;
+        return Ok(vec![
+            ("pico_hombro", p.pico_hombro(variante, 400)),
+            ("tau_hombro_final", p.tau_hombro(&fin)),
+            // El dorado lo llama "medio" y es el valor a mitad del
+            // recorrido, no un promedio. Se reproduce lo que dice, no lo
+            // que el nombre sugiere.
+            ("tau_hombro_medio", p.tau_hombro(&medio)),
+        ]);
+    }
 
-    if muestra.salida.contains_key("largo_cable") {
-        return Ok(reel.largo_cable(beta, u));
-    }
-    if muestra.salida.contains_key("tau") {
-        return Ok(reel.tau(beta, u));
-    }
-    Err("salida reel29: se esperaba tau o largo_cable".into())
+    let u = num(m, "u")?;
+    let pose = p.pose(variante, u).map_err(|e| format!("{e:?}"))?;
+    Ok(vec![
+        ("hombro", p.tau_hombro(&pose)),
+        ("codo", p.tau_codo(&pose)),
+        ("l5s1", p.tau_l5s1(&pose)),
+        ("hombro_grados", p.angulo_hombro(&pose)),
+        ("codo_grados", p.angulo_codo(&pose)),
+    ])
 }
 
-/// Evaluate one output field of a `reel39` golden sample.
-pub fn eval_reel39_field(muestra: &Muestra, field: &str) -> Result<f64, String> {
-    let reel = Reel39::default();
-    let variante = json_str(muestra.entrada.get("variante"), "variante")?;
-    let variante = Reel39Variante::parse(&variante)
-        .ok_or_else(|| format!("variante desconocida: {variante}"))?;
-
-    if let Some(medida) = muestra.entrada.get("medida") {
-        let medida = json_str(Some(medida), "medida")?;
-        if medida == "balance de energía" {
-            return match field {
-                "trabajo_musculos" | "trabajo_carga" => Ok(reel.trabajo_carga()),
-                other => Err(format!("campo {other} no aplica a balance de energía")),
-            };
-        }
-        return Err(format!("medida reel39 no implementada: {medida}"));
-    }
-
-    if muestra.entrada.contains_key("x") {
-        let x = json_f64(muestra.entrada.get("x"), "x")?;
-        return match field {
-            "tau_hombro_medio" | "pico_hombro" => Ok(reel.tau_hombro_offset(x)),
-            other => Err(format!("campo {other} no aplica a sensibilidad x")),
-        };
-    }
-
-    if muestra.entrada.contains_key("x0") {
-        let x0 = json_f64(muestra.entrada.get("x0"), "x0")?;
-        return match field {
-            "pico_hombro" => Ok(reel.tau_hombro_offset(x0)),
-            "tau_hombro_final" => Ok(0.0),
-            other => Err(format!("campo {other} no aplica a sensibilidad x0")),
-        };
-    }
-
-    let u = json_f64(muestra.entrada.get("u"), "u")?;
-    let pose = reel.pose(variante, u);
-
-    match field {
-        "hombro" => Ok(reel.tau_hombro(&pose)),
-        "codo" => Ok(reel.tau_codo(&pose)),
-        "hombro_grados" => Ok(reel.hombro_grados(&pose)),
-        "codo_grados" => Ok(reel.codo_grados(&pose)),
-        other => Err(format!("campo reel39 desconocido: {other}")),
-    }
+/// La postura que el motor calcula, para comparar punto por punto.
+///
+/// # Errors
+/// Si la muestra no trae `variante` y `u`, o la mano cae fuera de alcance.
+pub fn pose_reel39(m: &Muestra) -> Result<[(f64, f64); 4], String> {
+    let (p, variante) = prensa(m)?;
+    let u = num(m, "u")?;
+    let pose = p.pose(variante, u).map_err(|e| format!("{e:?}"))?;
+    Ok([pose.l5, pose.hombro, pose.codo, pose.mano])
 }
 
-fn json_f64(v: Option<&serde_json::Value>, key: &str) -> Result<f64, String> {
-    match v {
-        Some(serde_json::Value::Number(n)) => n.as_f64().ok_or_else(|| format!("{key}: no es f64")),
-        _ => Err(format!("{key}: falta o tipo inválido")),
-    }
+// ------------------------------------------------------------ lectura
+fn num(m: &Muestra, clave: &str) -> Result<f64, String> {
+    m.entrada
+        .get(clave)
+        .and_then(serde_json::Value::as_f64)
+        .ok_or_else(|| format!("falta la entrada {clave}"))
 }
 
-fn json_str(v: Option<&serde_json::Value>, key: &str) -> Result<String, String> {
-    match v {
-        Some(serde_json::Value::String(s)) => Ok(s.clone()),
-        _ => Err(format!("{key}: falta o no es string")),
-    }
+fn texto(m: &Muestra, clave: &str) -> Result<String, String> {
+    m.entrada
+        .get(clave)
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_owned)
+        .ok_or_else(|| format!("falta la entrada {clave}"))
 }

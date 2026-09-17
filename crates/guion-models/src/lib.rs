@@ -36,11 +36,14 @@ fn lever_state(model: &ModelRef, phi: f64) -> Option<LeverState> {
 }
 
 fn press_state(model: &ModelRef, u: f64) -> Option<PressState> {
-    if model.source != "guion-fisica:reel39" {
+    if !es_press(&model.source) {
         return None;
     }
     let params = PressParams::from_map(&model.params)?;
-    Some(press::state_at(&params, u))
+    // Una mano fuera de alcance no es un estado: es un guion mal
+    // puesto, y vale más que no devuelva nada a que devuelva una
+    // postura inventada.
+    press::state_at(&params, u).ok()
 }
 
 fn resolve_model_field(model: &ModelRef, field: Option<&str>, phi: f64) -> Option<f64> {
@@ -79,4 +82,11 @@ fn point_field(state: &LeverState, field: Option<&str>) -> Option<[f64; 3]> {
         Some("shoulder") => Some(state.shoulder),
         _ => None,
     }
+}
+
+// El nombre nuevo dice de dónde sale la física de verdad. El viejo se
+// sigue aceptando: hay guiones escritos con él, y romperlos por un
+// renombre sería cobrarle al autor un problema nuestro.
+fn es_press(fuente: &str) -> bool {
+    fuente == "mecanica:press" || fuente == "guion-fisica:reel39"
 }
