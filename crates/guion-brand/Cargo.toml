@@ -9,5 +9,7 @@ repository.workspace = true
 
 [dependencies]
 motoreel = { workspace = true }
+# R-0009: el registro de caras que `PpmSink::with_fonts` pide.
+motoreel-typeset = { path = "../../../motoreel/crates/motoreel-typeset" }
 serde = { workspace = true }
 toml = { workspace = true }
