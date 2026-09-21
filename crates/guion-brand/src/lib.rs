@@ -1,5 +1,6 @@
 //! `guion-brand` — themes, palettes, and post-fx (M3).
 
+pub mod fuentes;
 mod palette;
 mod postfx;
 mod ppm_io;

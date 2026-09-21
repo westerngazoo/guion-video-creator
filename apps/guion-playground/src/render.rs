@@ -84,37 +84,6 @@ pub fn eval_frame(track: &Track, t: f64, length: f64) -> Vec<Prim2> {
     pendulum_scene_at(track, t, length).eval(0.0)
 }
 
-#[cfg(test)]
-mod render_tests {
-    use super::*;
-    use crate::sim::{SimParams, SimulationState};
-    use motoreel::Prim2;
-
-    #[test]
-    fn rod_segment_spans_pivot_to_bob() {
-        let state = SimulationState::new(SimParams::default()).expect("sim");
-        let prims = eval_frame(&state.track, 0.0, state.params.length);
-        let segment = prims
-            .iter()
-            .find_map(|p| match p {
-                Prim2::Segment { a, b, style } => Some((a, b, style)),
-                _ => None,
-            })
-            .expect("pendulum scene should emit a rod segment");
-        let dist =
-            ((segment.0.x - segment.1.x).powi(2) + (segment.0.y - segment.1.y).powi(2)).sqrt();
-        assert!(dist > 0.5, "rod should span pivot to bob, got {dist}");
-        assert!(
-            segment.2.stroke.r > 200 && segment.2.stroke.g > 200,
-            "rod stroke should use a light paper tone"
-        );
-        assert!(
-            segment.2.width >= 0.02,
-            "rod should be thick enough to rasterize"
-        );
-    }
-}
-
 /// Render one preview frame as a base64 PNG data URL.
 pub fn preview_png_base64(track: &Track, t: f64, length: f64) -> Result<String, String> {
     let dir = std::env::temp_dir().join("guion-playground-preview");
@@ -160,4 +129,38 @@ pub fn export_mp4(
     }
     encode_ppm_dir(frames_dir, fps, out_mp4, None).map_err(|e| e.to_string())?;
     Ok(format!("{} frames → {}", frames, out_mp4.display()))
+}
+
+// El módulo de pruebas va al FINAL: clippy pide que nada quede
+// después de un `#[cfg(test)]`, porque lo que viene detrás se lee como
+// parte de las pruebas y no lo es.
+#[cfg(test)]
+mod render_tests {
+    use super::*;
+    use crate::sim::{SimParams, SimulationState};
+    use motoreel::Prim2;
+
+    #[test]
+    fn rod_segment_spans_pivot_to_bob() {
+        let state = SimulationState::new(SimParams::default()).expect("sim");
+        let prims = eval_frame(&state.track, 0.0, state.params.length);
+        let segment = prims
+            .iter()
+            .find_map(|p| match p {
+                Prim2::Segment { a, b, style } => Some((a, b, style)),
+                _ => None,
+            })
+            .expect("pendulum scene should emit a rod segment");
+        let dist =
+            ((segment.0.x - segment.1.x).powi(2) + (segment.0.y - segment.1.y).powi(2)).sqrt();
+        assert!(dist > 0.5, "rod should span pivot to bob, got {dist}");
+        assert!(
+            segment.2.stroke.r > 200 && segment.2.stroke.g > 200,
+            "rod stroke should use a light paper tone"
+        );
+        assert!(
+            segment.2.width >= 0.02,
+            "rod should be thick enough to rasterize"
+        );
+    }
 }

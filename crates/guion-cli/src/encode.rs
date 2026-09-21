@@ -139,8 +139,17 @@ fn render_frames(
     let (size, view) = match sp.meta.format {
         guion_core::Format::Vertical => ((1080, 1920), (1.8, 3.2)),
     };
+    // R-0009: el motor ya no trae tipografía adentro. Sin registro,
+    // un primitivo de texto es un error y no un cuadro en blanco.
+    let fuentes = match guion_brand::fuentes::marca() {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("{e}");
+            return Some(ExitCode::from(1));
+        }
+    };
     let mut sink = match PpmSink::with_view(dir, size, view) {
-        Ok(s) => s,
+        Ok(s) => s.with_fonts(fuentes),
         Err(e) => {
             eprintln!("{e}");
             return Some(ExitCode::from(1));

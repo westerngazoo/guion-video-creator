@@ -80,8 +80,17 @@ pub fn run(args: &[String]) -> ExitCode {
     let dir = out.unwrap_or_else(|| default_out(&sp.meta.slug));
 
     let (size, view) = raster_for(&sp.meta);
+    // R-0009: el motor ya no trae tipografía adentro. Sin registro,
+    // un primitivo de texto es un error y no un cuadro en blanco.
+    let fuentes = match guion_brand::fuentes::marca() {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("{e}");
+            return ExitCode::from(1);
+        }
+    };
     let mut sink = match PpmSink::with_view(&dir, size, view) {
-        Ok(s) => s,
+        Ok(s) => s.with_fonts(fuentes),
         Err(e) => {
             eprintln!("{e}");
             return ExitCode::from(1);
