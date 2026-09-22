@@ -1306,9 +1306,11 @@ dependencies = [
  "guion-assemble",
  "guion-audio",
  "guion-brand",
+ "guion-comparacion",
  "guion-core",
  "guion-encode",
  "guion-motion",
+ "guion-render",
  "motoreel",
 ]
 
