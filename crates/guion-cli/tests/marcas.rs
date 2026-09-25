@@ -95,31 +95,76 @@ fn la_misma_pieza_bajo_dos_marcas_no_da_el_mismo_cuadro() {
     assert_ne!(ba, bb, "las dos marcas dieron el cuadro idéntico");
 }
 
-/// AC2. Y no difieren de cualquier modo: `pista` tiene la tinta CLARA y
-/// `fbf` la oscura, así que sobre los pixeles que cambian, los de
-/// `pista` tienen que ser netamente más claros. Un cambio cualquiera
-/// (ruido, un sello, una fecha) también haría fallar AC1; esto fija la
-/// DIRECCIÓN del cambio.
-#[test]
-fn la_tinta_de_pista_es_la_clara_y_se_nota_en_el_cuadro() {
-    let (ia, ba) = ppm(&render("fbf", "fbf2").join("frame_00030.ppm"));
-    let (ib, bb) = ppm(&render("pista", "pista2").join("frame_00030.ppm"));
-    let (mut luz_a, mut luz_b, mut n) = (0u64, 0u64, 0u64);
-    for p in 0..(1080 * 1920) {
-        let (oa, ob) = (ia + p * 3, ib + p * 3);
-        if ba[oa..oa + 3] != bb[ob..ob + 3] {
-            n += 1;
-            luz_a += ba[oa..oa + 3].iter().map(|v| *v as u64).sum::<u64>();
-            luz_b += bb[ob..ob + 3].iter().map(|v| *v as u64).sum::<u64>();
-        }
+/// El color que más se repite en un cuadro: la página.
+fn pagina(dir: &Path) -> ([u8; 3], f64) {
+    let (i, b) = ppm(&dir.join("frame_00030.ppm"));
+    let mut cuenta: std::collections::HashMap<[u8; 3], u32> = std::collections::HashMap::new();
+    let total = 1080 * 1920;
+    for p in 0..total {
+        let o = i + p * 3;
+        *cuenta.entry([b[o], b[o + 1], b[o + 2]]).or_insert(0) += 1;
     }
-    assert!(n > 1000, "casi no cambió nada: {n} pixeles");
-    let (ma, mb) = (luz_a as f64 / n as f64, luz_b as f64 / n as f64);
-    println!("sobre {n} pixeles distintos: fbf {ma:.1}  pista {mb:.1}");
-    assert!(
-        mb > ma * 1.5,
-        "pista no salió más clara que fbf: {mb:.1} contra {ma:.1}"
-    );
+    let (c, n) = cuenta
+        .into_iter()
+        .max_by_key(|(_, n)| *n)
+        .expect("el cuadro tiene pixeles");
+    (c, f64::from(n) / total as f64)
+}
+
+/// AC2 (R-0008 OQ-1). El cuadro se limpia con el **papel de la marca**.
+///
+/// Antes de esto el fondo salía negro en las dos marcas y sólo cambiaban
+/// los trazos, o sea que en `fbf` —papel crema— lo único que no llegaba
+/// era la mitad de la pieza. Se mide el color que más se repite: es la
+/// página, y tiene que ser exactamente el de la paleta.
+#[test]
+fn el_cuadro_se_limpia_con_el_papel_de_la_marca() {
+    for (marca, nombre) in [("fbf", "fbf2"), ("pista", "pista2")] {
+        let esperado = guion_brand::theme_by_name(marca).expect("la marca").paper();
+        let (c, parte) = pagina(&render(marca, nombre));
+        println!("{marca}: la página es {c:?} y ocupa {:.1}%", parte * 100.0);
+        assert_eq!(
+            c,
+            [esperado.r, esperado.g, esperado.b],
+            "{marca}: la página no es el papel de su marca"
+        );
+        assert!(
+            parte > 0.5,
+            "{marca}: el papel sólo ocupa {:.1}% del cuadro",
+            parte * 100.0
+        );
+    }
+}
+
+/// AC9. Y las dos marcas son OPUESTAS, no variantes: en `fbf` la tinta
+/// es más oscura que su página y en `pista` más clara. Fija la dirección
+/// del cambio, que AC1 por sí sola no fija — un sello o una fecha
+/// distinta también harían fallar AC1.
+#[test]
+fn una_marca_escribe_oscuro_sobre_claro_y_la_otra_al_reves() {
+    for (marca, nombre, tinta_mas_clara) in [("fbf", "fbf3", false), ("pista", "pista3", true)] {
+        let dir = render(marca, nombre);
+        let (papel, _) = pagina(&dir);
+        let (i, b) = ppm(&dir.join("frame_00030.ppm"));
+        let luz = |c: &[u8]| c.iter().map(|v| u64::from(*v)).sum::<u64>();
+        let (mut suma, mut n) = (0u64, 0u64);
+        for p in 0..(1080 * 1920) {
+            let o = i + p * 3;
+            // Sólo lo que NO es página ni su versión tramada: el trazo.
+            if b[o..o + 3] != papel && luz(&b[o..o + 3]).abs_diff(luz(&papel)) > 40 {
+                suma += luz(&b[o..o + 3]);
+                n += 1;
+            }
+        }
+        assert!(n > 1000, "{marca}: casi no hay trazo ({n} pixeles)");
+        let (mt, mp) = (suma as f64 / n as f64, luz(&papel) as f64);
+        println!("{marca}: trazo {mt:.0}  ·  página {mp:.0}");
+        assert_eq!(
+            mt > mp,
+            tinta_mas_clara,
+            "{marca}: trazo {mt:.0} contra página {mp:.0}, no es lo esperado"
+        );
+    }
 }
 
 /// AC3. Una marca que no existe NO se renderiza con la de por omisión:

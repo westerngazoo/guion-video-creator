@@ -158,8 +158,11 @@ fn render_frames(
             return Some(ExitCode::from(1));
         }
     };
+    // R-0008 OQ-1: igual que en `render`. Las dos etapas tienen que
+    // limpiar con el mismo papel o la misma pieza sale distinta según
+    // por dónde se pida.
     let mut sink = match PpmSink::with_view(dir, size, view) {
-        Ok(s) => s.with_fonts(fuentes),
+        Ok(s) => s.with_fonts(fuentes).with_background(theme.paper()),
         Err(e) => {
             eprintln!("{e}");
             return Some(ExitCode::from(1));

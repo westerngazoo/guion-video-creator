@@ -51,13 +51,16 @@ fuerte ante lo desconocido, nombrando lo que sí existe.
 | # | Criterio | Prueba |
 |---|----------|--------|
 | AC1 | La misma pieza bajo dos marcas no da el mismo cuadro | `guion-cli/tests/marcas.rs::la_misma_pieza_bajo_dos_marcas_no_da_el_mismo_cuadro` |
-| AC2 | El cambio tiene DIRECCIÓN: la tinta de `pista` es la clara y el cuadro sale netamente más claro | `guion-cli/tests/marcas.rs::la_tinta_de_pista_es_la_clara_y_se_nota_en_el_cuadro` |
+| AC2 | El cuadro se limpia con el **papel de la marca** (cierra OQ-1) | `guion-cli/tests/marcas.rs::el_cuadro_se_limpia_con_el_papel_de_la_marca` |
 | AC3 | Una marca que no existe falla, nombra las que hay, y no escribe cuadros | `guion-cli/tests/marcas.rs::una_marca_que_no_existe_no_renderiza_nada` |
 | AC4 | `pista` es otra marca de verdad (papel oscuro, tinta clara, otro acento) | `guion-brand/tests/marcas.rs::pista_es_otra_marca_no_la_de_siempre` |
 | AC5 | Cada tinta se mide contra la superficie en la que se pinta | `guion-brand/tests/marcas.rs::cada_tinta_contra_la_superficie_en_la_que_se_pinta` |
 | AC6 | La rampa de calor se lee como escala en las dos marcas | `guion-brand/tests/marcas.rs::la_rampa_de_calor_se_lee_como_escala` |
 | AC7 | `skin` es igual en las dos marcas | `guion-brand/tests/marcas.rs::la_piel_no_es_identidad_de_marca` |
 | AC8 | El acento de `pista` es frío | `guion-brand/tests/marcas.rs::el_acento_de_pista_es_frio_porque_el_calor_ya_ocupa_lo_calido` |
+| AC9 | Las dos marcas son opuestas: una escribe oscuro sobre claro y la otra al revés | `guion-cli/tests/marcas.rs::una_marca_escribe_oscuro_sobre_claro_y_la_otra_al_reves` |
+| AC10 | Lo que se escribe en un PPM es lo que se lee, byte por byte | `guion-brand/src/ppm_io.rs::tests::lo_que_se_escribe_es_lo_que_se_lee` |
+| AC11 | El post-fx no corre la imagen ni rota los canales | `guion-brand/src/ppm_io.rs::tests::el_postfx_no_corre_la_imagen` |
 
 ## 4. Constraints & non-goals
 
@@ -72,12 +75,18 @@ fuerte ante lo desconocido, nombrando lo que sí existe.
 
 ## 5. Open questions
 
-- **OQ-1 — el motor no pinta el papel.** Medido en esta rama: renderizando
-  el mismo guion bajo las dos marcas, el fondo del cuadro sale
-  **negro en las dos**; sólo cambian los trazos. `paper` se usa como color
-  nombrado pero nadie lo pinta como suelo de la página. En `fbf` (papel
-  crema) la diferencia es enorme. Hasta que se cierre, ninguna pieza sale
-  del motor con su fondo de marca.
+- ~~**OQ-1 — el motor no pinta el papel.**~~ **Cerrada el 2026-09-25.**
+  `PpmSink::with_background` existía desde siempre en motoreel y sólo la
+  llamaba un *ejemplo*; ni `render` ni `encode` la usaban. Ahora las dos
+  etapas limpian con `theme.paper()` y la página ocupa el 92.3 % del
+  cuadro con el color exacto de la paleta (AC2). Al cerrarla salió a la
+  luz el defecto del lector de PPM — ver el registro de decisiones.
+- **OQ-4 — `guion-render` tiene su propia marca horneada.** `PAPEL`,
+  `TINTA` y `ACENTO` son constantes dentro del crate del dialecto de
+  comparación. Hoy sólo las usa su ejemplo, así que no se publica nada
+  con ellas, pero es la tercera copia de la identidad en el árbol y hay
+  que conectarla al tema antes de que ese dialecto salga por el CLI
+  (R-0007, PR #5).
 - **OQ-2 — `prenda`.** La fábrica vieja necesita un color que se despegue
   de `skin`: la familia mostaza entera cae a ΔE 19-25 de la piel y el
   muñeco se vuelve una mancha. Cuando el motor pinte muñeco, ese color
@@ -120,6 +129,23 @@ fuerte ante lo desconocido, nombrando lo que sí existe.
   sobreescriba es otra manera de renderizar con la identidad equivocada,
   y esta vez sin que quede escrito en ningún archivo.
 
+- **2026-09-25 — el lector de PPM se comía el valor máximo, y nadie lo
+  había visto porque el fondo era negro.** Al pintar el papel, `fbf`
+  salió (208,242,230) en vez de (242,230,208): los canales ROTADOS.
+  `parse_p6_header` devolvía el final del renglón de dimensiones en vez
+  del final del `255`, o sea 4 bytes de menos. Como 4 no es múltiplo de
+  3, la imagen entera se corría un pixel Y cambiaba de canal, y como
+  `postfx_dir` lee-procesa-escribe, el corrimiento se horneaba en el
+  archivo. Llevaba ahí desde que existe el post-fx: (0,0,0) rotado sigue
+  siendo (0,0,0), así que un fondo negro lo escondía entero.
+
+  Lo que faltaba no era cuidado, era una prueba de ida y vuelta: escribir
+  y volver a leer. Ahora existe (AC10), y con ella la de que el post-fx
+  no corre la imagen (AC11).
+
 ## Changelog
 
 - 2026-09-24 — creado, implementado y en revisión en la misma rama.
+- 2026-09-25 — cerrada OQ-1 (el motor pinta el papel). En el camino salió
+  el defecto del lector de PPM; AC2 se reescribió, y se agregaron AC9,
+  AC10 y AC11.

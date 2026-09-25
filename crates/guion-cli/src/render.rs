@@ -101,8 +101,12 @@ pub fn run(args: &[String]) -> ExitCode {
             return ExitCode::from(1);
         }
     };
+    // R-0008 OQ-1: el cuadro se limpia con el papel de la marca. Antes
+    // salía negro de fábrica en las dos marcas y sólo cambiaban los
+    // trazos, o sea que en `fbf` —papel crema— el fondo era lo único que
+    // no llegaba, y es la mitad de la pieza.
     let mut sink = match PpmSink::with_view(&dir, size, view) {
-        Ok(s) => s.with_fonts(fuentes),
+        Ok(s) => s.with_fonts(fuentes).with_background(theme.paper()),
         Err(e) => {
             eprintln!("{e}");
             return ExitCode::from(1);

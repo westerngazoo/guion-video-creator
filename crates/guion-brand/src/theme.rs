@@ -38,6 +38,22 @@ impl Theme {
         }
     }
 
+    /// El suelo de la página: el color con el que se limpia cada cuadro
+    /// antes de dibujar nada.
+    ///
+    /// R-0008 OQ-1. Existe como accesor propio y no como
+    /// `stroke_color("paper")` porque no es un trazo: es lo único que se
+    /// ve donde no hay trazo. Pedirlo por la puerta de los trazos fue
+    /// justo lo que dejó que nadie lo pidiera nunca.
+    pub fn paper(&self) -> Rgb {
+        rgb(self.palette.colors.paper)
+    }
+
+    /// El suelo del cintillo del pie, la segunda superficie de la pieza.
+    pub fn bar(&self) -> Rgb {
+        rgb(self.palette.colors.bar)
+    }
+
     pub fn heat_ref_force(&self) -> f64 {
         1600.0
     }
