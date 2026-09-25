@@ -73,7 +73,19 @@ pub fn run(args: &[String]) -> ExitCode {
         }
     };
 
-    let theme = default_theme();
+    // R-0008 AC3: `render` también respeta la marca del guion. Antes
+    // llamaba a `default_theme()` a secas, así que `render` y `encode`
+    // podían sacar la misma pieza con dos identidades distintas.
+    let theme = match sp.meta.theme.as_deref() {
+        None => default_theme(),
+        Some(n) => match guion_brand::theme_by_name(n) {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("{e}");
+                return ExitCode::from(1);
+            }
+        },
+    };
     let dur = timeline_duration(&sp).max(duration(&sp));
     let fps = fps.unwrap_or(sp.meta.fps);
     let frames = frame_count(dur, fps);

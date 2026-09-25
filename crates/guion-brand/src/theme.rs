@@ -54,9 +54,48 @@ pub fn load_theme(path: &Path) -> Result<Theme, String> {
     Ok(Theme::from_palette(name, palette))
 }
 
+/// La marca por omisión. Pasa por `theme_by_name` para que exista UNA
+/// tabla de marcas y no dos que se puedan desincronizar.
 pub fn default_theme() -> Theme {
-    Theme::from_palette(
-        "fbf",
-        PaletteFile::parse(include_str!("../../../themes/fbf/palette.toml")).expect("fbf palette"),
-    )
+    theme_by_name(MARCA_POR_OMISION).expect("la marca por omisión")
 }
+
+/// Las marcas que este binario trae adentro, en el orden en que se
+/// ofrecen cuando alguien escribe un nombre que no existe.
+///
+/// Van embebidas y no leídas de disco por la misma razón que `fbf` ya lo
+/// estaba: el render tiene que dar el mismo resultado desde cualquier
+/// directorio, y una marca que depende del cwd es una marca que algún día
+/// no se encuentra y se cae al tema por omisión sin avisar. Para temas de
+/// fuera del repo está `load_theme`, que sí toma una ruta.
+const MARCAS: &[(&str, &str)] = &[
+    ("fbf", include_str!("../../../themes/fbf/palette.toml")),
+    ("pista", include_str!("../../../themes/pista/palette.toml")),
+];
+
+/// Resuelve una marca por nombre.
+///
+/// R-0008 AC2: un nombre que no existe es un ERROR que nombra las marcas
+/// que sí, nunca un regreso callado a la marca por omisión. El defecto que
+/// esto cierra no es hipotético: el mismo silencio, en la fábrica vieja,
+/// dejó una pieza renderizada entera con la marca equivocada y ninguna de
+/// las 41 comprobaciones lo dijo, porque ninguna preguntaba por la marca.
+/// Un render con la identidad de otro cliente se ve terminado; ése es
+/// justo el fallo que tiene que gritar.
+pub fn theme_by_name(name: &str) -> Result<Theme, String> {
+    for (n, src) in MARCAS {
+        if *n == name {
+            let palette =
+                PaletteFile::parse(src).map_err(|e| format!("la marca `{name}` no carga: {e}"))?;
+            return Ok(Theme::from_palette(*n, palette));
+        }
+    }
+    let hay: Vec<&str> = MARCAS.iter().map(|(n, _)| *n).collect();
+    Err(format!(
+        "no existe la marca `{name}`. Las que hay: {}",
+        hay.join(", ")
+    ))
+}
+
+/// El nombre de la marca por omisión cuando el guion no dice ninguna.
+pub const MARCA_POR_OMISION: &str = "fbf";

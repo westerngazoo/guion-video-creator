@@ -5,7 +5,7 @@ use guion_assemble::{assemble_at, duration};
 use guion_audio::{
     default_narration_path, mix_for_encode, timeline_duration, write_narration, NarrateOptions,
 };
-use guion_brand::{default_theme, postfx_dir, Theme};
+use guion_brand::{default_theme, postfx_dir, theme_by_name, Theme};
 use guion_core::load_and_check;
 use guion_encode::{default_mp4, encode_ppm_dir};
 use guion_motion::ModelRuntime;
@@ -75,7 +75,13 @@ pub fn run(args: &[String]) -> ExitCode {
         }
     };
 
-    let theme = theme_for(&sp);
+    let theme = match theme_for(&sp) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("{e}");
+            return ExitCode::from(1);
+        }
+    };
     let fps = fps.unwrap_or(sp.meta.fps);
     let dur = timeline_duration(&sp).max(duration(&sp));
     let frames = frame_count(dur, fps);
@@ -121,10 +127,14 @@ pub fn run(args: &[String]) -> ExitCode {
     }
 }
 
-fn theme_for(sp: &guion_core::Screenplay) -> Theme {
+/// R-0008 AC1/AC2: la marca del guion se resuelve por nombre, y un nombre
+/// que no existe para el proceso. Antes las dos ramas devolvían `fbf`, o
+/// sea que `theme = "pista"` renderizaba un reel entero con la identidad
+/// equivocada y salía con código 0.
+fn theme_for(sp: &guion_core::Screenplay) -> Result<Theme, String> {
     match sp.meta.theme.as_deref() {
-        Some("fbf") | None => default_theme(),
-        _ => default_theme(),
+        None => Ok(default_theme()),
+        Some(n) => theme_by_name(n),
     }
 }
 
