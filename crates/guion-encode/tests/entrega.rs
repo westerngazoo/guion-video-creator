@@ -9,8 +9,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use guion_encode::{
-    encode_ordered, encode_ppm_dir, measure, mux_at_loudness, EncodeError, Encoder, LoudnessTarget,
-    VideoSpec,
+    encode_ordered, encode_ordered_with, encode_ppm_dir, measure, mux_at_loudness, EncodeError,
+    Encoder, LoudnessTarget, VideoSpec,
 };
 
 const W: u32 = 64;
@@ -329,4 +329,64 @@ fn ac7_errores_con_nombre_y_sin_archivo() {
     );
     assert!(!out.exists());
     assert_eq!(restos(&d), 0, "sin salida a medias");
+}
+
+/// AC8: cada hilo arma su estado una vez y lo usa en todos sus cuadros; el
+/// video es el mismo que sin estado; y si armarlo falla, el error dice el
+/// hilo, sale como su primer cuadro, y no queda archivo.
+#[test]
+fn ac8_cada_hilo_con_su_lienzo() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let d = dir("ac8");
+    let (n, hilos) = (23, 4);
+    let armados = AtomicUsize::new(0);
+    let con = d.join("con.mp4");
+    let escritos = encode_ordered_with(
+        &con,
+        SPEC,
+        n,
+        hilos,
+        |h| {
+            armados.fetch_add(1, Ordering::SeqCst);
+            Ok::<_, String>((h, 0usize, Vec::<u8>::with_capacity(SPEC.frame_len())))
+        },
+        |(h, hechos, lienzo), i| {
+            assert_eq!(i % hilos, *h, "el cuadro {i} llegó al hilo {h}");
+            *hechos += 1;
+            lienzo.clear();
+            lienzo.extend(cuadro(i));
+            Ok(lienzo.clone())
+        },
+    )
+    .unwrap();
+    assert_eq!(escritos, n);
+    assert_eq!(armados.load(Ordering::SeqCst), hilos, "un estado por hilo");
+    let sin = d.join("sin.mp4");
+    encode_ordered(&sin, SPEC, n, hilos, |i| Ok::<_, String>(cuadro(i))).unwrap();
+    assert!(
+        std::fs::read(&con).unwrap() == std::fs::read(&sin).unwrap(),
+        "el estado no cambia el video"
+    );
+
+    let falla = d.join("falla.mp4");
+    let e = encode_ordered_with(
+        &falla,
+        SPEC,
+        n,
+        hilos,
+        |h| {
+            if h == 2 {
+                Err("sin carpeta".to_string())
+            } else {
+                Ok(())
+            }
+        },
+        |_, i| Ok(cuadro(i)),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(&e, EncodeError::Render { frame: 2, message } if message.contains("hilo 2") && message.contains("sin carpeta")),
+        "{e}"
+    );
+    assert!(!falla.exists());
 }
