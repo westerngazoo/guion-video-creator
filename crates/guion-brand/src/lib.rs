@@ -9,4 +9,4 @@ mod theme;
 pub use palette::{heat_color, PaletteFile};
 pub use postfx::process_frame;
 pub use ppm_io::postfx_dir;
-pub use theme::{default_theme, load_theme, Theme};
+pub use theme::{default_theme, load_theme, theme_by_name, Theme, MARCA_POR_OMISION};
