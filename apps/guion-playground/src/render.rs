@@ -24,6 +24,7 @@ fn anchor_style(accent: Rgb) -> Style {
         stroke: accent,
         width: 0.02,
         alpha: 1.0,
+        fill: None,
     }
 }
 
@@ -39,6 +40,7 @@ fn rod_style(paper: Rgb) -> Style {
         stroke: paper,
         width: 0.02,
         alpha: 1.0,
+        fill: None,
     }
 }
 
@@ -47,6 +49,7 @@ fn bob_style(accent: Rgb) -> Style {
         stroke: accent,
         width: 0.05,
         alpha: 1.0,
+        fill: None,
     }
 }
 

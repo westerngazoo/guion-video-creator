@@ -15,5 +15,6 @@ pub fn build(spec: &SpStyle, theme: &Theme, meta: &Meta, heat_value: Option<f64>
         stroke,
         width,
         alpha: 1.0,
+        fill: None,
     }
 }
