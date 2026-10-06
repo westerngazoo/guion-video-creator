@@ -58,6 +58,10 @@ in index order and pushes. `render: Fn(usize) -> Result<Vec<u8>, E> + Sync`.
 A render error stops the writer, drops the receivers (workers stop at their
 next send) and returns `Render { frame, .. }`.
 
+`encode_ordered_with(out, spec, frames, threads, init, render)` (AC8): each
+worker calls `init(h)` once, inside the worker, and lends the state to
+`render(&mut state, i)`. `encode_ordered` is this with `()` state.
+
 ### Loudness (AC6)
 
 `mux_at_loudness(video, audio, out, LoudnessTarget::REELS)`:
@@ -77,6 +81,7 @@ next send) and returns `Render { frame, .. }`.
 - [x] 1 thread = N threads, bytes (AC5)
 - [x] −14 ± 0.5 LUFS, ≤ −1 dBTP, deterministic (AC6)
 - [x] typed, located errors; no leftovers (AC7)
+- [x] per-worker state, built once per worker (AC8)
 
 ## 4. Traceability
 
@@ -92,6 +97,7 @@ in `loudness.rs`.
 | AC5 | 1 = N threads, all frames | `ac5_uno_o_cuatro_hilos_dan_los_mismos_bytes` | `ordered::encode_ordered` |
 | AC6 | loudness target, deterministic | `ac6_el_audio_queda_a_menos_14_lufs`, `loudness::tests::*` | `loudness::mux_at_loudness`, `measure` |
 | AC7 | typed errors, no leftovers | `ac7_errores_con_nombre_y_sin_archivo` | `VideoSpec::check`, `Encoder::push`, `Drop for Encoder`, `EncodeError::Render` |
+| AC8 | per-worker state | `ac8_cada_hilo_con_su_lienzo` | `ordered::encode_ordered_with` |
 
 ## 5. Non-goals
 
@@ -101,3 +107,4 @@ in `loudness.rs`.
 ## Changelog
 
 - 2026-10-06 — created with the implementation.
+- 2026-10-06 — AC8, `encode_ordered_with`.

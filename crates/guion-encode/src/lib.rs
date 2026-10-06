@@ -5,7 +5,8 @@
 //!
 //! - [`encode_ppm_dir`]: PPM numerados en disco, con audio opcional;
 //! - [`Encoder`]: cuadros RGB en memoria, uno por uno;
-//! - [`encode_ordered`]: cuadros calculados en varios hilos, escritos en orden.
+//! - [`encode_ordered`]: cuadros calculados en varios hilos, escritos en orden
+//!   ([`encode_ordered_with`] si cada hilo necesita su propio lienzo).
 //!
 //! Y el audio al nivel de las plataformas: [`mux_at_loudness`] (−14 LUFS,
 //! −1 dBTP) y [`measure`].
@@ -18,7 +19,7 @@ mod stream;
 
 pub use error::EncodeError;
 pub use loudness::{measure, mux_at_loudness, Loudness, LoudnessTarget};
-pub use ordered::encode_ordered;
+pub use ordered::{encode_ordered, encode_ordered_with};
 pub use stream::{Encoder, VideoSpec};
 
 use std::path::{Path, PathBuf};

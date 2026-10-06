@@ -62,6 +62,12 @@ drop its private copy.
   and the expected size), and a render error (naming the frame). No failure
   leaves an output or temporary file behind.
 
+- **AC8.** Ordered parallel encoding can give each worker its own state,
+  built once inside that worker (an engine's scratch canvas, such as
+  `motoreel`'s `PpmSink` and its directory). The output equals the stateless
+  form's. A failure to build it is reported as that worker's first frame,
+  naming the worker, and leaves no file.
+
 ## 4. Constraints & non-goals
 
 - ffmpeg stays an external process (found on `PATH`, or `GUION_FFMPEG`);
@@ -88,7 +94,9 @@ drop its private copy.
 | 2026-10-06 | No partial output: write to `.<name>.parcial.mp4`, rename on success | CLAUDE.md §6 |
 | 2026-10-06 | Loudness by measured rounds (loudnorm 2-pass → exact gain + 192 kHz limiter → AAC → measure, ≤ 8 rounds) | Neither a fixed limiter nor `loudnorm` alone met both bounds on high-crest audio (§2); measuring the AAC output is the only check that counts |
 | 2026-10-06 | ffmpeg-backed tests fail, not skip, without ffmpeg; CI installs it | A delivery criterion that cannot be checked is not met |
+| 2026-10-06 | AC8: per-worker state (`encode_ordered_with`), built inside the worker, so it need not be `Send` | The first consumer (the rotorf-sico studio) renders through `motoreel::PpmSink`, which owns a scratch directory; a sink per frame reloads every font per frame, and a shared one would serialize the threads |
 
 ## Changelog
 
 - 2026-10-06 — created; realized by SPEC-0005 in the same change.
+- 2026-10-06 — AC8 added (per-worker state).
