@@ -41,6 +41,8 @@ guion-motion = { path = "crates/guion-motion" }
 guion-brand = { path = "crates/guion-brand" }
 guion-assemble = { path = "crates/guion-assemble" }
 guion-encode = { path = "crates/guion-encode" }
+guion-comparacion = { path = "crates/guion-comparacion" }
+guion-render = { path = "crates/guion-render" }
 guion-audio = { path = "crates/guion-audio" }
 guion-fisica = { path = "crates/guion-fisica" }
 
