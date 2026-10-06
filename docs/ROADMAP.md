@@ -26,7 +26,7 @@ A requirement can be **built green while its document is still `Discussing`**
 |-----------|-------|-------|
 | **M0** | Foundation — repo, methodology, adopt the RFC | **in progress** (this repo) |
 | **M1** | First screenplay — schema → assemble → frames | **in progress** (core built) |
-| M2 | Delivery — ffmpeg + audio + vertical presets | designed |
+| M2 | Delivery — ffmpeg + audio + vertical presets | in progress ([R-0005](requirements/0005-delivery.md)) |
 | M3 | Brand — theme, LUTs, fonts, post-fx | designed |
 | M4 | Physics motion — the `Model` × `Source` split | designed |
 | M5 | Creators — `new`, templates, `models`, `doctor` | designed |
@@ -82,6 +82,10 @@ vertical slice is provable without the delivery layer.
 Reproduces and generalizes the current ffmpeg + audio flow, with named format
 presets (`vertical`, `square`, `wide`) carrying safe-area metadata. Earmarked as
 `R-0005+`. Designed in [RFC-0001 §6](RFC-0001-guion-framework.md#6-rendering--delivery-pipeline-guion-encode).
+
+[R-0005](requirements/0005-delivery.md) ships the delivery core: BT.709
+tagged colour and `+faststart` on every output, an in-memory `Encoder`, ordered
+parallel encoding (byte-identical to serial) and audio at −14 LUFS / −1 dBTP.
 
 ## M3 — Brand
 
