@@ -36,6 +36,11 @@ jobs:
           repository: westerngazoo/motoreel
           path: motoreel
 
+      # guion-encode prueba la entrega de verdad (R-0005): color, faststart y
+      # sonoridad medidos sobre MP4 reales. Sin ffmpeg esas pruebas fallan.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Install pinned toolchain
         run: rustup show
         working-directory: guion-video-creator

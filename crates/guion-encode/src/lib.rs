@@ -1,8 +1,25 @@
-//! `guion-encode` — numbered PPM frames → vertical `.mp4` (M2).
+//! `guion-encode` — cuadros → `.mp4` vertical, listo para el teléfono (M2, R-0005).
+//!
+//! Tres entradas, una sola salida de video ([`ffmpeg::VIDEO`]: BT.709
+//! etiquetado y `+faststart`):
+//!
+//! - [`encode_ppm_dir`]: PPM numerados en disco, con audio opcional;
+//! - [`Encoder`]: cuadros RGB en memoria, uno por uno;
+//! - [`encode_ordered`]: cuadros calculados en varios hilos, escritos en orden.
+//!
+//! Y el audio al nivel de las plataformas: [`mux_at_loudness`] (−14 LUFS,
+//! −1 dBTP) y [`measure`].
 
 mod error;
+pub mod ffmpeg;
+mod loudness;
+mod ordered;
+mod stream;
 
 pub use error::EncodeError;
+pub use loudness::{measure, mux_at_loudness, Loudness, LoudnessTarget};
+pub use ordered::encode_ordered;
+pub use stream::{Encoder, VideoSpec};
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -34,18 +51,17 @@ pub fn preset_for(format: Format) -> VerticalPreset {
 }
 
 /// Encode `frame_%05d.ppm` in `frames_dir` to `out_mp4` at `fps`.
+///
+/// El video sale con las banderas de [`ffmpeg::VIDEO`] (BT.709 etiquetado y
+/// `+faststart`, R-0005 AC1–AC3), con o sin audio.
 pub fn encode_ppm_dir(
     frames_dir: &Path,
     fps: f64,
     out_mp4: &Path,
     audio: Option<&Path>,
 ) -> Result<(), EncodeError> {
-    if !(fps.is_finite() && fps > 0.0) {
-        return Err(EncodeError::InvalidInput(
-            "fps debe ser finito y > 0".into(),
-        ));
-    }
-    let ffmpeg = which_ffmpeg()?;
+    ffmpeg::check_fps(fps)?;
+    let ff = ffmpeg::ffmpeg()?;
     let pattern = frames_dir.join("frame_%05d.ppm");
     if !frames_dir.join("frame_00000.ppm").exists() {
         return Err(EncodeError::InvalidInput(format!(
@@ -54,35 +70,18 @@ pub fn encode_ppm_dir(
         )));
     }
 
-    let mut cmd = Command::new(&ffmpeg);
+    let mut cmd = Command::new(&ff);
     cmd.args(["-y", "-nostdin", "-framerate"])
-        .arg(format_fps(fps))
+        .arg(ffmpeg::fps_arg(fps))
         .args(["-i"])
         .arg(&pattern);
-
+    let audio = audio.filter(|wav| wav.exists());
     if let Some(wav) = audio {
-        if wav.exists() {
-            cmd.args(["-i"]).arg(wav);
-            cmd.args([
-                "-c:v",
-                "libx264",
-                "-pix_fmt",
-                "yuv420p",
-                "-crf",
-                "18",
-                "-c:a",
-                "aac",
-                "-b:a",
-                "160k",
-                "-shortest",
-                "-movflags",
-                "+faststart",
-            ]);
-        } else {
-            cmd.args(["-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18"]);
-        }
-    } else {
-        cmd.args(["-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18"]);
+        cmd.args(["-i"]).arg(wav);
+    }
+    cmd.args(ffmpeg::VIDEO);
+    if audio.is_some() {
+        cmd.args(["-c:a", "aac", "-b:a", "160k", "-shortest"]);
     }
 
     if let Some(parent) = out_mp4.parent() {
@@ -104,23 +103,4 @@ pub fn encode_ppm_dir(
 /// Default output mp4 beside frames: `out/<slug>/reel.mp4`.
 pub fn default_mp4(slug: &str) -> PathBuf {
     PathBuf::from("out").join(slug).join("reel.mp4")
-}
-
-fn which_ffmpeg() -> Result<String, EncodeError> {
-    let out = Command::new("which")
-        .arg("ffmpeg")
-        .output()
-        .map_err(EncodeError::Io)?;
-    if !out.status.success() {
-        return Err(EncodeError::NoFfmpeg);
-    }
-    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
-}
-
-fn format_fps(fps: f64) -> String {
-    if (fps - fps.round()).abs() < 1e-9 {
-        format!("{}", fps as i64)
-    } else {
-        format!("{fps}")
-    }
 }
