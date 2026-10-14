@@ -1,0 +1,16 @@
+[package]
+name = "guion-publish"
+version = "0.1.0"
+description = "Publishing exports with the platform's rules checked: an Instagram caption.md → caption.txt + alt-text.txt (R-0010)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+# R-0010: std only. A creator's publishing step reads text and writes text; it
+# must not compile a renderer to do it.
+[dependencies]
+
+[[bin]]
+name = "caption"
+path = "src/bin/caption.rs"

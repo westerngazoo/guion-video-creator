@@ -1,0 +1,25 @@
+[package]
+name = "guion-reel"
+version = "0.1.0"
+description = "The reel studio: a pure cuadro(t) → MP4 in parallel, review frames, contact sheet, events.json, and the narration clock (R-0009)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+# R-0009: a studio for scenes written as code (a pure function of time that
+# returns motoreel primitives), not as a screenplay. It does not depend on
+# guion-core's schema or on guion-assemble: a studio with its own scene format
+# (the rotorf-sico motor) uses it directly, and so can any creator who writes
+# scenes in Rust.
+[dependencies]
+# The parallel, ordered MP4 and ffmpeg discovery (R-0005).
+guion-encode = { workspace = true }
+# The primitives and the CPU raster (`PpmSink`), and the faces it draws text with.
+motoreel = { workspace = true }
+motoreel-typeset = { workspace = true }
+# The narration timeline (`voz.json`). `float_roundtrip`: times parse to the
+# correctly rounded f64, as `str::parse` does, so a scene sees the same instants
+# the studio's own reader gave it (AC8).
+serde = { workspace = true }
+serde_json = { workspace = true, features = ["float_roundtrip"] }

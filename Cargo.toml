@@ -12,6 +12,8 @@ members = [
     "crates/guion-assemble",
     "crates/guion-encode",
     "crates/guion-audio",
+    "crates/guion-reel",
+    "crates/guion-publish",
     "crates/guion-fisica",
     "crates/guion-cli",
     "apps/guion-studio",
@@ -34,6 +36,7 @@ repository = "https://github.com/westerngazoo/guion-video-creator"
 garust = { path = "../garust" }
 mecanica = { path = "../physics-lab/mecanica" }
 motoreel = { path = "../motoreel/crates/motoreel" }
+motoreel-typeset = { path = "../motoreel/crates/motoreel-typeset" }
 
 guion-core = { path = "crates/guion-core" }
 guion-models = { path = "crates/guion-models" }
@@ -42,6 +45,8 @@ guion-brand = { path = "crates/guion-brand" }
 guion-assemble = { path = "crates/guion-assemble" }
 guion-encode = { path = "crates/guion-encode" }
 guion-audio = { path = "crates/guion-audio" }
+guion-reel = { path = "crates/guion-reel" }
+guion-publish = { path = "crates/guion-publish" }
 guion-fisica = { path = "crates/guion-fisica" }
 
 serde = { version = "1", features = ["derive"] }
