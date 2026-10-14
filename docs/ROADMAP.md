@@ -93,6 +93,12 @@ measured times of every line and sentence, with no screenplay (the screenplay
 API moves behind the default feature `screenplay`). First consumer: the
 `rotorf-sico` studio's `narra`.
 
+[R-0008](requirements/0008-synthesis.md) (in review) adds `guion-audio::synth`:
+generic, deterministic synthesis for a reel's sound (oscillators, envelopes,
+seeded noise per sound, zero-phase filters, a level-stable room, constant-power
+pan, buses, ducking under the voice, 16-bit stereo WAV). First consumer: the
+`rotorf-sico` studio's `sonido` (its reels' sound as data, `sonido.toml`).
+
 ## M3 — Brand
 
 `guion-brand` + `themes/fbf`: port the físico buen físico identity (palettes,

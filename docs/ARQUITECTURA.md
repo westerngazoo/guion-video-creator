@@ -39,6 +39,7 @@ de las dos le está mintiendo a alguien que paga.
 | **Render** | — | **falta** (fase 3) |
 | **Narración** — Piper determinista, líneas en cola, tiempos por frase | `guion-video-creator/crates/guion-audio/src/lines.rs` (R-0007) | **en revisión** · 7 afirmaciones · la usa el `narra` de rotorf-sico |
 | **Subtítulos** | `rotorf-sico/mathematicus/motor/src/voz.rs` | en el estudio, todavía no aquí |
+| **Síntesis del sonido** — osciladores, ruido con semilla, filtros, sala estable, buses, agacharse bajo la voz, WAV estéreo | `guion-video-creator/crates/guion-audio/src/synth/` (R-0008) | **en revisión** · 12 afirmaciones · la usa el `sonido` de rotorf-sico |
 
 **247 afirmaciones corriendo** entre las capas construidas (157 `garust-geo`,
 48 `garust-physics`, 35 `mecanica`, 7 `guion-comparacion`), y entre ellas la

@@ -12,12 +12,19 @@
 //!   clock. Lines are spoken one after another with fixed pauses, and the
 //!   result reports when each line, and each sentence inside it, starts and
 //!   ends, measured on the samples. No screenplay needed.
+//!
+//! And one way out for a reel's sound (R-0008, [`synth`]): generic,
+//! deterministic synthesis (oscillators, envelopes, seeded noise, filters, a
+//! level-stable room, pan, buses, ducking under the voice) to a 16-bit stereo
+//! WAV. A studio keeps its own instruments and builds them from these.
 
 mod engine;
 mod error;
 mod lines;
 mod pcm;
 mod wav;
+
+pub mod synth;
 
 #[cfg(feature = "screenplay")]
 mod bed;
@@ -32,7 +39,7 @@ pub use lines::{
     narrate_lines, sentence_times, split_sentences, Line, Narration, Pacing, Sentence, SilenceRule,
     TimedLine,
 };
-pub use pcm::{read_wav_pcm16, write_wav_pcm16, Pcm16};
+pub use pcm::{read_wav_pcm16, write_wav, write_wav_pcm16, Pcm16};
 pub use wav::{mix_buffers, WavBuffer, SAMPLE_RATE};
 
 #[cfg(feature = "screenplay")]
