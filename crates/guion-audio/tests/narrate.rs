@@ -1,3 +1,5 @@
+#![cfg(feature = "screenplay")]
+
 use guion_audio::{
     fit_to_window, parse_script, timeline_duration, NarrationEngine, ScaffoldEngine,
 };

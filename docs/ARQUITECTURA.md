@@ -37,7 +37,8 @@ de las dos le está mintiendo a alguien que paga.
 | **`Comparacion`** — lo que es un reel | `guion-video-creator/crates/guion-comparacion/` | **hecho** · 5 afirmaciones |
 | **Guion TOML** — lo que escribe el creador | `guion-video-creator/guiones/` | **hecho** · un caso |
 | **Render** | — | **falta** (fase 3) |
-| **Narración y subtítulos** | `westerngazoo/guion` → `guion-narrate` | existe, **sin conectar** |
+| **Narración** — Piper determinista, líneas en cola, tiempos por frase | `guion-video-creator/crates/guion-audio/src/lines.rs` (R-0007) | **en revisión** · 7 afirmaciones · la usa el `narra` de rotorf-sico |
+| **Subtítulos** | `rotorf-sico/mathematicus/motor/src/voz.rs` | en el estudio, todavía no aquí |
 
 **247 afirmaciones corriendo** entre las capas construidas (157 `garust-geo`,
 48 `garust-physics`, 35 `mecanica`, 7 `guion-comparacion`), y entre ellas la

@@ -87,6 +87,12 @@ presets (`vertical`, `square`, `wide`) carrying safe-area metadata. Earmarked as
 tagged colour and `+faststart` on every output, an in-memory `Encoder`, ordered
 parallel encoding (byte-identical to serial) and audio at −14 LUFS / −1 dBTP.
 
+[R-0007](requirements/0007-cue-list-narration.md) (in review) adds narration
+from a cue list: deterministic Piper, lines laid out with fixed pauses, and the
+measured times of every line and sentence, with no screenplay (the screenplay
+API moves behind the default feature `screenplay`). First consumer: the
+`rotorf-sico` studio's `narra`.
+
 ## M3 — Brand
 
 `guion-brand` + `themes/fbf`: port the físico buen físico identity (palettes,
