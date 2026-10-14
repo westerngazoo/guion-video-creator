@@ -1383,6 +1383,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "guion-publish"
+version = "0.1.0"
+
+[[package]]
+name = "guion-reel"
+version = "0.1.0"
+dependencies = [
+ "guion-encode",
+ "motoreel",
+ "motoreel-typeset",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "guion-render"
 version = "0.1.0"
 dependencies = [

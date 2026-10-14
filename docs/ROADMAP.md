@@ -99,6 +99,19 @@ seeded noise per sound, zero-phase filters, a level-stable room, constant-power
 pan, buses, ducking under the voice, 16-bit stereo WAV). First consumer: the
 `rotorf-sico` studio's `sonido` (its reels' sound as data, `sonido.toml`).
 
+[R-0009](requirements/0009-reel-studio.md) (in review) adds `guion-reel`, the
+studio for scenes written as code (a pure `frame(t)` of motoreel primitives):
+the MP4 in parallel and byte-identical to one thread, review frames, a contact
+sheet labelled with the events, one clock file (`events.json`) for the sound,
+the narration timeline (`voz.json`) and subtitle layout measured by the
+caller. First consumer: the `rotorf-sico` motor (its `estudio` and `voz`).
+
+[R-0010](requirements/0010-instagram-export.md) (in review) adds
+`guion-publish`: a post's `caption.md` → the `caption.txt` and `alt-text.txt`
+a person pastes in Instagram, refusing more than 5 hashtags or more than 2 200
+characters before writing anything. Meant for `rotorf-sico`'s
+`publicar.sh`, which still runs its own `caption` (byte-identical on its 20 captions).
+
 ## M3 — Brand
 
 `guion-brand` + `themes/fbf`: port the físico buen físico identity (palettes,
