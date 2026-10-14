@@ -7,8 +7,19 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
+# R-0007: the cue-list narration (`lines`, `pcm`, the engines) needs no
+# screenplay. A studio that keeps its own scene format (the rotorf-sico motor)
+# builds with `default-features = false` and does not compile the assembler
+# (motoreel, garust, guion-motion) a second time. The CLI and the studio app
+# keep the default.
+[features]
+default = ["screenplay"]
+screenplay = ["dep:guion-assemble"]
+
 [dependencies]
-guion-assemble = { workspace = true }
+guion-assemble = { workspace = true, optional = true }
 guion-core = { workspace = true }
+# One rule for finding ffmpeg (GUION_FFMPEG or PATH): the resampling uses it too.
+guion-encode = { workspace = true }
 
 [dev-dependencies]
