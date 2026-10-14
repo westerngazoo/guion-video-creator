@@ -70,20 +70,43 @@ pub fn read_wav_pcm16(bytes: &[u8]) -> Result<Pcm16, AudioError> {
 /// Writes mono 16-bit PCM with the canonical 44-byte header. No partial
 /// output: the file is written beside `path` and renamed on success.
 pub fn write_wav_pcm16(path: &Path, sample_rate: u32, samples: &[i16]) -> Result<(), AudioError> {
+    write_wav_channels(path, sample_rate, 1, samples)
+}
+
+/// Writes any [`Pcm16`] (interleaved, any channel count) with the canonical
+/// 44-byte header: the stereo output of a synthesized bed (R-0008 AC10).
+pub fn write_wav(path: &Path, pcm: &Pcm16) -> Result<(), AudioError> {
+    if pcm.channels == 0 || !pcm.samples.len().is_multiple_of(pcm.channels as usize) {
+        return Err(AudioError::Wav(format!(
+            "{} muestras no se reparten en {} canales",
+            pcm.samples.len(),
+            pcm.channels
+        )));
+    }
+    write_wav_channels(path, pcm.sample_rate, pcm.channels, &pcm.samples)
+}
+
+fn write_wav_channels(
+    path: &Path,
+    sample_rate: u32,
+    channels: u16,
+    samples: &[i16],
+) -> Result<(), AudioError> {
     if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
         std::fs::create_dir_all(parent)?;
     }
     let data_len = (samples.len() * 2) as u32;
+    let block = 2 * channels;
     let mut out = Vec::with_capacity(44 + samples.len() * 2);
     out.extend_from_slice(b"RIFF");
     out.extend_from_slice(&(36 + data_len).to_le_bytes());
     out.extend_from_slice(b"WAVEfmt ");
     out.extend_from_slice(&16u32.to_le_bytes());
     out.extend_from_slice(&1u16.to_le_bytes()); // PCM
-    out.extend_from_slice(&1u16.to_le_bytes()); // mono
+    out.extend_from_slice(&channels.to_le_bytes());
     out.extend_from_slice(&sample_rate.to_le_bytes());
-    out.extend_from_slice(&(sample_rate * 2).to_le_bytes());
-    out.extend_from_slice(&2u16.to_le_bytes());
+    out.extend_from_slice(&(sample_rate * block as u32).to_le_bytes());
+    out.extend_from_slice(&block.to_le_bytes());
     out.extend_from_slice(&16u16.to_le_bytes());
     out.extend_from_slice(b"data");
     out.extend_from_slice(&data_len.to_le_bytes());

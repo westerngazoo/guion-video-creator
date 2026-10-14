@@ -25,6 +25,12 @@ pub enum AudioError {
     Wav(String),
     /// ffmpeg was not found or failed while resampling.
     Resample(String),
+    /// A synthesis parameter out of range (R-0008 AC12): names the
+    /// parameter (`room.t60`, `duck.ramp`) and what it must be.
+    InvalidSynth {
+        what: String,
+        message: String,
+    },
 }
 
 impl fmt::Display for AudioError {
@@ -52,6 +58,7 @@ impl fmt::Display for AudioError {
             ),
             AudioError::Wav(msg) => write!(f, "wav: {msg}"),
             AudioError::Resample(msg) => write!(f, "remuestreo (ffmpeg): {msg}"),
+            AudioError::InvalidSynth { what, message } => write!(f, "síntesis, {what}: {message}"),
         }
     }
 }
