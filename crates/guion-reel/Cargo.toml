@@ -23,3 +23,10 @@ motoreel-typeset = { workspace = true }
 # the studio's own reader gave it (AC8).
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["float_roundtrip"] }
+# R-0012, the gate: the brand profile is TOML; the caption rules are
+# guion-publish's (the same export the post is published with); subtitle
+# widths in an em size need the face's unitsPerEm (ab_glyph, the version
+# motoreel-typeset already uses: no new crate in the lock).
+toml = { workspace = true }
+guion-publish = { workspace = true }
+ab_glyph = "0.2"
