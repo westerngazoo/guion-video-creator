@@ -19,3 +19,8 @@ guion-core = { workspace = true }
 guion-encode = { workspace = true }
 guion-motion = { workspace = true }
 motoreel = { workspace = true }
+# R-0012: the narrated reel's pipeline and its gate.
+guion-publish = { workspace = true }
+guion-reel = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }

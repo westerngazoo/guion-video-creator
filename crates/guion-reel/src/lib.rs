@@ -16,7 +16,9 @@
 //!   [`Command`] to pick among them from a command line;
 //! - [`Narration`]: the voice's timeline (`voz.json`), the clock of a
 //!   narrated reel (AC5);
-//! - [`subtitle`]: subtitle layout, measured by the caller (AC6).
+//! - [`subtitle`]: subtitle layout, measured by the caller (AC6);
+//! - [`gate`]: the automatic gate of a narrated reel, against a brand
+//!   profile the brand writes (R-0012).
 //!
 //! Nothing here belongs to a brand (AC7): faces, colours, sizes and the
 //! folder layout are the caller's.
@@ -25,6 +27,7 @@ pub mod canvas;
 pub mod clock;
 pub mod ease;
 pub mod error;
+pub mod gate;
 mod json;
 pub mod narration;
 pub mod studio;
