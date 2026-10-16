@@ -53,8 +53,10 @@ pub fn read_wav_pcm16(bytes: &[u8]) -> Result<Pcm16, AudioError> {
                 )));
             }
             let samples = bytes[body..end]
-                .chunks_exact(2)
-                .map(|c| i16::from_le_bytes([c[0], c[1]]))
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|c| i16::from_le_bytes(*c))
                 .collect();
             return Ok(Pcm16 {
                 sample_rate,
