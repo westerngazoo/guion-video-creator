@@ -99,7 +99,7 @@ not in a studio:
   the platform's `libm`, so another libc can move the last bit. The md5 of a
   delivered sound belongs with its platform.
 - Not here: instruments (a drum, a bell, a house drone), a studio's sound
-  design format (rotorf-sico's `sonido.toml`), loudness (R-0005 owns
+  design format (now R-0011, `score`), loudness (R-0005 owns
   −14 LUFS), live or streaming audio (the zero-phase filters see the whole
   signal).
 - Output is **not** sample-identical to the numpy tools it replaces: the

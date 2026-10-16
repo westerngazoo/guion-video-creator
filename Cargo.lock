@@ -1288,6 +1288,9 @@ dependencies = [
  "guion-assemble",
  "guion-core",
  "guion-encode",
+ "serde",
+ "serde_json",
+ "toml 0.8.23",
 ]
 
 [[package]]

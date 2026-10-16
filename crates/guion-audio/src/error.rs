@@ -31,6 +31,9 @@ pub enum AudioError {
         what: String,
         message: String,
     },
+    /// A score (R-0011) that cannot be read or played: the message names the
+    /// file and the table (`sonido.toml: [[golpe]] 3 («qed»): …`).
+    InvalidScore(String),
 }
 
 impl fmt::Display for AudioError {
@@ -59,6 +62,7 @@ impl fmt::Display for AudioError {
             AudioError::Wav(msg) => write!(f, "wav: {msg}"),
             AudioError::Resample(msg) => write!(f, "remuestreo (ffmpeg): {msg}"),
             AudioError::InvalidSynth { what, message } => write!(f, "síntesis, {what}: {message}"),
+            AudioError::InvalidScore(msg) => write!(f, "{msg}"),
         }
     }
 }
