@@ -17,6 +17,10 @@
 //! deterministic synthesis (oscillators, envelopes, seeded noise, filters, a
 //! level-stable room, pan, buses, ducking under the voice) to a 16-bit stereo
 //! WAV. A studio keeps its own instruments and builds them from these.
+//!
+//! And the sound design as data (R-0011, feature `score`, [`score`]):
+//! `sonido.toml` + `eventos.json` (+ `voz.wav`, `voz.json`) → `audio.wav`,
+//! with the instruments registered by the caller.
 
 mod engine;
 mod error;
@@ -25,6 +29,9 @@ mod pcm;
 mod wav;
 
 pub mod synth;
+
+#[cfg(feature = "score")]
+pub mod score;
 
 #[cfg(feature = "screenplay")]
 mod bed;
