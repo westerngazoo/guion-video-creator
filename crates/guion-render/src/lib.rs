@@ -62,6 +62,7 @@ fn trazo(color: Rgb, ancho: f64) -> Style {
         stroke: color,
         width: ancho,
         alpha: 1.0,
+        fill: None,
     }
 }
 

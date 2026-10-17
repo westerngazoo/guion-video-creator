@@ -26,7 +26,7 @@ A requirement can be **built green while its document is still `Discussing`**
 |-----------|-------|-------|
 | **M0** | Foundation — repo, methodology, adopt the RFC | **in progress** (this repo) |
 | **M1** | First screenplay — schema → assemble → frames | **in progress** (core built) |
-| M2 | Delivery — ffmpeg + audio + vertical presets | designed |
+| M2 | Delivery — ffmpeg + audio + vertical presets | in progress ([R-0005](requirements/0005-delivery.md)) |
 | M3 | Brand — theme, LUTs, fonts, post-fx | designed |
 | M4 | Physics motion — the `Model` × `Source` split | designed |
 | M5 | Creators — `new`, templates, `models`, `doctor` | designed |
@@ -82,6 +82,35 @@ vertical slice is provable without the delivery layer.
 Reproduces and generalizes the current ffmpeg + audio flow, with named format
 presets (`vertical`, `square`, `wide`) carrying safe-area metadata. Earmarked as
 `R-0005+`. Designed in [RFC-0001 §6](RFC-0001-guion-framework.md#6-rendering--delivery-pipeline-guion-encode).
+
+[R-0005](requirements/0005-delivery.md) ships the delivery core: BT.709
+tagged colour and `+faststart` on every output, an in-memory `Encoder`, ordered
+parallel encoding (byte-identical to serial) and audio at −14 LUFS / −1 dBTP.
+
+[R-0007](requirements/0007-cue-list-narration.md) (in review) adds narration
+from a cue list: deterministic Piper, lines laid out with fixed pauses, and the
+measured times of every line and sentence, with no screenplay (the screenplay
+API moves behind the default feature `screenplay`). First consumer: the
+`rotorf-sico` studio's `narra`.
+
+[R-0008](requirements/0008-synthesis.md) (in review) adds `guion-audio::synth`:
+generic, deterministic synthesis for a reel's sound (oscillators, envelopes,
+seeded noise per sound, zero-phase filters, a level-stable room, constant-power
+pan, buses, ducking under the voice, 16-bit stereo WAV). First consumer: the
+`rotorf-sico` studio's `sonido` (its reels' sound as data, `sonido.toml`).
+
+[R-0009](requirements/0009-reel-studio.md) (in review) adds `guion-reel`, the
+studio for scenes written as code (a pure `frame(t)` of motoreel primitives):
+the MP4 in parallel and byte-identical to one thread, review frames, a contact
+sheet labelled with the events, one clock file (`events.json`) for the sound,
+the narration timeline (`voz.json`) and subtitle layout measured by the
+caller. First consumer: the `rotorf-sico` motor (its `estudio` and `voz`).
+
+[R-0010](requirements/0010-instagram-export.md) (in review) adds
+`guion-publish`: a post's `caption.md` → the `caption.txt` and `alt-text.txt`
+a person pastes in Instagram, refusing more than 5 hashtags or more than 2 200
+characters before writing anything. Meant for `rotorf-sico`'s
+`publicar.sh`, which still runs its own `caption` (byte-identical on its 20 captions).
 
 ## M3 — Brand
 

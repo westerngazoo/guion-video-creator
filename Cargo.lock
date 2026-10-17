@@ -1287,6 +1287,10 @@ version = "0.1.0"
 dependencies = [
  "guion-assemble",
  "guion-core",
+ "guion-encode",
+ "serde",
+ "serde_json",
+ "toml 0.8.23",
 ]
 
 [[package]]
@@ -1310,8 +1314,12 @@ dependencies = [
  "guion-core",
  "guion-encode",
  "guion-motion",
+ "guion-publish",
+ "guion-reel",
  "guion-render",
  "motoreel",
+ "serde",
+ "toml 0.8.23",
 ]
 
 [[package]]
@@ -1381,6 +1389,24 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+]
+
+[[package]]
+name = "guion-publish"
+version = "0.1.0"
+
+[[package]]
+name = "guion-reel"
+version = "0.1.0"
+dependencies = [
+ "ab_glyph",
+ "guion-encode",
+ "guion-publish",
+ "motoreel",
+ "motoreel-typeset",
+ "serde",
+ "serde_json",
+ "toml 0.8.23",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-//! `guion` — check and render screenplays (R-0003).
+//! `guion` — check and render screenplays (R-0003); make and gate narrated reels (R-0012).
 
 use std::env;
 use std::path::PathBuf;
@@ -9,6 +9,7 @@ mod comparacion;
 mod encode;
 mod narrate;
 mod path;
+mod reel;
 mod render;
 
 fn main() -> ExitCode {
@@ -20,7 +21,9 @@ fn main() -> ExitCode {
   guion check <screenplay.toml>\n\
   guion render <screenplay.toml> [--out DIR] [--fps N] [--no-brand]\n\
   guion narrate <screenplay.toml> [--out WAV] [--engine scaffold|piper] [--piper-model PATH] [--with-bed]\n\
-  guion encode <screenplay.toml> [--out FILE.mp4] [--frames DIR] [--fps N] [--no-brand] [--narrate]"
+  guion encode <screenplay.toml> [--out FILE.mp4] [--frames DIR] [--fps N] [--no-brand] [--narrate]\n\
+  guion reel <post> [--twice] [--no-check]\n\
+  guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]"
             );
             ExitCode::SUCCESS
         }
@@ -28,6 +31,7 @@ fn main() -> ExitCode {
         Some("render") => render::run(&args[2..]),
         Some("narrate") => narrate::run(&args[2..]),
         Some("encode") => encode::run(&args[2..]),
+        Some("reel") => reel::run(&args[2..]),
         Some(cmd) => {
             eprintln!("comando desconocido: {cmd}");
             ExitCode::from(2)

@@ -7,8 +7,33 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
+# R-0007: the cue-list narration (`lines`, `pcm`, the engines) needs no
+# screenplay. A studio that keeps its own scene format (the rotorf-sico motor)
+# builds with `default-features = false` and does not compile the assembler
+# (motoreel, garust, guion-motion) a second time. The CLI and the studio app
+# keep the default.
+[features]
+default = ["screenplay"]
+screenplay = ["dep:guion-assemble"]
+# R-0011: the data-driven sound design (`score`): `sonido.toml` + `eventos.json`
+# (+ `voz.wav`, `voz.json`) → `audio.wav`, with the instruments supplied by the
+# caller. Optional, so the synthesis alone (R-0008 AC11) still adds no crate.
+score = ["dep:toml", "dep:serde", "dep:serde_json"]
+
 [dependencies]
-guion-assemble = { workspace = true }
+guion-assemble = { workspace = true, optional = true }
 guion-core = { workspace = true }
+# One rule for finding ffmpeg (GUION_FFMPEG or PATH): the resampling uses it too.
+guion-encode = { workspace = true }
+# `score` only. `float_roundtrip`: the times in eventos.json and voz.json parse to
+# the correctly rounded f64, as `str::parse` does, so every brand that reads the
+# same file lands on the same sample.
+toml = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true, features = ["float_roundtrip"] }
 
 [dev-dependencies]
+
+[[test]]
+name = "score"
+required-features = ["score"]

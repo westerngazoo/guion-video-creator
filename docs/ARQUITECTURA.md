@@ -37,7 +37,11 @@ de las dos le está mintiendo a alguien que paga.
 | **`Comparacion`** — lo que es un reel | `guion-video-creator/crates/guion-comparacion/` | **hecho** · 5 afirmaciones |
 | **Guion TOML** — lo que escribe el creador | `guion-video-creator/guiones/` | **hecho** · un caso |
 | **Render** | — | **falta** (fase 3) |
-| **Narración y subtítulos** | `westerngazoo/guion` → `guion-narrate` | existe, **sin conectar** |
+| **Narración** — Piper determinista, líneas en cola, tiempos por frase | `guion-video-creator/crates/guion-audio/src/lines.rs` (R-0007) | **en revisión** · 7 afirmaciones · la usa el `narra` de rotorf-sico |
+| **El estudio de escenas en código** — `cuadro(t)` → MP4 en paralelo, cuadros sueltos, hoja de contacto, `events.json` | `guion-video-creator/crates/guion-reel/src/studio.rs` (R-0009) | **en revisión** · 13 afirmaciones · lo usa el motor de rotorf-sico (`--features guion-reel`) |
+| **El reloj de la voz y los subtítulos** — `voz.json`, `at`/`after`, el subtítulo activo, el corte en renglones | `guion-video-creator/crates/guion-reel/src/{narration,subtitle}.rs` (R-0009) | **en revisión** · 6 afirmaciones · el dibujo (caras, colores) se queda en cada estudio |
+| **La exportación a Instagram** — `caption.md` → `caption.txt` + `alt-text.txt`, 5 hashtags y 2 200 caracteres como tope | `guion-video-creator/crates/guion-publish/src/instagram.rs` (R-0010) | **en revisión** · 9 afirmaciones · los mismos bytes que el `caption` de rotorf-sico en sus 20 `caption.md` |
+| **Síntesis del sonido** — osciladores, ruido con semilla, filtros, sala estable, buses, agacharse bajo la voz, WAV estéreo | `guion-video-creator/crates/guion-audio/src/synth/` (R-0008) | **en revisión** · 12 afirmaciones · la usa el `sonido` de rotorf-sico |
 
 **247 afirmaciones corriendo** entre las capas construidas (157 `garust-geo`,
 48 `garust-physics`, 35 `mecanica`, 7 `guion-comparacion`), y entre ellas la
