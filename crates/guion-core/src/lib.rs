@@ -22,12 +22,14 @@
 //! an alias for [`validate`]; [`load_and_check`] chains both.
 
 pub mod bind;
+pub mod dialecto;
 pub mod error;
 pub mod load;
 pub mod model;
 pub mod validate;
 
 pub use bind::{SymbolTable, Token};
+pub use dialecto::{dialecto, Dialecto, NoSeSabe};
 pub use error::{GuionError, LoadError, ValidateError};
 pub use load::{from_str, load, to_string, Syntax};
 pub use model::{
