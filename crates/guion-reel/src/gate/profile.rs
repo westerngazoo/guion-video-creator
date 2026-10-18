@@ -176,11 +176,17 @@ pub struct MotionSpec {
     /// `strong` (0–255)…
     #[serde(default = "strong")]
     pub strong: f32,
-    /// …or at least `min_blocks` blocks changed more than `delta`.
+    /// …or at least `min_blocks` blocks changed more than `delta`, as long
+    /// as one of them changed more than `noise`.
     #[serde(default = "delta")]
     pub delta: f32,
     #[serde(default = "min_blocks")]
     pub min_blocks: usize,
+    /// The codec's noise floor in block-mean levels (0–255): how far H.264
+    /// re-quantization (P-frame drift, a keyframe) moves the 8 × 8 means of
+    /// a still picture. A change no block of which passes it is the codec.
+    #[serde(default = "noise")]
+    pub noise: f32,
 }
 
 fn strong() -> f32 {
@@ -191,6 +197,9 @@ fn delta() -> f32 {
 }
 fn min_blocks() -> usize {
     30
+}
+fn noise() -> f32 {
+    8.0
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

@@ -69,8 +69,14 @@ cover (`<bin> <frames_flag> <cover>`) → the gate on `<name>-audio.mp4`.
 
 One ffmpeg decode to RGB24 (`scale=in_color_matrix=bt709:in_range=tv`).
 Every frame: 8×8 block means of luma outside the subtitle band, compared
-with the last moving frame (moved: one block over `strong`, or
-`min_blocks` over `delta`). Every `stride`-th frame: each pixel classified
+with the last moving frame (moved: one block over `strong` (24), or
+`min_blocks` (30) over `delta` (4) with at least one of them over `noise`
+(8), the codec's floor). The floor is what keeps H.264 out of a still
+card: P-frame drift and a keyframe's re-quantization move a few dozen
+block means by up to ~6, scattered, and never further however long the
+card holds; a real change (a fade, a slow drift, a small object) keeps
+adding up against the anchor and passes 8 a frame or two later, so the
+floor delays a slow change, it never hides one. Every `stride`-th frame: each pixel classified
 by a LUT (nearest token within `tolerance`, else none); role regions on a
 4-px grid merged within `merge` px; ink outside the safe area; anything
 non-background in the band outside the subtitle's measured box (centered
@@ -100,3 +106,4 @@ See R-0012 §6.
 ## Changelog
 
 - 2026-10-16 — created with R-0012.
+- 2026-10-18 — motion: the codec floor `noise` on the `delta` tier (a keyframe on a still closing card no longer ends the hold).

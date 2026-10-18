@@ -58,7 +58,9 @@ circular cause, a physically false drawing) stays with the reviewers.
   but background is in the subtitle band; a formula region (not taller than
   `formula.max_height`) that crosses its band fails.
 - **AC5. Motion.** Every frame is compared, by 8×8 block means outside the
-  subtitle band, with the last frame that moved; a still stretch with more
+  subtitle band, with the last frame that moved (one block over `strong`,
+  or `min_blocks` over `delta` with one past the codec floor `noise`); a
+  still stretch with more
   than `max_still_with_voice` s of voice fails, and the closing hold (the
   last change to the end) must last `closing_hold` s or more. The MP4 has
   the frames `eventos.json` says and lasts no more than `max_duration`.
@@ -107,8 +109,10 @@ circular cause, a physically false drawing) stays with the reviewers.
 | 2026-10-16 | A focus region counts from `focus_min_area`; layout misses shorter than `safe.min_duration` are passing sweeps | A formula and its named symbols are one focus by the brand's own design (Rotor §11); an entrance zooming through the margin in one frame is motion, not layout (*euler* 53.0 s, 54.7 s) |
 | 2026-10-16 | Short gaps holding a beat event are exempt from the pumping check | Rotor's designer allowed the bed up only at beat changes (`unir = 0.5`); the profile names the event prefix |
 | 2026-10-16 | Pumping is the gap's level relative to the lines, with the limit halfway between the brand's ducked and released bed (the profile says which) | Subtracting `voz.wav` from the mix to measure the bed *under* the voice was tried: the fit's residual (the voice's room, the codec) sits at −28 to −30 dB, above the bed it should reveal. The level in the gap, where the voice is silent, is measurable; the brand's bed and duck values say where ducked and released sit |
+| 2026-10-18 | The `delta` tier needs one block past a codec floor, `noise` = 8 levels | Measured on *pitagoras* at 2504 frames: against the frame where the closing medallion finished, P-frame drift left 27 blocks over 4 at f2499 and the keyframe at f2500 re-quantized the card to 43 (largest 5.80), so the old rule saw motion and measured a 0.10 s hold (false FAIL). Codec error is bounded by the quantizer, real change is not: against the last moving frame a fade or drift keeps growing and passes 8 a frame or two later. A higher `delta` would also blunt the count; a second tier only vetoes changes that no block lifts out of the codec's range. On the 8 reels with an MP4, every check kept its PASS/FAIL |
 | 2026-10-16 | Narration bytes verified: `guion reel voice` reproduces `voz.wav` and `voz.json` of *frenar-y-girar* and *euler* (same md5 as `tools/narra.py`) | AC10 |
 
 ## Changelog
 
 - 2026-10-16 — created; realized by SPEC-0012 in the same change.
+- 2026-10-18 — AC5: the codec floor on the motion scan.
