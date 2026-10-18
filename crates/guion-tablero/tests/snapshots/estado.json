@@ -1,0 +1,120 @@
+{
+  "cuentas": [
+    {
+      "nombre": "Cuenta A",
+      "repo": "<RAIZ>",
+      "perfil": "marca/perfil.toml",
+      "plantilla": "plantillas/reel",
+      "conteo": {
+        "idea": 0,
+        "borrador": 0,
+        "revisión": 1,
+        "listo": 1,
+        "publicado": 1,
+        "sin estado": 0,
+        "legado": 1
+      },
+      "posts": [
+        {
+          "nombre": "dos",
+          "ruta": "posts/dos",
+          "titulo": "¿Y dos?",
+          "estado": "revisión",
+          "nota": "revisión — falta fisico",
+          "reel": true,
+          "narrado": true,
+          "check": {
+            "pass": false,
+            "total": 2,
+            "fallas": 1,
+            "lineas": [
+              "PASS sub-width     3 lines, widest 700 px ≤ 840",
+              "FAIL red           2 red regions @ 1.00 s (f30); 1.03 s (f31)"
+            ]
+          },
+          "video": "posts/dos/dos-audio.mp4",
+          "duracion": 42.5,
+          "hoja": null,
+          "publicar": null
+        },
+        {
+          "nombre": "tres",
+          "ruta": "posts/tres",
+          "titulo": "Tres",
+          "estado": "publicado",
+          "nota": "Publicado.",
+          "reel": false,
+          "narrado": false,
+          "check": null,
+          "video": "posts/tres/tres.mp4",
+          "duracion": 42.5,
+          "hoja": null,
+          "publicar": "publicar/nivel-0/tres"
+        },
+        {
+          "nombre": "uno",
+          "ruta": "posts/uno",
+          "titulo": "¿Por qué uno?",
+          "estado": "listo",
+          "nota": "listo (2026-10-01): todo bien",
+          "reel": true,
+          "narrado": true,
+          "check": {
+            "pass": true,
+            "total": 2,
+            "fallas": 0,
+            "lineas": [
+              "PASS sub-width     2 lines, widest 500 px ≤ 840",
+              "PASS loudness      -14.1 LUFS"
+            ]
+          },
+          "video": "posts/uno/uno-reel-audio.mp4",
+          "duracion": 42.5,
+          "hoja": "posts/uno/cuadros/hoja.png",
+          "publicar": "publicar/nivel-1/uno"
+        }
+      ]
+    },
+    {
+      "nombre": "Cuenta B",
+      "repo": "<RAIZ>",
+      "perfil": null,
+      "plantilla": null,
+      "conteo": {
+        "idea": 0,
+        "borrador": 0,
+        "revisión": 0,
+        "listo": 0,
+        "publicado": 0,
+        "sin estado": 1,
+        "legado": 1
+      },
+      "posts": [
+        {
+          "nombre": "cuatro",
+          "ruta": "b/posts/cuatro",
+          "titulo": "Cuatro",
+          "estado": null,
+          "nota": null,
+          "reel": false,
+          "narrado": false,
+          "check": null,
+          "video": null,
+          "duracion": null,
+          "hoja": null,
+          "publicar": null
+        }
+      ]
+    }
+  ],
+  "encargos": [
+    {
+      "repo": "<RAIZ>",
+      "id": "E-0001",
+      "fecha": "2026-10-17",
+      "cuenta": "Cuenta A",
+      "idea": "¿Por qué cinco?",
+      "estado": "pendiente"
+    }
+  ]
+}

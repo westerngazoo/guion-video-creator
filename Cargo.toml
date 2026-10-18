@@ -16,6 +16,8 @@ members = [
     "crates/guion-publish",
     "crates/guion-fisica",
     "crates/guion-cli",
+    # R-0013: el tablero de las cuentas (TUI y modo para agentes)
+    "crates/guion-tablero",
     "apps/guion-studio",
     "apps/guion-playground",
 ]
@@ -48,6 +50,7 @@ guion-audio = { path = "crates/guion-audio" }
 guion-reel = { path = "crates/guion-reel" }
 guion-publish = { path = "crates/guion-publish" }
 guion-fisica = { path = "crates/guion-fisica" }
+guion-tablero = { path = "crates/guion-tablero" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

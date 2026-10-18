@@ -280,6 +280,40 @@ fn ac6_el_audio_queda_a_menos_14_lufs() {
     );
 }
 
+/// AC6 (R-0013): la mezcla conserva todos los cuadros del video. Con
+/// `-shortest` y `-c:v copy`, un reel de 217 cuadros que acaba quieto salía
+/// con 213 (la compuerta de R-0012 lo vio en la plantilla de un post nuevo);
+/// con `-t` y la duración del video, los 217. Un video sintético chico no
+/// reproduce la pérdida: esta prueba cuida que la mezcla no corte ninguno.
+#[test]
+fn ac6_la_mezcla_conserva_todos_los_cuadros() {
+    let d = dir("ac6-cuadros");
+    let video = d.join("v.mp4");
+    // 60 cuadros que se mueven y 157 quietos: el cierre de un reel
+    let cuadros: Vec<Vec<u8>> = (0..217).map(|i| cuadro(i.min(60))).collect();
+    escribir(&video, &cuadros);
+    let wav = d.join("a.wav");
+    wav_con_golpes(&wav, 217.0 / 30.0);
+    // otro nombre que el de AC6: el temporal de la mezcla lleva el nombre de la salida
+    let out = d.join("cuadros.mp4");
+    mux_at_loudness(&video, &wav, &out, LoudnessTarget::REELS).unwrap();
+    let ff = guion_encode::ffmpeg::ffmpeg().unwrap();
+    let log = Command::new(ff)
+        .args(["-hide_banner", "-nostdin", "-i"])
+        .arg(&out)
+        .args(["-map", "0:v", "-f", "null", "-"])
+        .output()
+        .unwrap();
+    let log = String::from_utf8_lossy(&log.stderr);
+    let cuadros_salida: usize = log
+        .rsplit("frame=")
+        .next()
+        .and_then(|r| r.split_whitespace().next())
+        .and_then(|n| n.parse().ok())
+        .expect("ffmpeg cuenta los cuadros");
+    assert_eq!(cuadros_salida, 217, "la mezcla perdió cuadros");
+}
+
 /// AC7: cada error dice qué y dónde, y ninguno deja archivo.
 #[test]
 fn ac7_errores_con_nombre_y_sin_archivo() {
