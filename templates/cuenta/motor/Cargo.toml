@@ -1,0 +1,16 @@
+[package]
+name = "{%slug%}-motor"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Las escenas de los reels de {%nombre%}: una por post, sobre las primitivas neutras de guion-marca, que leen cuenta.toml."
+
+# guion-video-creator es un repo hermano (motoreel y garust, sus hermanos). Las
+# escenas dependen solo de guion-marca: trae guion-reel y motoreel re-exportados.
+[dependencies]
+guion-marca = { path = "{%guion_motor%}/crates/guion-marca" }
+
+# Un crate suelto: no es miembro del workspace de nadie.
+[workspace]
+
+# Las escenas: `guion reel nuevo` agrega una [[bin]] por post aquí abajo.

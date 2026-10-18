@@ -1,5 +1,5 @@
 //! `guion` — check and render screenplays (R-0003); make and gate narrated reels (R-0012);
-//! the accounts dashboard and new posts from a template (R-0013).
+//! the accounts dashboard and new posts from a template (R-0013); new accounts (R-0014).
 
 use std::env;
 use std::path::PathBuf;
@@ -24,8 +24,11 @@ fn main() -> ExitCode {
   guion encode <screenplay.toml> [--out FILE.mp4] [--frames DIR] [--fps N] [--no-brand] [--narrate]\n\
   guion reel <post> [--twice] [--no-check]\n\
   guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]\n\
-  guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--workspace DIR...]\n\
-  guion tablero [--workspace DIR...] [--json] | lote <render|check|voz> [--cuenta X] [--estado Y]"
+  guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--repo DIR]...\n\
+  guion reel sonido <post>\n\
+  guion tablero [--repo DIR]... [--todas] [--json] | lote <render|check|voz> [--cuenta X] [--estado Y]\n\
+  guion cuenta nueva <dir> --nombre \"…\" --tema \"…\" --revisor NOMBRE --materia \"…\" [...]\n\
+  guion cuenta perfil <dir> [--check]"
             );
             ExitCode::SUCCESS
         }
@@ -35,11 +38,23 @@ fn main() -> ExitCode {
         Some("encode") => encode::run(&args[2..]),
         Some("reel") => reel::run(&args[2..]),
         Some("tablero") => guion_tablero::run(&args[2..]),
+        Some("cuenta") => guion_cuenta::run(&args[2..], &guion_tablero::fecha::hoy(), &al_tablero),
         Some(cmd) => {
             eprintln!("comando desconocido: {cmd}");
             ExitCode::from(2)
         }
     }
+}
+
+/// `guion cuenta nueva --al-tablero`: the new repo joins the user's list.
+fn al_tablero(repo: &std::path::Path) -> Result<String, String> {
+    let f = guion_tablero::repos::archivo()
+        .ok_or("no user list: set GUION_REPOS or HOME".to_string())?;
+    Ok(if guion_tablero::repos::agregar(&f, repo)? {
+        format!("tablero: agregado a {}", f.display())
+    } else {
+        format!("tablero: ya estaba en {}", f.display())
+    })
 }
 
 pub(crate) fn default_out(slug: &str) -> PathBuf {

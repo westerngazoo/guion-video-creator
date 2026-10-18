@@ -1417,7 +1417,9 @@ dependencies = [
  "guion-audio",
  "guion-brand",
  "guion-core",
+ "guion-cuenta",
  "guion-encode",
+ "guion-marca",
  "guion-motion",
  "guion-publish",
  "guion-reel",
@@ -1446,6 +1448,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "guion-cuenta"
+version = "0.1.0"
+dependencies = [
+ "guion-reel",
+ "guion-tablero",
+ "serde",
+ "serde_json",
+ "toml 0.8.23",
+]
+
+[[package]]
 name = "guion-encode"
 version = "0.1.0"
 dependencies = [
@@ -1460,6 +1473,20 @@ dependencies = [
  "mecanica",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "guion-marca"
+version = "0.1.0"
+dependencies = [
+ "ab_glyph",
+ "guion-audio",
+ "guion-cuenta",
+ "guion-encode",
+ "guion-reel",
+ "guion-tablero",
+ "motoreel",
+ "motoreel-typeset",
 ]
 
 [[package]]

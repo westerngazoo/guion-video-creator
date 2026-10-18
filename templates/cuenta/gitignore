@@ -1,0 +1,9 @@
+# Los renders se rehacen de la fuente (misma fuente, mismos bytes).
+*.mp4
+*.wav
+cuadros/
+frames/
+motor/target/
+# Las caras no se versionan (brand/fonts/README.md).
+brand/fonts/*.ttf
+brand/fonts/*.otf

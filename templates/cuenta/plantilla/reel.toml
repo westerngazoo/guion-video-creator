@@ -1,0 +1,27 @@
+# El reel narrado en un comando: `guion reel posts/{{slug}}` (guion-video-creator
+# R-0012). Voz (si falta voz.wav) → escena → sonido → mezcla a −14 LUFS →
+# caption y alt text → la compuerta (`guion reel check`). Las rutas son
+# relativas a este post; ${VAR} sale del entorno.
+
+[reel]
+brand = "../../brand/reel-perfil.toml"   # derivado de cuenta.toml (guion cuenta perfil)
+max_duration = 90.0
+cover = 2.0                              # la portada de cuadro: el título ya entró
+
+[voice]
+model = "{%voz_modelo%}"                  # el de cuenta.toml [voz]
+voices = "${GUION_VOCES}"                # la carpeta con <modelo>/<modelo>.onnx; Piper: GUION_PIPER o el PATH
+
+[scene]
+manifest = "../../motor/Cargo.toml"
+bin = "{{slug}}"                         # `guion reel nuevo` lo registró en motor/Cargo.toml
+
+# El sonido de la casa con los instrumentos neutros (guion-marca); `{guion}` es
+# el mismo binario de guion que corre el reel.
+[sound]
+command = ["{guion}", "reel", "sonido", "{post}"]
+output = "audio.wav"
+
+# Sin [publish], caption.txt y alt-text.txt quedan en el post. Al llegar a `listo`:
+# [publish]
+# dir = "{%publicar_post%}/{{slug}}"

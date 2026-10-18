@@ -1,0 +1,22 @@
+[package]
+name = "guion-cuenta"
+version = "0.1.0"
+description = "The account contract (cuenta.toml), the gate profile derived from it, and `guion cuenta nueva`: a new account scaffolded from the generic templates (R-0014)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+# R-0014: no engine here. The contract is serde + toml, so the brand crate
+# (guion-marca) and the CLI read the same file through the same types.
+[dependencies]
+serde = { workspace = true }
+toml = { workspace = true }
+
+[dev-dependencies]
+# The scaffold is checked with the readers that will consume it: the gate's
+# profile (guion-reel), the dashboard's accounts file and `guion reel nuevo`
+# (guion-tablero).
+guion-reel = { workspace = true }
+guion-tablero = { workspace = true }
+serde_json = { workspace = true }

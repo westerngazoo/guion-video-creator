@@ -1,0 +1,29 @@
+[package]
+name = "guion-marca"
+version = "0.1.0"
+description = "A brand as data: neutral reel primitives (title, subtitle, closing card, the studio) and neutral instruments, all read from an account's cuenta.toml (R-0014, phase 1 of the data-driven brand)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+# R-0014: an account made with `guion cuenta nueva` writes no brand Rust. Its
+# scenes depend on this crate alone (it re-exports guion-reel and motoreel), and
+# every colour, face and size comes from the account's cuenta.toml.
+[dependencies]
+guion-cuenta = { workspace = true }
+guion-reel = { workspace = true }
+motoreel = { workspace = true }
+motoreel-typeset = { workspace = true }
+# unitsPerEm and the line height, to set sizes in em as the gate measures them
+# (the ab_glyph motoreel-typeset and guion-reel already use: no new crate).
+ab_glyph = "0.2"
+# Neutral instruments for R-0011's score (`guion reel sonido`). The score
+# alone: no screenplay assembler (the same features rotorf-sico's motor uses).
+guion-audio = { path = "../guion-audio", default-features = false, features = ["score"] }
+
+[dev-dependencies]
+# The template reel, end to end: scaffold (guion-cuenta), a post from the
+# template (guion-tablero), the mix (guion-encode) and the gate (guion-reel).
+guion-tablero = { workspace = true }
+guion-encode = { workspace = true }
