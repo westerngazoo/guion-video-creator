@@ -1,4 +1,5 @@
-//! `guion` — check and render screenplays (R-0003); make and gate narrated reels (R-0012).
+//! `guion` — check and render screenplays (R-0003); make and gate narrated reels (R-0012);
+//! the accounts dashboard and new posts from a template (R-0013).
 
 use std::env;
 use std::path::PathBuf;
@@ -23,7 +24,9 @@ fn main() -> ExitCode {
   guion narrate <screenplay.toml> [--out WAV] [--engine scaffold|piper] [--piper-model PATH] [--with-bed]\n\
   guion encode <screenplay.toml> [--out FILE.mp4] [--frames DIR] [--fps N] [--no-brand] [--narrate]\n\
   guion reel <post> [--twice] [--no-check]\n\
-  guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]"
+  guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]\n\
+  guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--workspace DIR...]\n\
+  guion tablero [--workspace DIR...] [--json] | lote <render|check|voz> [--cuenta X] [--estado Y]"
             );
             ExitCode::SUCCESS
         }
@@ -32,6 +35,7 @@ fn main() -> ExitCode {
         Some("narrate") => narrate::run(&args[2..]),
         Some("encode") => encode::run(&args[2..]),
         Some("reel") => reel::run(&args[2..]),
+        Some("tablero") => guion_tablero::run(&args[2..]),
         Some(cmd) => {
             eprintln!("comando desconocido: {cmd}");
             ExitCode::from(2)

@@ -1,0 +1,34 @@
+┌ cuentas ────────────────────┐┌ posts · 4 · filtro: todos · marcados: 1 ─────────────────┐┌ detalle ──────────────────────────────────────┐
+│Todas  4                     ││  estado    cuenta     post       check  dur    voz tipo  ││¿Por qué uno?                                  │
+│Cuenta A  3                  ││  revisión  Cuenta A   dos        FAIL 1 42.5 s sí  reel  ││cuenta Cuenta A                                │
+│  i0 b0 r1 l1 p1 E1          ││  publicado Cuenta A   tres       —      42.5 s —   legado││estado listo                                   │
+│Cuenta B  1                  ││● listo     Cuenta A   uno        PASS   42.5 s sí  reel  ││listo (2026-10-01): todo bien                  │
+│  i0 b0 r0 l0 p0             ││  —         Cuenta B   cuatro     —      —      —   legado││tipo reel · voz sí · 42.5 s                    │
+│                             ││                                                          ││                                               │
+│                             ││                                                          ││check PASS (2 de 2 pasan)                      │
+│                             ││                                                          ││PASS sub-width     2 lines, widest 500 px ≤ 840│
+│                             ││                                                          ││PASS loudness      -14.1 LUFS                  │
+│                             ││                                                          ││                                               │
+│                             ││                                                          ││carpeta posts/uno                              │
+│                             ││                                                          ││video posts/uno/uno-reel-audio.mp4             │
+│                             ││                                                          ││hoja posts/uno/cuadros/hoja.png                │
+│                             ││                                                          ││publicar publicar/nivel-1/uno                  │
+│                             ││                                                          ││                                               │
+│                             ││                                                          ││encargos pendientes de Cuenta A                │
+│                             ││                                                          ││E-0001 2026-10-17 ¿Por qué cinco?              │
+│                             ││                                                          ││                                               │
+│                             ││                                                          ││                                               │
+│                             ││                                                          ││                                               │
+│                             ││                                                          ││                                               │
+│                             ││                                                          ││                                               │
+│                             ││                                                          ││                                               │
+└─────────────────────────────┘└──────────────────────────────────────────────────────────┘└───────────────────────────────────────────────┘
+┌ registro ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│[uno] $ guion reel check posts/uno --brand marca/perfil.toml                                                                              │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ ↑↓ mover  ←→ panel  espacio marcar  a todos  f filtro  r render  c check  v voz  o abrir  p publicado  e encargo  g releer  q salir

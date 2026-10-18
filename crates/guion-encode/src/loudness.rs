@@ -221,6 +221,11 @@ fn mezclar(
     );
     let prueba = dir.join("prueba.mp4");
     let prueba_s = path_str(&prueba)?;
+    // El video manda el largo. `-shortest` con `-c:v copy` cortaba los últimos
+    // cuadros (4 de 217 en un reel de 7.2 s, R-0013): el muxer suelta la cola de
+    // video que espera en su cola de intercalado. `-t` con la duración del video
+    // los conserva todos.
+    let largo = format!("{:.6}", crate::ffmpeg::duration(video)?);
     let mut ultima = None;
     for _ in 0..VUELTAS {
         let af = format!(
@@ -249,7 +254,8 @@ fn mezclar(
                 "192k",
                 "-ar",
                 "48000",
-                "-shortest",
+                "-t",
+                &largo,
                 "-movflags",
                 "+faststart",
                 prueba_s,

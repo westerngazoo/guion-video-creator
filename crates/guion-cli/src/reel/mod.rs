@@ -3,6 +3,7 @@
 //! ```text
 //! guion reel <post> [--twice] [--no-check]
 //! guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]
+//! guion reel nuevo <cuenta> <slug> [--titulo "…"] [--workspace DIR...]   (R-0013, guion-tablero)
 //! ```
 //!
 //! The pipeline reads the post's `reel.toml` (AC9): the voice if `voz.wav` is
@@ -26,6 +27,7 @@ use config::{path, ReelToml};
 
 const USAGE: &str =
     "uso:\n  guion reel <post> [--twice] [--no-check]\n  guion reel voice <post>\n  \
+guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--workspace DIR...]\n  \
 guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]";
 
 pub fn run(args: &[String]) -> ExitCode {
@@ -36,6 +38,8 @@ pub fn run(args: &[String]) -> ExitCode {
         }
         Some("check") => check_cmd(&args[1..]),
         Some("voice") => voice_cmd(&args[1..]),
+        // R-0013: a new post from the account's template (guion-tablero)
+        Some("nuevo") => guion_tablero::run_nuevo(&args[1..]),
         Some(_) => pipeline_cmd(args),
     }
 }
