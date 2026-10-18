@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::process::ExitCode;
 
-use guion_core::load_and_check;
+use guion_core::{dialecto, load_and_check, Dialecto};
 
 use crate::path::{resolve_screenplay_path, screenplay_not_found};
 
@@ -17,6 +17,24 @@ pub fn run(path: Option<&String>) -> ExitCode {
     if !resolved.exists() {
         eprintln!("{}", screenplay_not_found(path, &resolved));
         return ExitCode::from(1);
+    }
+    // Qué clase de guion es, ANTES de intentar leerlo. Adivinar —probar
+    // un dialecto y si falla el otro— haría que un `[meta]` con una llave
+    // mal escrita reportara el error del dialecto equivocado.
+    let texto = match std::fs::read_to_string(&resolved) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("{}: {e}", resolved.display());
+            return ExitCode::from(1);
+        }
+    };
+    match dialecto(&texto) {
+        Ok(Dialecto::Comparacion) => return crate::comparacion::check(&resolved),
+        Ok(Dialecto::Escena) => {}
+        Err(e) => {
+            eprintln!("{}: {e}", resolved.display());
+            return ExitCode::from(1);
+        }
     }
     match load_and_check(&resolved) {
         Ok(sp) => {
