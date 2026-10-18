@@ -20,6 +20,33 @@ pub fn ffmpeg() -> Result<String, EncodeError> {
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
+/// La duración de un archivo de medios, en segundos, del encabezado de
+/// ffmpeg (`Duration: 00:01:27.30`). La usa el tablero (R-0013) para la
+/// columna de duración; no decodifica nada.
+pub fn duration(path: &std::path::Path) -> Result<f64, EncodeError> {
+    let ff = ffmpeg()?;
+    // Sin salida, ffmpeg termina con error a propósito: solo se lee su encabezado.
+    let out = Command::new(&ff)
+        .args(["-hide_banner", "-nostdin", "-i"])
+        .arg(path)
+        .output()
+        .map_err(EncodeError::Io)?;
+    parse_duration(&String::from_utf8_lossy(&out.stderr)).ok_or_else(|| {
+        EncodeError::InvalidInput(format!("{}: ffmpeg no dio una duración", path.display()))
+    })
+}
+
+/// `Duration: HH:MM:SS.ss` → segundos (`N/A` → nada).
+pub fn parse_duration(log: &str) -> Option<f64> {
+    let resto = &log[log.find("Duration:")? + "Duration:".len()..];
+    let campo = resto.trim_start().split(',').next()?.trim();
+    let mut partes = campo.split(':');
+    let h: f64 = partes.next()?.parse().ok()?;
+    let m: f64 = partes.next()?.parse().ok()?;
+    let s: f64 = partes.next()?.parse().ok()?;
+    Some(h * 3600.0 + m * 60.0 + s)
+}
+
 /// Las banderas de video de toda salida (R-0005 AC1–AC3).
 ///
 /// - **BT.709 de verdad y etiquetado (AC1, AC2).** Sin `out_color_matrix`,
@@ -66,5 +93,18 @@ pub(crate) fn check_fps(fps: f64) -> Result<(), EncodeError> {
         Err(EncodeError::InvalidInput(format!(
             "fps debe ser finito y > 0, no {fps}"
         )))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_duration;
+
+    #[test]
+    fn la_duracion_sale_del_encabezado() {
+        let log = "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'x.mp4':\n  Duration: 00:01:27.30, start: 0.000000, bitrate: 2154 kb/s\n";
+        assert_eq!(parse_duration(log), Some(87.3));
+        assert_eq!(parse_duration("  Duration: N/A, bitrate: N/A"), None);
+        assert_eq!(parse_duration("nada"), None);
     }
 }

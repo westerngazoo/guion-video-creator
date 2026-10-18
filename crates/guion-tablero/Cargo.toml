@@ -1,0 +1,19 @@
+[package]
+name = "guion-tablero"
+version = "0.1.0"
+description = "The accounts dashboard: every post of every account a workspace declares, its estado, gate and deliverables, and the actions on them, as a TUI or as JSON (R-0013)"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Duration of a reel's MP4: ffmpeg discovery and the banner probe (R-0005).
+guion-encode = { workspace = true }
+# guion-cuentas.toml, encargos.toml, reel.toml (read leniently) and the JSON state.
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+# R-0013: the terminal UI. crossterm comes through ratatui's re-export
+# (`ratatui::crossterm`), so the backend and the events are one version.
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
