@@ -1,0 +1,49 @@
+# pista — la marca de automovilismo. Paleta «medianoche».
+#
+# No es la marca de fisicobuenfisico con otro color: es el otro suelo. Un
+# gris calibrado contra papel crema no dice nada contra azul marino, así
+# que el par (suelo, tintas) se elige junto o no se elige.
+#
+# El acento es FRÍO a propósito. La escala de calor ya recorre
+# verde→amarillo→naranja→rojo; un acento cálido competiría con «esto está
+# caliente» en vez de sumarle. Con el acento en cian queda el eje
+# frío/caliente entero, que es como lee un instrumento de verdad.
+#
+# `skin` no cambia entre marcas: la piel es anatomía, no identidad.
+#
+# Los contrastes de estos valores contra su propio papel están MEDIDOS y
+# la prueba `contraste_sobre_su_propio_papel` los vuelve a medir en cada
+# build. Si alguien los mueve "porque se ve mejor", la prueba lo dice.
+
+[colors]
+skin    = [196, 140, 95]
+ink     = [214, 222, 237]
+paper   = [11, 16, 32]
+accent  = [64, 196, 216]
+accent2 = [126, 220, 235]
+bar     = [20, 27, 46]   # el cintillo: un peldaño más oscuro que el papel
+
+# La rampa de calor conserva los TONOS de la marca clara
+# (verde→amarillo→naranja→rojo) porque son la convención física y no la
+# identidad. Lo que se recalibra es la luminancia, y no de cualquier modo:
+# el primer intento subió los cuatro tonos parejo y quedaron apretados
+# entre sí (separación mínima 1.34:1, PEOR que el 1.51:1 de la marca que
+# ya publica). Estos valores abren el arco otra vez: piso 3.63:1 contra el
+# papel y separación mínima 1.71:1 entre vecinos. Medido, no ajustado a
+# ojo.
+
+[[heat]]
+t = 0.0
+rgb = [58, 120, 94]
+
+[[heat]]
+t = 0.35
+rgb = [232, 206, 86]
+
+[[heat]]
+t = 0.70
+rgb = [246, 124, 46]
+
+[[heat]]
+t = 1.0
+rgb = [214, 46, 54]
