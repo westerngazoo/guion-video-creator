@@ -311,11 +311,11 @@ impl Marca {
         for &y in &ys {
             rect(0.0, y - media, w, y + media);
         }
-        if g.nodos > 0 {
+        if let Some(n) = std::num::NonZeroUsize::new(g.nodos) {
             let lado = g.grosor * 2.5;
-            for (i, &x) in xs.iter().enumerate().filter(|(i, _)| i % g.nodos == 0) {
-                for (j, &y) in ys.iter().enumerate().filter(|(j, _)| j % g.nodos == 0) {
-                    if (i / g.nodos + j / g.nodos) % 2 == 0 {
+            for (i, &x) in xs.iter().enumerate().filter(|(i, _)| *i % n == 0) {
+                for (j, &y) in ys.iter().enumerate().filter(|(j, _)| *j % n == 0) {
+                    if (i / n + j / n) % 2 == 0 {
                         rect(x - lado, y - lado, x + lado, y + lado);
                     }
                 }
