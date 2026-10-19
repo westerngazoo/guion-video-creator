@@ -155,6 +155,22 @@ fn ac6_the_scene_checks_its_subtitles_with_the_gates_rules() {
         format!("{:?}", m.cierre(0.7)),
         format!("{:?}", m.cierre(2.0))
     );
+    // no [marca.rejilla], no grid; with one, one path in its token
+    assert!(m.rejilla().is_empty());
+    let f = raiz.join("cuenta.toml");
+    let t = std::fs::read_to_string(&f).unwrap().replace(
+        "# rejilla = { paso = 60.0, token = \"panel\", grosor = 2.0, nodos = 4 }",
+        "rejilla = { paso = 60.0, token = \"panel\", grosor = 2.0, nodos = 3 }",
+    );
+    std::fs::write(&f, t).unwrap();
+    let m = Marca::cargar(&raiz).unwrap();
+    match m.rejilla().as_slice() {
+        [guion_marca::Prim2::Path { subpaths, style }] => {
+            assert!(subpaths.len() > 40, "lines and pads");
+            assert_eq!(style.fill.unwrap().colour, m.color("panel"));
+        }
+        otro => panic!("{otro:?}"),
+    }
 }
 
 #[test]
