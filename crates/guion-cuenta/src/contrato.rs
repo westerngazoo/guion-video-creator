@@ -108,6 +108,27 @@ pub struct Marca {
     pub titulo: Titulo,
     pub subtitulo: Subtitulo,
     pub seguro: Seguro,
+    /// An optional grid behind everything (a PCB, a ruled page), drawn in a
+    /// background token, so the gate counts it as empty.
+    #[serde(default)]
+    pub rejilla: Option<Rejilla>,
+}
+
+/// The grid: lines every `paso` px, `grosor` px wide, in `token`; with
+/// `nodos` = k > 0, a square pad on every k-th crossing.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Rejilla {
+    pub paso: f64,
+    pub token: String,
+    #[serde(default = "dos")]
+    pub grosor: f64,
+    #[serde(default)]
+    pub nodos: usize,
+}
+
+fn dos() -> f64 {
+    2.0
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
@@ -320,6 +341,17 @@ impl Cuenta {
         }
         if r.acento.iter().any(|a| r.fondo.contains(a)) {
             return Err("marca.roles: a token cannot be background and accent".into());
+        }
+        if let Some(g) = &m.rejilla {
+            if !r.fondo.contains(&g.token) {
+                return Err(format!(
+                    "marca.rejilla.token «{}» must be one of marca.roles.fondo (the gate counts the grid as empty)",
+                    g.token
+                ));
+            }
+            if g.paso.is_nan() || g.paso < 8.0 || g.grosor.is_nan() || g.grosor <= 0.0 {
+                return Err("marca.rejilla: paso ≥ 8 and grosor > 0".into());
+            }
         }
         let s = &m.subtitulo;
         if !(s.tam > 0.0 && s.ancho > 0.0 && s.franja[0] < s.franja[1] && s.palabras > 0) {

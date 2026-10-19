@@ -19,7 +19,7 @@ crates/guion-cuenta/src/          # no engine: serde + toml
 
 crates/guion-marca/src/           # the engine coupling
 ├── lib.rs        # re-exports guion-reel (as `reel`), motoreel, Marca
-├── marca.rs      # Marca: tokens, faces in em, titulo, subtitulo, barra, cierre, reloj, reel (AC6)
+├── marca.rs      # Marca: tokens, faces in em, rejilla, titulo, subtitulo, barra, cierre, reloj, reel (AC6)
 └── sonido.rs     # the neutral kit (tono, pulso, roce) and render(post) (AC7)
 
 crates/guion-tablero/src/repos.rs # the user's list: archivo, leer, agregar, elegir (AC8)

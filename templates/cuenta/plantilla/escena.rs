@@ -57,7 +57,8 @@ fn opacidad(beats: &[(f64, f64)], t: f64, k: usize) -> f64 {
 
 fn cuadro(m: &Marca, voz: &Narration, k: &Tiempos, t: f64) -> (Vec<Prim2>, Vec<NoOverlay>) {
     let ultimo = k.beats.len() - 1;
-    let mut v = Vec::new();
+    // la rejilla de `[marca.rejilla]`, si la cuenta tiene una, debajo de todo
+    let mut v = m.rejilla();
 
     // ===== 1 · gancho: la pregunta =====
     let o = opacidad(&k.beats, t, 0);

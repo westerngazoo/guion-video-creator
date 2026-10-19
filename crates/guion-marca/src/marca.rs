@@ -279,6 +279,59 @@ impl Marca {
         }]
     }
 
+    /// The grid of `[marca.rejilla]` (nothing without one): one filled path
+    /// of every line and pad, in its background token. Drawn first.
+    pub fn rejilla(&self) -> Vec<Prim2> {
+        let Some(g) = &self.cuenta.marca.rejilla else {
+            return Vec::new();
+        };
+        let (w, h) = (f64::from(self.canvas.width), f64::from(self.canvas.height));
+        let c = self.color(&g.token);
+        let mut sub = Vec::new();
+        let mut rect = |x0: f64, y0: f64, x1: f64, y1: f64| {
+            let pts =
+                [(x0, y0), (x1, y0), (x1, y1), (x0, y1)].map(|(x, y)| self.canvas.to_view(x, y));
+            sub.extend(polygon(&pts));
+        };
+        let media = g.grosor / 2.0;
+        // centred on the canvas, so the margins match on both sides
+        let x0 = (w / 2.0) % g.paso;
+        let y0 = (h / 2.0) % g.paso;
+        let xs: Vec<f64> = (0..)
+            .map(|i| x0 + i as f64 * g.paso)
+            .take_while(|x| *x <= w)
+            .collect();
+        let ys: Vec<f64> = (0..)
+            .map(|i| y0 + i as f64 * g.paso)
+            .take_while(|y| *y <= h)
+            .collect();
+        for &x in &xs {
+            rect(x - media, 0.0, x + media, h);
+        }
+        for &y in &ys {
+            rect(0.0, y - media, w, y + media);
+        }
+        if g.nodos > 0 {
+            let lado = g.grosor * 2.5;
+            for (i, &x) in xs.iter().enumerate().filter(|(i, _)| i % g.nodos == 0) {
+                for (j, &y) in ys.iter().enumerate().filter(|(j, _)| j % g.nodos == 0) {
+                    if (i / g.nodos + j / g.nodos) % 2 == 0 {
+                        rect(x - lado, y - lado, x + lado, y + lado);
+                    }
+                }
+            }
+        }
+        vec![Prim2::Path {
+            subpaths: sub,
+            style: Style {
+                stroke: c,
+                width: 0.0,
+                alpha: 0.0,
+                fill: Some(Fill::solid(c, 1.0)),
+            },
+        }]
+    }
+
     /// The subtitle at `t`: the line being said, with its fade, in the text
     /// face, centred on the subtitle's baseline.
     pub fn subtitulo(&self, voz: &Narration, t: f64) -> Vec<Prim2> {

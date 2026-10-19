@@ -65,7 +65,7 @@ that creating an account be easy, before starting the fourth.
 
 - **AC1. The contract.** `cuenta.toml` holds `[cuenta]`, `[voz]`, `[marca]`
   (with `lienzo`, `tokens`, `roles`, `fuentes`, `titulo`, `subtitulo`,
-  `seguro`), `[compuerta]` (defaults: the platform's) and `[revisor]`.
+  `seguro`, and an optional `rejilla`), `[compuerta]` (defaults: the platform's) and `[revisor]`.
   Unknown keys fail by name; every role names a token; the language is `es`
   or `en`; the slug and the reviewer's name are slugs; dates are
   `AAAA-MM-DD`. The crate holds no brand value.
@@ -97,7 +97,9 @@ that creating an account be easy, before starting the fourth.
   goes at the root.
 - **AC6. Neutral primitives from the contract.** guion-marca's `Marca` loads
   `cuenta.toml` and its faces and gives a scene: colours by token and role,
-  text sized in em as the gate measures it, the title (shrunk to the safe
+  text sized in em as the gate measures it, the optional grid of
+  `[marca.rejilla]` (a PCB, a ruled page: drawn in a background token, so
+  the gate counts it as empty), the title (shrunk to the safe
   area), the subtitle of the line being said, an accent bar, the closing
   card (still after 0.6 s), the voice's clock, the studio with the house
   layout (`eventos.json`, `cuadros/hoja.png`), and the gate's own subtitle
@@ -180,8 +182,10 @@ Rust can go:
 | 2026-10-18 | Templates use `{%clave%}`; `{{…}}` is left for `guion reel nuevo` | The account's template is itself a template for posts |
 | 2026-10-18 | The neutral kit is always compiled in guion-marca (guion-audio with `score` only) | A feature would make `cargo test -p guion-marca` differ from the workspace build; the score adds no heavy crate |
 | 2026-10-18 | `[sound] command` may say `{guion}`: the binary running the pipeline | A new account's sound is `guion reel sonido` without depending on `guion` being in PATH |
+| 2026-10-19 | `[marca.rejilla]`: an optional background grid, data in the contract; its token must be a `fondo` role | The fourth account's direction (terminal / circuit, a PCB grid) is the first real case; a grid is generic (Rotor's retícula, a ruled page), so it is data and a neutral primitive, not account Rust |
 | 2026-10-18 | The user's repo list is append-only TOML (`[[repo]]`) | `--al-tablero` appends without rewriting a file the owner may have commented |
 
 ## Changelog
 
 - 2026-10-18 — created; realized by SPEC-0014 in the same change.
+- 2026-10-19 — `[marca.rejilla]` and `Marca::rejilla`; the first real account («El extraño arte de computar», terminal / circuit) scaffolded locally with it: its template reel passes the gate 18/18.

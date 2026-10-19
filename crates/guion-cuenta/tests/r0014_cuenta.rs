@@ -81,6 +81,17 @@ fn ac1_the_contract_parses_and_fails_by_name() {
     // the language is es or en
     let fr = texto.replace("idioma = \"es\"", "idioma = \"fr\"");
     assert!(Cuenta::parse(&fr).unwrap_err().contains("idioma"));
+    // an optional grid must be drawn in a background token
+    let rejilla = "rejilla = { paso = 60.0, token = \"panel\", grosor = 2.0, nodos = 3 }";
+    let con = texto.replace(
+        "# rejilla = { paso = 60.0, token = \"panel\", grosor = 2.0, nodos = 4 }",
+        rejilla,
+    );
+    assert_eq!(Cuenta::parse(&con).unwrap().marca.rejilla.unwrap().nodos, 3);
+    let mala = con.replace("token = \"panel\"", "token = \"acento\"");
+    assert!(Cuenta::parse(&mala)
+        .unwrap_err()
+        .contains("marca.rejilla.token"));
 }
 
 // ---------- AC2: the derived profile ----------

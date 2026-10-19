@@ -314,6 +314,7 @@ prohibido = {prohibido}                 # la compuerta los rechaza en el caption
 direccion = "por decidir"               # la dirección de diseño la decide el dueño (R-0014 §4)
 logo = ""                               # por decidir; la fase 2 lo dibuja desde aquí (R-0014 §5)
 lienzo = {{ ancho = 1080, alto = 1920, fps = 30.0 }}
+# rejilla = {{ paso = 60.0, token = "panel", grosor = 2.0, nodos = 4 }}   # opcional: una rejilla de fondo
 
 # La paleta: neutra hasta que se decida la dirección de diseño.
 [marca.tokens]
