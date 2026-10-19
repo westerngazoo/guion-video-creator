@@ -1,11 +1,16 @@
 //! The command lines (R-0013 AC3, AC9, AC10):
 //!
 //! ```text
-//! guion tablero [--workspace DIR...] [--paralelo N]
-//! guion tablero --json [--workspace DIR...]
-//! guion tablero lote <render|check|voz> [--cuenta X] [--estado Y] [--paralelo N] [--dry-run] [--workspace DIR...]
-//! guion reel nuevo <cuenta> <slug> [--titulo "…"] [--workspace DIR...]
+//! guion tablero [--repo DIR]... [--todas] [--paralelo N]
+//! guion tablero --json [--repo DIR]... [--todas]
+//! guion tablero lote <render|check|voz> [--cuenta X] [--estado Y] [--paralelo N] [--dry-run] [--repo DIR]...
+//! guion reel nuevo <cuenta> <slug> [--titulo "…"] [--repo DIR]...
 //! ```
+//!
+//! `--repo DIR` (repeatable) and `--workspace DIR...` name the repos;
+//! `--todas` adds the user's list ([`crate::repos`], R-0014 AC8). With
+//! neither, the current folder, or the user's list when the current folder
+//! declares no accounts.
 //!
 //! Exit codes: 0 done, 1 some job failed, 2 usage or input error.
 
@@ -20,18 +25,21 @@ use crate::trabajos::{self, Evento, Trabajo};
 use crate::{fecha, nuevo, tui};
 
 /// `guion tablero`'s usage.
-pub const USO: &str = "uso:\n  guion tablero [--workspace DIR...] [--paralelo N]\n  \
-guion tablero --json [--workspace DIR...]\n  \
-guion tablero lote <render|check|voz> [--cuenta X] [--estado Y] [--paralelo N] [--dry-run] [--workspace DIR...]";
+pub const USO: &str = "uso:\n  guion tablero [--repo DIR]... [--todas] [--paralelo N]\n  \
+guion tablero --json [--repo DIR]... [--todas]\n  \
+guion tablero lote <render|check|voz> [--cuenta X] [--estado Y] [--paralelo N] [--dry-run] [--repo DIR]... [--todas]\n\
+(--workspace DIR... también vale; sin repos: la carpeta actual, o la lista del usuario en $GUION_REPOS o ~/.config/guion/repos.toml)";
 
 /// `guion reel nuevo`'s usage.
 pub const USO_NUEVO: &str =
-    "uso:\n  guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--workspace DIR...]";
+    "uso:\n  guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--repo DIR]... [--todas]";
 
 /// The parsed flags.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Opciones {
     pub workspaces: Vec<PathBuf>,
+    /// `--todas`: the user's list of repos too (R-0014 AC8).
+    pub todas: bool,
     pub json: bool,
     pub paralelo: usize,
     pub cuenta: Option<String>,
@@ -43,7 +51,8 @@ pub struct Opciones {
 }
 
 /// Parses the flags; `--workspace` takes every following argument up to the
-/// next flag (or `lote`).
+/// next flag (or `lote`), `--repo` takes one (and repeats). Which repos are
+/// read when none is named: [`crate::repos::elegir`].
 pub fn opciones(args: &[String]) -> Result<Opciones, String> {
     let mut o = Opciones {
         paralelo: 2,
@@ -72,6 +81,11 @@ pub fn opciones(args: &[String]) -> Result<Opciones, String> {
                     return Err("--workspace necesita al menos una carpeta".into());
                 }
             }
+            "--repo" | "-r" => {
+                o.workspaces.push(PathBuf::from(valor(i, a)?));
+                i += 1;
+            }
+            "--todas" => o.todas = true,
             "--json" => o.json = true,
             "--dry-run" => o.dry_run = true,
             "--paralelo" | "-j" => {
@@ -103,10 +117,20 @@ pub fn opciones(args: &[String]) -> Result<Opciones, String> {
         }
         i += 1;
     }
-    if o.workspaces.is_empty() {
-        o.workspaces
-            .push(std::env::current_dir().map_err(|e| e.to_string())?);
-    }
+    // the user's list is read only when it may be used
+    let hace_falta = o.todas || o.workspaces.is_empty();
+    let usuario = match crate::repos::archivo().filter(|f| hace_falta && f.is_file()) {
+        Some(f) => Some(crate::repos::leer(&f)?),
+        None if o.todas => {
+            return Err(format!(
+                "--todas: no user list of repos (${} or ~/.config/guion/repos.toml)",
+                crate::repos::ENV
+            ))
+        }
+        None => None,
+    };
+    let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
+    o.workspaces = crate::repos::elegir(&o.workspaces, o.todas, &cwd, usuario);
     Ok(o)
 }
 

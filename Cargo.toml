@@ -18,6 +18,9 @@ members = [
     "crates/guion-cli",
     # R-0013: el tablero de las cuentas (TUI y modo para agentes)
     "crates/guion-tablero",
+    # R-0014: el contrato de una cuenta, `guion cuenta nueva` y la marca como datos
+    "crates/guion-cuenta",
+    "crates/guion-marca",
     "apps/guion-studio",
     "apps/guion-playground",
 ]
@@ -51,6 +54,8 @@ guion-reel = { path = "crates/guion-reel" }
 guion-publish = { path = "crates/guion-publish" }
 guion-fisica = { path = "crates/guion-fisica" }
 guion-tablero = { path = "crates/guion-tablero" }
+guion-cuenta = { path = "crates/guion-cuenta" }
+guion-marca = { path = "crates/guion-marca" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

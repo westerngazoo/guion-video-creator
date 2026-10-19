@@ -6,7 +6,8 @@
 //! JSON, and runs the existing commands on them as subprocesses
 //! ([`acciones`], [`trabajos`]): `guion reel`, its check and its voice. It
 //! also appends the owner's one-line ideas ([`encargos`]) and makes new posts
-//! from an account's template ([`nuevo`]). No brand value lives here.
+//! from an account's template ([`nuevo`]). It reads one repo or several
+//! (`--repo`, or the user's list: [`repos`], R-0014). No brand value lives here.
 
 pub mod acciones;
 mod cli;
@@ -15,6 +16,7 @@ pub mod encargos;
 pub mod fecha;
 pub mod nuevo;
 pub mod post;
+pub mod repos;
 pub mod tablero;
 pub mod trabajos;
 mod tui;

@@ -3,7 +3,8 @@
 //! ```text
 //! guion reel <post> [--twice] [--no-check]
 //! guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]
-//! guion reel nuevo <cuenta> <slug> [--titulo "…"] [--workspace DIR...]   (R-0013, guion-tablero)
+//! guion reel nuevo <cuenta> <slug> [--titulo "…"] [--repo DIR]...   (R-0013, guion-tablero)
+//! guion reel sonido <post>                                           (R-0014, guion-marca)
 //! ```
 //!
 //! The pipeline reads the post's `reel.toml` (AC9): the voice if `voz.wav` is
@@ -27,7 +28,7 @@ use config::{path, ReelToml};
 
 const USAGE: &str =
     "uso:\n  guion reel <post> [--twice] [--no-check]\n  guion reel voice <post>\n  \
-guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--workspace DIR...]\n  \
+guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--repo DIR]...\n  guion reel sonido <post>\n  \
 guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]";
 
 pub fn run(args: &[String]) -> ExitCode {
@@ -40,6 +41,8 @@ pub fn run(args: &[String]) -> ExitCode {
         Some("voice") => voice_cmd(&args[1..]),
         // R-0013: a new post from the account's template (guion-tablero)
         Some("nuevo") => guion_tablero::run_nuevo(&args[1..]),
+        // R-0014: the bed with the neutral kit (an account with no instruments of its own)
+        Some("sonido") => sonido_cmd(&args[1..]),
         Some(_) => pipeline_cmd(args),
     }
 }
@@ -75,6 +78,19 @@ fn voice_of(post: &Path, r: &ReelToml) -> Result<voz::Voice, String> {
             .transpose()?,
         model: Some(r.voice.model.clone()),
     })
+}
+
+// --- the sound with the neutral kit (R-0014) ---
+
+fn sonido_cmd(args: &[String]) -> ExitCode {
+    let [post] = args else { return fail(USAGE) };
+    match guion_marca::sonido::render(Path::new(post)) {
+        Ok(o) => {
+            println!("{} ({:.2} s)\n{}", o.path.display(), o.duration, o.report);
+            ExitCode::SUCCESS
+        }
+        Err(e) => fail(e),
+    }
 }
 
 // --- the gate ---
@@ -281,11 +297,15 @@ fn pipeline(post: &Path, twice: bool, check: bool) -> Result<bool, String> {
     // 3. the sound
     let t = Instant::now();
     let post_s = post.display().to_string();
+    // `{guion}`: this very binary (R-0014: `guion reel sonido`, the neutral kit)
+    let guion_s = std::env::current_exe()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| "guion".into());
     let cmd: Vec<String> = r
         .sound
         .command
         .iter()
-        .map(|a| a.replace("{post}", &post_s))
+        .map(|a| a.replace("{post}", &post_s).replace("{guion}", &guion_s))
         .collect();
     let (prog, rest) = cmd.split_first().ok_or("[sound] command is empty")?;
     sh(Command::new(prog).args(rest).current_dir(post))?;

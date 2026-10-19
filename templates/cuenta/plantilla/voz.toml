@@ -1,0 +1,34 @@
+# La voz de «{{titulo}}» (creado el {{fecha}} con `guion reel nuevo`). La
+# sintetiza `guion reel voice posts/{{slug}}` y fija el reloj: la escena lee
+# voz.json. Lo revisan {%revisor%} (la materia y la procedencia dicha en
+# palabras) y {%designer%} (los subtítulos).
+#
+# Las reglas (docs/proceso-reel.md de guion-video-creator):
+# - Los símbolos se dicen como se leen, y los números con letras: la voz corta
+#   las frases en . ? ! y «0.8» partiría una.
+# - Lo que solo vale en un modelo se dice como del modelo. Cada número dice su
+#   procedencia en palabras.
+# - Subtítulos: una línea, 8 palabras o menos, solo palabras (sin cifras ni
+#   signos), sin repetir ni adelantar la pantalla. Una línea de más de 6 s
+#   empieza su subtítulo en la frase que lo dice: `desde = n`.
+# - Cada id es un evento de eventos.json (`voz:<id>`).
+[voz]
+modelo = "{%voz_modelo%}"
+inicio = 0.5
+pausa = 0.3
+lento = 1.0
+
+# el título entra; la pregunta es el gancho
+[[linea]]
+id = "gancho"
+texto = "{{titulo}}"
+subtitulo = "{%gancho_sub%}"
+
+# ... los beats: una línea por idea, con su id ...
+
+# la tarjeta de cierre entra 0.3 s antes de esta línea
+[[linea]]
+id = "cierre"
+texto = "{%cierre_texto%}"
+subtitulo = "{%cierre_sub%}"
+antes = 0.2

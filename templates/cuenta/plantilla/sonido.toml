@@ -1,0 +1,49 @@
+# El sonido de «{{titulo}}», como datos (guion-video-creator R-0011): lo lee
+# `guion reel sonido` con los instrumentos neutros (tono, pulso, roce) y
+# escribe audio.wav. La voz manda: voz.wav al frente; debajo, la cama,
+# agachada mientras suena una línea. Ningún tiempo va escrito a mano: todo es
+# un evento de eventos.json (beat-N, cierre, fin y voz:<id>).
+
+[sonido]
+semilla = 1
+sala = { t60 = 1.4, largo = 2.0, oscuro = 4000.0, envio = 0.3 }
+
+[voz]
+paso_alto = 70.0
+nivel = 0.707
+sala = { t60 = 0.8, nivel = 0.04 }
+
+[mezcla]
+cama_rms = -12.0       # la cama, por su RMS, 12 dB bajo la voz
+pico = 0.89
+entrada = 0.02
+salida = 1.2
+
+[agachar]              # bajo cada línea de voz.json
+por = "lineas"
+antes = 0.08
+despues = 0.15
+rampa = 0.08
+unir = 0.5             # la cama no sube en huecos de menos de 0.5 s (la compuerta lo mide)
+buses = { dron = -6.0, golpe = -5.0 }
+
+# --- la cama: un tono suave de principio a fin ---
+[[dron]]
+instrumento = "tono"
+f0 = 110.0
+ganancia = 0.22
+sala = 0.2
+envolvente = [["0", 0.0], ["0.8", 0.3], ["cierre", 0.3], ["fin", 0.0]]
+
+# --- los golpes, en los eventos de la imagen ---
+[[golpe]]              # entra la pregunta
+en = "0.05"
+instrumento = "pulso"
+f0 = 220.0
+ganancia = 0.4
+
+[[golpe]]              # entra la tarjeta de cierre
+en = "cierre"
+instrumento = "pulso"
+f0 = 330.0
+ganancia = 0.5
