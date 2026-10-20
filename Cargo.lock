@@ -1419,6 +1419,7 @@ dependencies = [
  "guion-core",
  "guion-cuenta",
  "guion-encode",
+ "guion-estudio",
  "guion-marca",
  "guion-motion",
  "guion-publish",
@@ -1466,6 +1467,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "guion-estudio"
+version = "0.1.0"
+dependencies = [
+ "guion-cuenta",
+ "guion-gadget",
+ "guion-reel",
+ "motoreel",
+ "motoreel-typeset",
+ "png 0.18.1",
+ "serde_json",
+]
+
+[[package]]
 name = "guion-fisica"
 version = "0.1.0"
 dependencies = [
@@ -1473,6 +1487,18 @@ dependencies = [
  "mecanica",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "guion-gadget"
+version = "0.1.0"
+dependencies = [
+ "guion-reel",
+ "mecanica",
+ "motoreel",
+ "motoreel-typeset",
+ "serde",
+ "toml 0.8.23",
 ]
 
 [[package]]

@@ -1,0 +1,20 @@
+[package]
+name = "guion-gadget"
+version = "0.1.0"
+description = "The gadget contract of the studio (R-0015): typed params with range, unit and provenance, a pure eval(t, params) → (prims, eventos, valores), asserts and oracles, the registry, the timeline anchored to the voice, and escena.toml"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+# R-0015: a reel assembled from gadgets. No gdk, no window, no network: this
+# crate builds in CI and in the cloud. The engine coupling is the one every
+# scene already has (motoreel primitives through guion-reel's canvas); the
+# physics is physics-lab's (`mecanica`), consumed and never copied.
+[dependencies]
+guion-reel = { workspace = true }
+mecanica = { workspace = true }
+motoreel = { workspace = true }
+motoreel-typeset = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }

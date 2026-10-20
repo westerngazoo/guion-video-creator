@@ -1,5 +1,6 @@
 //! `guion` — check and render screenplays (R-0003); make and gate narrated reels (R-0012);
-//! the accounts dashboard and new posts from a template (R-0013); new accounts (R-0014).
+//! the accounts dashboard and new posts from a template (R-0013); new accounts (R-0014);
+//! the gadget studio (R-0015).
 
 use std::env;
 use std::path::PathBuf;
@@ -28,7 +29,8 @@ fn main() -> ExitCode {
   guion reel sonido <post>\n\
   guion tablero [--repo DIR]... [--todas] [--json] | lote <render|check|voz> [--cuenta X] [--estado Y]\n\
   guion cuenta nueva <dir> --nombre \"…\" --tema \"…\" --revisor NOMBRE --materia \"…\" [...]\n\
-  guion cuenta perfil <dir> [--check]"
+  guion cuenta perfil <dir> [--check]\n\
+  guion studio <post> [--puerto N] [--cara F.ttf] | --cuadro T [--out F.png] | --check | --video | --sheet"
             );
             ExitCode::SUCCESS
         }
@@ -39,6 +41,7 @@ fn main() -> ExitCode {
         Some("reel") => reel::run(&args[2..]),
         Some("tablero") => guion_tablero::run(&args[2..]),
         Some("cuenta") => guion_cuenta::run(&args[2..], &guion_tablero::fecha::hoy(), &al_tablero),
+        Some("studio") => guion_estudio::run(&args[2..]),
         Some(cmd) => {
             eprintln!("comando desconocido: {cmd}");
             ExitCode::from(2)

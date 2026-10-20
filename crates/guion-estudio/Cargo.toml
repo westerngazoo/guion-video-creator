@@ -1,0 +1,20 @@
+[package]
+name = "guion-estudio"
+version = "0.1.0"
+description = "guion studio <post> (R-0015): a local web studio over localhost that renders a post's gadgets frame by frame through guion-reel and saves what it edits to escena.toml; no gdk, so it runs in CI and in the cloud"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+# R-0015: the server is std only (a TcpListener and HTTP/1.1 by hand); the
+# page is one embedded HTML file. Frames are PNG through `png` (already in the
+# lock, through tauri's icon crates: no new crate), so a frame needs no ffmpeg.
+[dependencies]
+guion-cuenta = { workspace = true }
+guion-gadget = { workspace = true }
+guion-reel = { workspace = true }
+motoreel = { workspace = true }
+motoreel-typeset = { workspace = true }
+png = "0.18"
+serde_json = { workspace = true }

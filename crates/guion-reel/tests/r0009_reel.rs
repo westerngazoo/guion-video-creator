@@ -180,6 +180,18 @@ fn ac3_frames_png_are_the_frames() {
     assert_ne!(a, b, "two different times gave the same frame");
 }
 
+/// R-0015: one frame's pixels in memory, no ffmpeg, the same as the PNG's.
+#[test]
+fn ac3_frame_rgb_is_the_frame_without_ffmpeg() {
+    let r = reel("ac3rgb", 1.0, Clock::new());
+    let a = r.frame_rgb(0.5, &plain).unwrap();
+    assert_eq!(a.len(), CANVAS.rgb_len());
+    assert_eq!(a, r.frame_rgb(0.5, &plain).unwrap(), "same t, other bytes");
+    assert_ne!(a, r.frame_rgb(0.0, &plain).unwrap());
+    let png = r.frames_png(&[0.5], &plain).unwrap();
+    assert_eq!(decode(&png[0]), a, "the in-memory frame is not the PNG's");
+}
+
 #[test]
 fn ac3_contact_sheet_is_the_grid_of_reduced_frames() {
     let r = reel("ac3sheet", 1.0, Clock::new());

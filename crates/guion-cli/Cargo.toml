@@ -27,5 +27,7 @@ guion-tablero = { workspace = true }
 # R-0014: `guion cuenta nueva|perfil`, and `guion reel sonido` (the neutral kit).
 guion-cuenta = { workspace = true }
 guion-marca = { workspace = true }
+# R-0015: `guion studio <post>`, the gadget studio on localhost.
+guion-estudio = { workspace = true }
 serde = { workspace = true }
 toml = { workspace = true }
