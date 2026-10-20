@@ -58,6 +58,35 @@ pub struct Cuenta {
     #[serde(default)]
     pub compuerta: Compuerta,
     pub revisor: Revisor,
+    /// The account's own studio gadgets (R-0015), if it has any.
+    #[serde(default)]
+    pub estudio: Option<Estudio>,
+}
+
+/// The account's gadgets for the studio (R-0015 AC3): Rust in its motor
+/// crate, whose `bin` registers them next to the built-ins and serves the
+/// studio (`guion_estudio::run_con`). `guion studio` reads `gadgets` to say
+/// which binary a post that uses one needs.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Estudio {
+    /// The `tipo` of each gadget the account adds.
+    pub gadgets: Vec<String>,
+    /// The crate that holds them, relative to the account's root.
+    #[serde(default = "Estudio::motor_por_defecto")]
+    pub motor: String,
+    /// Its binary that serves the studio.
+    #[serde(default = "Estudio::bin_por_defecto")]
+    pub bin: String,
+}
+
+impl Estudio {
+    fn motor_por_defecto() -> String {
+        "motor/Cargo.toml".into()
+    }
+    fn bin_por_defecto() -> String {
+        "estudio".into()
+    }
 }
 
 /// Who the account is.
@@ -369,6 +398,11 @@ impl Cuenta {
         }
         if rv.materia.trim().is_empty() {
             return Err("revisor.materia is empty".into());
+        }
+        if let Some(e) = &self.estudio {
+            if let Some(g) = e.gadgets.iter().find(|g| !slug_valido(g)) {
+                return Err(format!("estudio.gadgets «{g}»: a gadget tipo is a slug"));
+            }
         }
         Ok(())
     }

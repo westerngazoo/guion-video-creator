@@ -21,6 +21,9 @@ members = [
     # R-0014: el contrato de una cuenta, `guion cuenta nueva` y la marca como datos
     "crates/guion-cuenta",
     "crates/guion-marca",
+    # R-0015: the studio: the gadget contract, and `guion studio <post>` on localhost
+    "crates/guion-gadget",
+    "crates/guion-estudio",
     "apps/guion-studio",
     "apps/guion-playground",
 ]
@@ -56,6 +59,8 @@ guion-fisica = { path = "crates/guion-fisica" }
 guion-tablero = { path = "crates/guion-tablero" }
 guion-cuenta = { path = "crates/guion-cuenta" }
 guion-marca = { path = "crates/guion-marca" }
+guion-gadget = { path = "crates/guion-gadget" }
+guion-estudio = { path = "crates/guion-estudio" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

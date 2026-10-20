@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>guion studio</title>
+<style>
+:root {
+  --fondo: #0a0a0b; --panel: #131316; --linea: #2a2a31; --tinta: #f1efe8;
+  --tenue: #9a9ca5; --acento: #e9b23f; --rojo: #e0322a;
+  --calculado: #7fb8ff; --medido: #6fd58f; --reportado: #e9b23f; --supuesto: #c79bff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); color: var(--tinta);
+  font: 14px/1.4 ui-sans-serif, system-ui, sans-serif; }
+header { display: flex; gap: 12px; align-items: center; padding: 10px 16px;
+  border-bottom: 1px solid var(--linea); flex-wrap: wrap; }
+header b { letter-spacing: .12em; }
+header .post { color: var(--tenue); font-family: ui-monospace, monospace; }
+header .sp { flex: 1; }
+button { font: inherit; color: var(--tinta); background: #16161a; border: 1px solid #3a3a42;
+  border-radius: 6px; padding: 7px 12px; min-height: 36px; cursor: pointer; }
+button.primario { border-color: var(--acento); color: #f4cc6e; background: #2a2210; }
+main { display: grid; grid-template-columns: 220px 1fr 340px; gap: 0; min-height: calc(100vh - 220px); }
+aside, section { padding: 12px 16px; border-right: 1px solid var(--linea); overflow: auto; }
+h2 { font-size: 11px; letter-spacing: .14em; color: var(--tenue); margin: 14px 0 6px; font-weight: 600; }
+.estante div { color: var(--tenue); padding: 3px 0; }
+.gadget { display: block; width: 100%; text-align: left; margin: 4px 0; }
+.gadget.sel { border-color: var(--acento); }
+.vista { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.vista img { height: min(68vh, 900px); aspect-ratio: 9 / 16; background: #000;
+  border: 1px solid var(--linea); image-rendering: auto; }
+.scrub { display: flex; gap: 8px; align-items: center; width: min(100%, 520px); }
+.scrub input { flex: 1; accent-color: var(--acento); }
+.mono { font-family: ui-monospace, monospace; }
+.param { margin: 10px 0; }
+.param label { display: flex; justify-content: space-between; gap: 6px; }
+.param input[type=range] { width: 100%; accent-color: var(--acento); }
+.param select, .param input[type=text] { width: 100%; background: #16161a; color: var(--tinta);
+  border: 1px solid #3a3a42; border-radius: 4px; padding: 4px; }
+.tag { font-size: 11px; padding: 1px 6px; border-radius: 9px; border: 1px solid currentColor; }
+.tag.calculado { color: var(--calculado); } .tag.medido { color: var(--medido); }
+.tag.reportado { color: var(--reportado); } .tag.supuesto { color: var(--supuesto); }
+.nota { color: var(--tenue); font-size: 12px; }
+.aviso { color: var(--rojo); }
+.valor { display: flex; justify-content: space-between; gap: 6px; padding: 2px 0; }
+footer { border-top: 1px solid var(--linea); padding: 10px 16px; }
+.pista { position: relative; height: 22px; margin: 4px 0 4px 120px; background: #101013; }
+.pista .nombre { position: absolute; left: -120px; width: 116px; color: var(--tenue);
+  font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clip { position: absolute; top: 2px; height: 18px; border-radius: 3px; background: #26262c;
+  border: 1px solid #3a3a42; font-size: 11px; padding: 0 4px; overflow: hidden; white-space: nowrap; }
+.clip.voz { background: #1d2a1d; border-color: #2f4a2f; }
+.cabezal { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--acento); }
+#estado { color: var(--tenue); }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } aside, section { border-right: 0; } }
+</style>
+</head>
+<body>
+<header>
+  <b>GUION STUDIO</b>
+  <span class="post" id="post"></span>
+  <span class="tag" id="plantilla"></span>
+  <span class="sp"></span>
+  <span id="estado">cargando…</span>
+  <button id="toml">ver escena.toml</button>
+  <button class="primario" id="guardar">guardar</button>
+</header>
+<main>
+  <aside>
+    <h2>EN ESTE REEL</h2>
+    <div id="gadgets"></div>
+    <h2>BIBLIOTECA</h2>
+    <div id="biblioteca"></div>
+    <h2>PLANTILLA</h2>
+    <div id="notas" class="nota"></div>
+  </aside>
+  <section class="vista">
+    <img id="cuadro" alt="el cuadro en el instante elegido">
+    <div class="scrub">
+      <button id="play" aria-label="reproducir">▶</button>
+      <input id="t" type="range" min="0" step="0.0333" value="0" aria-label="instante">
+      <span class="mono" id="tl">0.00 s</span>
+    </div>
+    <div class="nota">setT(t): el mismo t y los mismos parámetros dan los mismos bytes</div>
+  </section>
+  <section>
+    <h2>INSPECTOR</h2>
+    <div id="inspector" class="nota">elige un gadget</div>
+  </section>
+</main>
+<footer>
+  <h2>LÍNEA DE TIEMPO · un solo reloj para imagen y sonido</h2>
+  <div id="linea"></div>
+</footer>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+let S = null, sel = null, t = 0, jugando = false, pedido = 0;
+
+function el(tag, attrs, ...hijos) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e[k] = v; else e.setAttribute(k, v);
+  }
+  for (const h of hijos) e.append(h);
+  return e;
+}
+const fmt = (x, u) => (Math.abs(x) >= 100 ? x.toFixed(1) : x.toPrecision(4).replace(/\.?0+$/, "")) + (u ? " " + u : "");
+
+async function estado() {
+  const r = await fetch(`/api/estado?t=${t}`);
+  const j = await r.json();
+  if (!r.ok) { $("estado").textContent = j.error; return; }
+  S = j; pintar();
+}
+function cuadro() {
+  const n = ++pedido;
+  const img = new Image();
+  img.onload = () => { if (n === pedido) { $("cuadro").src = img.src; if (jugando) avanzar(); } };
+  img.src = `/api/cuadro.png?t=${t.toFixed(4)}&r=2&n=${n}`;
+}
+function ir(nt) {
+  t = Math.max(0, Math.min(nt, S ? S.duracion : nt));
+  $("t").value = t; $("tl").textContent = t.toFixed(2) + " s";
+  cuadro(); estado();
+}
+let reloj0 = 0, t0 = 0;
+function avanzar() {
+  const ahora = performance.now() / 1000;
+  let nt = t0 + (ahora - reloj0);
+  if (nt >= S.duracion) { nt = S.duracion - 1 / S.fps; jugando = false; $("play").textContent = "▶"; }
+  t = nt; $("t").value = t; $("tl").textContent = t.toFixed(2) + " s";
+  cuadro();
+  if (!jugando) estado();
+}
+
+function pintar() {
+  $("post").textContent = S.post;
+  $("plantilla").textContent = "plantilla · " + S.plantilla.nombre;
+  $("t").max = S.duracion;
+  $("notas").replaceChildren(...S.plantilla.colores.map(c =>
+    el("div", {}, el("span", { style: `display:inline-block;width:10px;height:10px;background:${c.hex};margin-right:6px` }), c.rol)),
+    ...S.plantilla.notas.map(n => el("div", { class: "aviso" }, n)));
+  $("biblioteca").replaceChildren(...S.biblioteca.map(e =>
+    el("div", { class: "estante" }, el("b", {}, e.categoria), ...e.gadgets.map(g => el("div", { title: g.doc }, g.tipo)))));
+  if (!sel && S.gadgets.length) sel = S.gadgets[0].id;
+  $("gadgets").replaceChildren(...S.gadgets.map(g => el("button", {
+    class: "gadget" + (g.id === sel ? " sel" : ""),
+    onclick: () => { sel = g.id; pintar(); },
+  }, `${g.id} · ${g.tipo}`, g.avisos.length ? el("span", { class: "aviso" }, " ⚠") : "")));
+  inspector(); linea();
+  const avisos = S.gadgets.reduce((n, g) => n + g.avisos.length, 0);
+  $("estado").textContent = `${S.gadgets.length} gadgets · ${avisos ? avisos + " avisos" : "sin avisos"} · ${S.lienzo[0]}×${S.lienzo[1]} · ${S.fps} fps`;
+}
+
+function inspector() {
+  const g = S.gadgets.find(g => g.id === sel);
+  if (!g) { $("inspector").textContent = "este reel no tiene gadgets todavía (escena.toml)"; return; }
+  const cosas = [el("div", {}, el("b", {}, g.id), ` · ${g.tipo} · ${g.categoria}`),
+    el("div", { class: "nota" }, `entra «${g.entra}» · sale «${g.sale}»`)];
+  for (const p of g.params) cosas.push(control(g, p));
+  cosas.push(el("h2", {}, "VALORES"));
+  for (const v of g.valores) cosas.push(el("div", { class: "valor", title: v.nota },
+    el("span", {}, v.nombre), el("span", { class: "mono" }, fmt(v.cantidad, v.unidad)), el("span", { class: "tag " + v.procedencia }, v.procedencia)));
+  if (g.eventos.length) cosas.push(el("div", { class: "nota" }, "eventos: " + g.eventos.join(", ")));
+  for (const a of g.avisos) cosas.push(el("div", { class: "aviso" }, a));
+  $("inspector").replaceChildren(...cosas);
+}
+
+let espera = null;
+function enviar(g, p, valor, procedencia) {
+  clearTimeout(espera);
+  espera = setTimeout(async () => {
+    const cuerpo = { id: g.id, param: p.nombre, valor };
+    if (procedencia) cuerpo.procedencia = procedencia;
+    const r = await fetch(`/api/param?t=${t}`, { method: "POST", body: JSON.stringify(cuerpo) });
+    const j = await r.json();
+    if (!r.ok) { $("estado").textContent = j.error; return; }
+    S = j; pintar(); cuadro();
+    $("estado").textContent += " · sin guardar";
+  }, 60);
+}
+
+function control(g, p) {
+  const cab = el("label", {}, el("span", { title: p.doc }, p.nombre));
+  const caja = el("div", { class: "param" }, cab);
+  if (p.de) {
+    cab.append(el("span", { class: "mono" }, `= ${p.de}`), el("span", { class: "tag " + p.procedencia }, p.procedencia));
+    caja.append(el("div", { class: "nota" }, `enlazado: ${fmt(p.valor, p.unidad)}`));
+    return caja;
+  }
+  if (p.tipo === "num") {
+    const lect = el("span", { class: "mono" }, fmt(p.valor, p.unidad));
+    cab.append(lect);
+    const r = el("input", { type: "range", min: p.min, max: p.max, step: p.paso, value: p.valor });
+    if (p.animado) { r.disabled = true; caja.append(el("div", { class: "nota" }, "sigue a la línea de tiempo")); }
+    r.oninput = () => { lect.textContent = fmt(+r.value, p.unidad); enviar(g, p, +r.value); };
+    caja.append(r);
+  } else if (p.tipo === "opcion") {
+    const s = el("select", {}, ...p.opciones.map(o => el("option", o === p.valor ? { selected: "" } : {}, o)));
+    s.onchange = () => enviar(g, p, s.value);
+    caja.append(s);
+  } else {
+    const i = el("input", { type: "text", value: p.valor });
+    i.onchange = () => enviar(g, p, i.value);
+    caja.append(i);
+  }
+  if (p.fisico) {
+    const s = el("select", { "aria-label": "procedencia" },
+      ...["calculado", "medido", "reportado", "supuesto"].map(o => el("option", o === p.procedencia ? { selected: "" } : {}, o)));
+    s.className = "tag " + (p.procedencia || "");
+    s.onchange = () => enviar(g, p, p.valor, s.value);
+    cab.append(s);
+    if (p.fuente) caja.append(el("div", { class: "nota" }, "fuente: " + p.fuente));
+    if (p.nota) caja.append(el("div", { class: "nota" }, p.nota));
+  }
+  return caja;
+}
+
+function linea() {
+  const pct = (x) => `${(100 * x / S.duracion).toFixed(3)}%`;
+  const pistas = [];
+  const cab = () => el("div", { class: "cabezal", style: `left:${pct(t)}` });
+  if (S.voz) {
+    pistas.push(el("div", { class: "pista" }, el("span", { class: "nombre" }, "voz"),
+      ...S.voz.map(l => el("div", { class: "clip voz", title: l.subtitulo, style: `left:${pct(l.t0)};width:${pct(l.t1 - l.t0)}` }, l.id)), cab()));
+  }
+  for (const g of S.gadgets) {
+    const a = S.anclas, rs = (n) => { const m = a.find(x => x.nombre === n); return m ? m.t : null; };
+    const t0 = resolver(g.entra, rs), t1 = resolver(g.sale, rs);
+    pistas.push(el("div", { class: "pista" }, el("span", { class: "nombre" }, `${g.tipo} · ${g.id}`),
+      el("div", { class: "clip", style: `left:${pct(t0)};width:${pct(t1 - t0)}` }, `${g.entra} → ${g.sale}`), cab()));
+  }
+  $("linea").replaceChildren(...pistas);
+}
+function resolver(s, rs) {
+  s = s.trim();
+  if (rs(s) !== null) return rs(s);
+  for (let i = s.length - 1; i > 0; i--) {
+    if (s[i] === "+" || s[i] === "-") {
+      const b = rs(s.slice(0, i).trim()), d = parseFloat(s.slice(i).replace(/ /g, ""));
+      if (b !== null && isFinite(d)) return b + d;
+    }
+  }
+  return 0;
+}
+
+$("t").oninput = () => ir(+$("t").value);
+$("play").onclick = () => {
+  jugando = !jugando; $("play").textContent = jugando ? "❚❚" : "▶";
+  if (jugando) { reloj0 = performance.now() / 1000; t0 = t; avanzar(); } else estado();
+};
+$("guardar").onclick = async () => {
+  const r = await fetch("/api/guardar", { method: "POST" });
+  const j = await r.json();
+  $("estado").textContent = r.ok ? "guardado: " + j.guardado : j.error;
+};
+$("toml").onclick = async () => {
+  const txt = await (await fetch("/api/escena.toml")).text();
+  const w = window.open("", "_blank");
+  if (w) { w.document.body.append(el("pre", {}, txt)); }
+};
+ir(0);
+</script>
+</body>
+</html>

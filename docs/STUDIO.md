@@ -1,5 +1,11 @@
 # guion studio — cómo correrlo en local
 
+> **R-0015 (2026-10-20):** el studio nuevo es `guion studio <post>`: gadgets
+> sobre `escena.toml`, servido en http://127.0.0.1:7878 sin gdk ni Tauri
+> ([requisito](requirements/0015-studio.md), [spec](specs/0015-studio.md)).
+> La app Tauri de abajo (`apps/guion-studio`, el pipeline de screenplays) queda
+> como legado hasta que el dueño confirme quitarla (R-0015 Q1).
+
 Guía práctica para creadores y desarrolladores: instalar dependencias, clonar el
 repo, ejecutar el pipeline CLI completo (`check` → `render` → `narrate` →
 `encode`) y abrir **guion studio** (interfaz Tauri).

@@ -327,6 +327,32 @@ impl Reel {
         done.map(|_| ()).map_err(ReelError::from)
     }
 
+    /// The RGB24 pixels of the frame at `t`, overlays composed, with no
+    /// ffmpeg and nothing left on disk: what an interactive studio shows
+    /// while the creator drags a slider (R-0015). The same `t` and the same
+    /// `frame` give the same bytes, which are the bytes the MP4 encodes for
+    /// that frame.
+    pub fn frame_rgb<L, F>(&self, t: f64, frame: &F) -> Result<Vec<u8>, ReelError>
+    where
+        L: Overlay,
+        F: Fn(f64) -> Frame<L>,
+    {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        // one scratch folder per call: two studios (or two tests) never share one
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        let tmp = std::env::temp_dir().join(format!(
+            "guion-reel-frame-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        let done = self
+            .sink(&tmp)
+            .and_then(|mut sink| Reel::rasterize(&mut sink, &tmp, 0, frame(t)));
+        let _ = std::fs::remove_dir_all(&tmp);
+        let bytes = done?;
+        Ok(self.pixels(&bytes).to_vec())
+    }
+
     /// Loose review frames: `<review>/t-<t>.png`, one per time.
     pub fn frames_png<L, F>(&self, times: &[f64], frame: &F) -> Result<Vec<PathBuf>, ReelError>
     where
