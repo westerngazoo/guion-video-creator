@@ -45,7 +45,8 @@ impl Estudio {
         } else {
             None
         };
-        let plantilla = Plantilla::para(post, cara)?;
+        let plantilla = Plantilla::para(post, cara)?
+            .para_formato(escena.formato.unwrap_or(guion_reel::Formato::Reel))?;
         // a gadget of the account is served by the account's own binary
         if let Some(e) = plantilla.cuenta.as_ref().and_then(|c| c.estudio.as_ref()) {
             if let Some(g) = escena

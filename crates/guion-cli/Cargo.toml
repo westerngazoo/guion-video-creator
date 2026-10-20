@@ -29,5 +29,8 @@ guion-cuenta = { workspace = true }
 guion-marca = { workspace = true }
 # R-0015: `guion studio <post>`, the gadget studio on localhost.
 guion-estudio = { workspace = true }
+# R-0016: escena.toml's format, and chapter anchors (the voice's instants, the events).
+guion-gadget = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 toml = { workspace = true }

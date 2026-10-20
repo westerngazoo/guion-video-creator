@@ -8,6 +8,7 @@
 //! ```toml
 //! version = 1
 //! cola = 2.3                      # seconds after the voice (with voz.json)
+//! # formato = "youtube"           # R-0016: reel (default), tiktok, short, youtube
 //! # duracion = 8.0                # only for a post without voice
 //!
 //! [[gadget]]
@@ -44,7 +45,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
-use guion_reel::{Clock, Narration};
+use guion_reel::{Clock, Formato, Narration};
 use motoreel::Prim2;
 use serde::Deserialize;
 
@@ -120,6 +121,9 @@ pub struct Instancia {
 /// The whole file.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Escena {
+    /// The delivery format (R-0016): its canvas is the studio's. `None` is
+    /// the reel, and is not written back (a 9:16 scene saves as it did).
+    pub formato: Option<Formato>,
     pub cola: f64,
     pub duracion: Option<f64>,
     pub gadgets: Vec<Instancia>,
@@ -129,6 +133,7 @@ pub struct Escena {
 #[serde(deny_unknown_fields)]
 struct EscenaToml {
     version: u32,
+    formato: Option<String>,
     cola: Option<f64>,
     duracion: Option<f64>,
     #[serde(default)]
@@ -211,6 +216,7 @@ impl Escena {
     /// An empty scene (no gadgets) of a post with voice.
     pub fn vacia() -> Escena {
         Escena {
+            formato: None,
             cola: COLA,
             duracion: None,
             gadgets: Vec::new(),
@@ -258,7 +264,9 @@ impl Escena {
                 anims,
             });
         }
+        let formato = f.formato.as_deref().map(Formato::de).transpose()?;
         Ok(Escena {
+            formato,
             cola: f.cola.unwrap_or(COLA),
             duracion: f.duracion,
             gadgets,
@@ -512,6 +520,9 @@ impl Escena {
              # (voz.toml) or <id>.fin, ± seconds. Physical values carry their procedencia.\n",
         );
         s.push_str("version = 1\n");
+        if let Some(f) = self.formato {
+            let _ = writeln!(s, "formato = {}", cadena(f.nombre()));
+        }
         let _ = writeln!(s, "cola = {}", num(self.cola));
         if let Some(d) = self.duracion {
             let _ = writeln!(s, "duracion = {}", num(d));

@@ -29,6 +29,18 @@ impl Tiempos {
         Tiempos { nombres, duracion }
     }
 
+    /// More named instants: the events of `eventos.json` (a beat, a
+    /// gadget's state), by their names. A name the voice already has keeps
+    /// the voice's instant.
+    pub fn con_eventos(mut self, eventos: &[(String, f64)]) -> Tiempos {
+        for (n, t) in eventos {
+            if self.buscar(n).is_none() {
+                self.nombres.push((n.clone(), *t));
+            }
+        }
+        self
+    }
+
     /// The names and their instants, in order (the studio lists them).
     pub fn nombres(&self) -> &[(String, f64)] {
         &self.nombres
@@ -191,6 +203,21 @@ mod tests {
         assert!(e.contains("never typed"), "{e}");
         let e = t.resolver("gancho2").unwrap_err();
         assert!(e.contains("gancho.fin") && e.contains("cierre"), "{e}");
+    }
+
+    #[test]
+    fn los_eventos_tambien_son_anclas() {
+        // R-0016: a chapter may start on a beat of eventos.json
+        let v = voz();
+        let ev = [("beat-2".to_string(), 3.2), ("gancho".to_string(), 9.0)];
+        let t = Tiempos::de_voz(Some(&v), 8.0).con_eventos(&ev);
+        assert_eq!(t.resolver("beat-2").unwrap(), 3.2);
+        assert!((t.resolver("beat-2-0.2").unwrap() - 3.0).abs() < 1e-12);
+        assert_eq!(
+            t.resolver("gancho").unwrap(),
+            0.5,
+            "the voice's name keeps the voice's instant"
+        );
     }
 
     #[test]

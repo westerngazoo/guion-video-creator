@@ -27,6 +27,15 @@ impl Canvas {
         px_per_unit: 600.0,
     };
 
+    /// A long YouTube video (R-0016): 1920 × 1080 at 30 fps, 600 px per unit
+    /// (a 3.2 × 1.8 view: the vertical reel turned on its side).
+    pub const HORIZONTAL_VIDEO: Canvas = Canvas {
+        width: 1920,
+        height: 1080,
+        fps: 30.0,
+        px_per_unit: 600.0,
+    };
+
     /// The view window the sink rasterizes, in units.
     pub fn view(&self) -> (f64, f64) {
         (
