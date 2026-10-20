@@ -27,6 +27,15 @@ una máquina; lo que es juicio, una sola ronda de personas.
 | −14 LUFS, pico real ≤ −1 dBTP; la cama no sube en huecos cortos | `loudness`, `bed-gaps` |
 | caption: 2 200 caracteres, 5 hashtags, U+202F, nada interno | `caption`, `units`, `internal` |
 | dos renders, mismos bytes | `determinism` |
+| YouTube (Short y largo): título ≤ 100, descripción ≤ 5 000, sin `<` ni `>`, nada interno | `yt-title`, `yt-description` |
+| YouTube largo: el .srt igual a `voz.json`; capítulos (00:00, ≥ 3, ≥ 10 s); miniatura 1280×720 ≤ 2 MB | `srt`, `chapters`, `thumbnail` |
+
+**El formato (R-0016)** sale de `--formato`, de `[reel] formato` en
+`reel.toml` o de `formato` en `escena.toml`: `reel` (por omisión), `tiktok` y
+`short` (9:16, 1080×1920; el Short hasta 3 min) o `youtube` (16:9,
+1920×1080). La compuerta toma las franjas del formato del perfil de la cuenta
+(`[formato.<nombre>]`) o, si no las escribe, las de la casa. El mismo MP4 de un
+reel se comprueba como Short con `guion reel check <post> --formato short`.
 
 **Un reel no va a revisión con la compuerta en rojo.** Su informe
 (`check.json`, corto) es lo que leen los revisores, no cuarenta cuadros.
@@ -44,8 +53,11 @@ una máquina; lo que es juicio, una sola ronda de personas.
    menos de 40 líneas. No relee manuales enteros: la skill, `cuenta.toml` y
    el último post `listo` de la misma cuenta bastan.
 3. **Un comando.** `guion reel <post> --twice`: voz si falta → escena (dos
-   veces) → sonido → mezcla → caption y alt text → **la compuerta**. El autor
-   mira la hoja de contacto (`cuadros/hoja.png`) él mismo antes de pedir nada.
+   veces) → sonido → mezcla → caption y alt text → **la compuerta**. En
+   YouTube, además: `titulo.txt` y `descripcion.txt` desde `youtube.md` (con los
+   capítulos anclados a la voz o a los beats) y, en el video largo, el `.srt`
+   y la miniatura (`[youtube] miniatura = <s>`). El autor mira la hoja de
+   contacto (`cuadros/hoja.png`) él mismo antes de pedir nada.
 4. **Una sola revisión, en paralelo.** El revisor de la materia (solo
    `voz.toml`, el caption, los asserts, la tabla de números y la hoja) y el
    designer (la hoja, `check.json` y los cuadros que la compuerta marque) leen

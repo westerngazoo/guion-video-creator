@@ -24,6 +24,9 @@ pub enum PublishError {
         chars: usize,
         max: usize,
     },
+    /// What YouTube would refuse in a title, a description or its chapters
+    /// (R-0016), every problem named.
+    Youtube { path: String, problems: Vec<String> },
 }
 
 impl fmt::Display for PublishError {
@@ -40,6 +43,13 @@ impl fmt::Display for PublishError {
             ),
             PublishError::CaptionTooLong { path, chars, max } => {
                 write!(f, "{path}: the exported caption is {chars} characters; Instagram accepts {max} at most")
+            }
+            PublishError::Youtube { path, problems } => {
+                write!(
+                    f,
+                    "{path}: YouTube would refuse it: {}",
+                    problems.join("; ")
+                )
             }
         }
     }

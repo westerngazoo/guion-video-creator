@@ -11,7 +11,9 @@
 //! - **review frames** ([`Reel::frames_png`]): loose PNGs at chosen times;
 //! - **the contact sheet** ([`Reel::contact_sheet`]): one image with the key
 //!   frames, each labelled with its time and the event it follows (AC3);
-//! - **`events.json`** ([`Reel::write_events`]): the clock (AC1).
+//! - **`events.json`** ([`Reel::write_events`]): the clock (AC1);
+//! - **the YouTube thumbnail** ([`Reel::miniatura`]): the frame at `t`,
+//!   resized to 1280 × 720 and checked against the platform's weight (R-0016).
 //!
 //! [`Command`] reads the same choices from a command line.
 
@@ -99,17 +101,29 @@ pub enum Command {
     Sheet(Option<Vec<f64>>),
     /// Only `events.json`.
     Events,
+    /// The YouTube thumbnail from the frame at this time (R-0016).
+    Miniatura(f64),
 }
 
 impl Command {
-    /// Reads `--frames 1.2,4.0`, `--sheet [1,3,5]`, `--serial` (one thread),
-    /// `--events`, or nothing (the MP4 on every core).
+    /// Reads `--frames 1.2,4.0`, `--sheet [1,3,5]`, `--miniatura 12.0`,
+    /// `--serial` (one thread), `--events`, or nothing (the MP4 on every core).
     pub fn from_args(args: &[String]) -> Result<Command, ReelError> {
         let value = |flag: &str| {
             args.iter()
                 .position(|a| a == flag)
                 .map(|i| args.get(i + 1).cloned())
         };
+        if let Some(t) = value("--miniatura") {
+            let t = t.ok_or_else(|| {
+                ReelError::Usage("--miniatura needs a time: --miniatura 12.0".into())
+            })?;
+            let ts = times(&t)?;
+            let [t] = ts.as_slice() else {
+                return Err(ReelError::Usage(format!("--miniatura «{t}»: one time")));
+            };
+            return Ok(Command::Miniatura(*t));
+        }
         if let Some(list) = value("--frames") {
             let list = list
                 .ok_or_else(|| ReelError::Usage("--frames needs times: --frames 1.2,4.0".into()))?;
@@ -235,6 +249,7 @@ impl Reel {
                 Ok(vec![self.contact_sheet(&ts, &frame)?])
             }
             Command::Events => Ok(vec![self.write_events()?]),
+            Command::Miniatura(t) => Ok(vec![self.miniatura(*t, &frame)?]),
             Command::Video { threads } => {
                 let events = self.write_events()?;
                 let mp4 = self.mp4();
@@ -351,6 +366,33 @@ impl Reel {
         let _ = std::fs::remove_dir_all(&tmp);
         let bytes = done?;
         Ok(self.pixels(&bytes).to_vec())
+    }
+
+    /// The YouTube thumbnail (R-0016): the frame at `t`, area-resized to
+    /// 1280 × 720, as `<dir>/miniatura.png`. The canvas must be 16:9; a PNG
+    /// over the platform's 2 MB is refused (and removed). Deterministic: the
+    /// same `t` and `frame` give the same bytes.
+    pub fn miniatura<L, F>(&self, t: f64, frame: &F) -> Result<PathBuf, ReelError>
+    where
+        L: Overlay,
+        F: Fn(f64) -> Frame<L>,
+    {
+        use crate::youtube::{check_thumbnail, resample, THUMB_H, THUMB_W};
+        let (w, h) = (self.canvas.width as usize, self.canvas.height as usize);
+        if w * 9 != h * 16 {
+            return Err(ReelError::Format(format!(
+                "the thumbnail is 16:9 ({THUMB_W}×{THUMB_H}); this canvas is {w}×{h}"
+            )));
+        }
+        let rgb = self.frame_rgb(t, frame)?;
+        let small = resample(&rgb, w, h, THUMB_W, THUMB_H);
+        let png = self.dir.join("miniatura.png");
+        png_from_rgb(&small, THUMB_W, THUMB_H, &png)?;
+        if let Err(e) = check_thumbnail(&png) {
+            let _ = std::fs::remove_file(&png);
+            return Err(ReelError::Format(e));
+        }
+        Ok(png)
     }
 
     /// Loose review frames: `<review>/t-<t>.png`, one per time.

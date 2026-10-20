@@ -5,6 +5,22 @@
 //! safe area, the motion and audio limits, and the caption's rules. The crate
 //! holds none of them (R-0009 AC7 still holds): a brand writes one TOML and
 //! every reel of that brand is checked the same way.
+//!
+//! **Formats (R-0016).** The top-level `[canvas]`, `[subtitle]`, `[safe]` and
+//! `[formula]` describe the brand's own format (a 9:16 reel, for the house's
+//! brands). [`Profile::para`] gives the profile a format is checked with: the
+//! same one for a format of the same orientation, the house's default bands
+//! ([`crate::Formato::bandas`]) for the other orientation, and on top of either
+//! what the brand writes under `[formato.<name>]`:
+//!
+//! ```toml
+//! [formato.youtube]
+//! canvas = { width = 1920, height = 1080, fps = 30.0 }
+//! subtitle = { band = [940.0, 1025.0], baseline = 980.0, center_x = 960.0, max_width = 1400.0 }
+//! safe = { x = [96.0, 1824.0], y = [54.0, 1025.0], except = [[1700.0, 60.0, 1860.0, 140.0]] }
+//! formula_band = [700.0, 900.0]
+//! max_duration = 900.0
+//! ```
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -12,6 +28,7 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 
 use super::GateError;
+use crate::formato::Formato;
 
 /// An RGB colour, `[r, g, b]` (an `[r, g, b, a]` token keeps only its colour:
 /// the gate never classifies translucent fills).
@@ -35,6 +52,9 @@ pub struct Profile {
     pub scan: ScanSpec,
     pub audio: AudioSpec,
     pub caption: CaptionSpec,
+    /// Per-format overrides, by format name (R-0016).
+    #[serde(default)]
+    pub formato: BTreeMap<String, FormatoSpec>,
     /// Where the profile was read from: its relative font paths resolve here.
     #[serde(skip)]
     pub dir: PathBuf,
@@ -262,6 +282,52 @@ pub struct CaptionSpec {
     pub internal: Vec<String>,
 }
 
+/// What a brand overrides for one format (R-0016); every key is optional.
+#[derive(Debug, Clone, PartialEq, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FormatoSpec {
+    #[serde(default)]
+    pub canvas: Option<CanvasSpec>,
+    #[serde(default)]
+    pub subtitle: Option<SubtitleBands>,
+    #[serde(default)]
+    pub safe: Option<SafeBands>,
+    /// The formula band in this format (the brand's `[formula]` tokens).
+    #[serde(default)]
+    pub formula_band: Option<[f64; 2]>,
+    /// The longest the video may last here, s (never past the platform's).
+    #[serde(default)]
+    pub max_duration: Option<f64>,
+}
+
+/// The subtitle's geometry in one format.
+#[derive(Debug, Clone, PartialEq, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SubtitleBands {
+    #[serde(default)]
+    pub band: Option<[f64; 2]>,
+    #[serde(default)]
+    pub baseline: Option<f64>,
+    #[serde(default)]
+    pub center_x: Option<f64>,
+    #[serde(default)]
+    pub max_width: Option<f64>,
+}
+
+/// The safe area in one format.
+#[derive(Debug, Clone, PartialEq, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SafeBands {
+    #[serde(default)]
+    pub x: Option<[f64; 2]>,
+    #[serde(default)]
+    pub y: Option<[f64; 2]>,
+    #[serde(default)]
+    pub free: Option<Vec<[f64; 4]>>,
+    #[serde(default)]
+    pub except: Option<Vec<[f64; 4]>>,
+}
+
 fn tokens<'de, D>(d: D) -> Result<BTreeMap<String, Rgb>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -318,7 +384,97 @@ impl Profile {
                 "scan.stride and canvas.fps must be > 0".into(),
             ));
         }
+        for (name, o) in &p.formato {
+            Formato::de(name).map_err(|e| GateError::Profile(format!("[formato.{name}]: {e}")))?;
+            if o.formula_band.is_some() && p.formula.is_none() {
+                return Err(GateError::Profile(format!(
+                    "formato.{name}.formula_band needs a [formula] (its tokens)"
+                )));
+            }
+            if let Some(c) = &o.canvas {
+                if c.width == 0 || c.height == 0 || c.fps <= 0.0 || !c.fps.is_finite() {
+                    return Err(GateError::Profile(format!(
+                        "formato.{name}.canvas: width, height and fps must be > 0"
+                    )));
+                }
+            }
+        }
         Ok(p)
+    }
+
+    /// The profile format `f` is checked with (R-0016): this one when `f`
+    /// has the orientation of `[canvas]`, the house's default bands for `f`
+    /// otherwise, then the brand's `[formato.<f>]` on top. A brand that
+    /// writes nothing for a format of its own orientation gets itself back,
+    /// unchanged.
+    pub fn para(&self, f: Formato) -> Profile {
+        let mut q = self.clone();
+        let vertical = self.canvas.height > self.canvas.width;
+        if f.vertical() != vertical {
+            let b = f.bandas();
+            q.canvas.width = b.width;
+            q.canvas.height = b.height;
+            q.subtitle.band = b.subtitle_band;
+            q.subtitle.baseline = b.baseline;
+            q.subtitle.center_x = b.center_x;
+            q.subtitle.max_width = b.max_width;
+            q.safe.x = b.safe_x;
+            q.safe.y = b.safe_y;
+            q.safe.free = b.free;
+            q.safe.except = b.except;
+            q.formula = match (q.formula.take(), b.formula_band) {
+                (Some(mut fs), Some(band)) => {
+                    fs.band = band;
+                    Some(fs)
+                }
+                // a formula band is the brand's design in its own format
+                _ => None,
+            };
+        }
+        let Some(o) = self.formato.get(f.nombre()) else {
+            return q;
+        };
+        if let Some(c) = &o.canvas {
+            q.canvas = c.clone();
+        }
+        if let Some(s) = &o.subtitle {
+            q.subtitle.band = s.band.unwrap_or(q.subtitle.band);
+            q.subtitle.baseline = s.baseline.unwrap_or(q.subtitle.baseline);
+            q.subtitle.center_x = s.center_x.unwrap_or(q.subtitle.center_x);
+            q.subtitle.max_width = s.max_width.unwrap_or(q.subtitle.max_width);
+        }
+        if let Some(s) = &o.safe {
+            q.safe.x = s.x.unwrap_or(q.safe.x);
+            q.safe.y = s.y.unwrap_or(q.safe.y);
+            if let Some(v) = &s.free {
+                q.safe.free = v.clone();
+            }
+            if let Some(v) = &s.except {
+                q.safe.except = v.clone();
+            }
+        }
+        if let Some(band) = o.formula_band {
+            // the brand's formula tokens, in this format's band
+            q.formula = q
+                .formula
+                .take()
+                .or_else(|| self.formula.clone())
+                .map(|mut fs| {
+                    fs.band = band;
+                    fs
+                });
+        }
+        q
+    }
+
+    /// The longest a video of format `f` may last, s: the brand's
+    /// `[formato.<f>] max_duration` and the platform's, the shorter.
+    pub fn max_duration(&self, f: Formato) -> Option<f64> {
+        let brand = self.formato.get(f.nombre()).and_then(|o| o.max_duration);
+        match (brand, f.duracion_maxima()) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (a, b) => a.or(b),
+        }
     }
 
     /// A path from the profile, resolved against the profile's folder.

@@ -1420,6 +1420,7 @@ dependencies = [
  "guion-cuenta",
  "guion-encode",
  "guion-estudio",
+ "guion-gadget",
  "guion-marca",
  "guion-motion",
  "guion-publish",
@@ -1427,6 +1428,7 @@ dependencies = [
  "guion-tablero",
  "motoreel",
  "serde",
+ "serde_json",
  "toml 0.8.23",
 ]
 

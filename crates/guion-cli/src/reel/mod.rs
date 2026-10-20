@@ -1,8 +1,8 @@
 //! `guion reel`: a narrated reel in one command, and its automatic gate (R-0012).
 //!
 //! ```text
-//! guion reel <post> [--twice] [--no-check]
-//! guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]
+//! guion reel <post> [--twice] [--no-check] [--formato F]
+//! guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT] [--formato F]
 //! guion reel nuevo <cuenta> <slug> [--titulo "…"] [--repo DIR]...   (R-0013, guion-tablero)
 //! guion reel sonido <post>                                           (R-0014, guion-marca)
 //! ```
@@ -13,9 +13,15 @@
 //! and alt text (guion-publish), the cover frame, and the gate. Every step
 //! is deterministic, so a second run gives the same bytes; `--twice` renders
 //! the scene twice and the gate compares them.
+//!
+//! The format (R-0016: `reel`, `tiktok`, `short`, `youtube`) comes from
+//! `--formato`, `reel.toml` or `escena.toml`. The scene and the sound see it
+//! in `GUION_FORMATO`; a YouTube format also writes the title and the
+//! description (`youtube.md`), and a long video the `.srt` and the thumbnail.
 
 mod config;
 mod voz;
+mod youtube;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -23,13 +29,14 @@ use std::time::Instant;
 
 use guion_encode::{mux_at_loudness, LoudnessTarget};
 use guion_reel::gate::{self, Inputs, Profile};
+use guion_reel::Formato;
 
 use config::{path, ReelToml};
 
 const USAGE: &str =
-    "uso:\n  guion reel <post> [--twice] [--no-check]\n  guion reel voice <post>\n  \
+    "uso:\n  guion reel <post> [--twice] [--no-check] [--formato reel|tiktok|short|youtube]\n  guion reel voice <post>\n  \
 guion reel nuevo <cuenta> <slug> [--titulo \"…\"] [--repo DIR]...\n  guion reel sonido <post>\n  \
-guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT]";
+guion reel check <post> [--brand PROFILE.toml] [--mp4 FILE] [--compare A.mp4 B.mp4] [--json OUT] [--formato F]";
 
 pub fn run(args: &[String]) -> ExitCode {
     match args.first().map(String::as_str) {
@@ -101,11 +108,13 @@ struct CheckArgs {
     mp4: Option<PathBuf>,
     compare: Option<(PathBuf, PathBuf)>,
     json: Option<PathBuf>,
+    formato: Option<Formato>,
 }
 
 fn parse_check(args: &[String]) -> Result<CheckArgs, String> {
     let mut post = None;
     let (mut brand, mut mp4, mut compare, mut json) = (None, None, None, None);
+    let mut formato = None;
     let mut it = args.iter();
     while let Some(a) = it.next() {
         let mut val = |flag: &str| {
@@ -117,6 +126,10 @@ fn parse_check(args: &[String]) -> Result<CheckArgs, String> {
             "--brand" => brand = Some(val("--brand")?),
             "--mp4" => mp4 = Some(val("--mp4")?),
             "--json" => json = Some(val("--json")?),
+            "--formato" => {
+                let f = it.next().ok_or("--formato needs a value")?;
+                formato = Some(Formato::de(f)?);
+            }
             "--compare" => {
                 let a = val("--compare")?;
                 let b = it
@@ -136,6 +149,7 @@ fn parse_check(args: &[String]) -> Result<CheckArgs, String> {
         mp4,
         compare,
         json,
+        formato,
     })
 }
 
@@ -152,22 +166,50 @@ fn check_cmd(args: &[String]) -> ExitCode {
     } else {
         None
     };
-    match gate_post(&a.post, reel.as_ref(), a.brand, a.mp4, a.compare, a.json) {
+    let formato = match youtube::formato(&a.post, reel.as_ref(), a.formato) {
+        Ok(f) => f,
+        Err(e) => return fail(e),
+    };
+    let gate = Gate {
+        brand: a.brand,
+        mp4: a.mp4,
+        compare: a.compare,
+        json: a.json,
+        formato,
+    };
+    match gate_post(&a.post, reel.as_ref(), gate) {
         Ok(true) => ExitCode::SUCCESS,
         Ok(false) => ExitCode::FAILURE,
         Err(e) => fail(e),
     }
 }
 
-/// Runs the gate on a post, prints the summary, writes the JSON. `Ok(pass)`.
-fn gate_post(
-    post: &Path,
-    reel: Option<&ReelToml>,
+/// What the gate is asked beyond the post.
+struct Gate {
     brand: Option<PathBuf>,
     mp4: Option<PathBuf>,
     compare: Option<(PathBuf, PathBuf)>,
     json: Option<PathBuf>,
-) -> Result<bool, String> {
+    formato: Formato,
+}
+
+/// Where the texts to paste go: `[publish] dir`, or the post.
+fn publish_dir(post: &Path, reel: Option<&ReelToml>) -> Result<PathBuf, String> {
+    match reel.and_then(|r| r.publish.as_ref()) {
+        Some(p) => path(post, &p.dir),
+        None => Ok(post.to_path_buf()),
+    }
+}
+
+/// Runs the gate on a post, prints the summary, writes the JSON. `Ok(pass)`.
+fn gate_post(post: &Path, reel: Option<&ReelToml>, g: Gate) -> Result<bool, String> {
+    let Gate {
+        brand,
+        mp4,
+        compare,
+        json,
+        formato,
+    } = g;
     let brand = match (brand, reel) {
         (Some(b), _) => b,
         (None, Some(r)) => path(post, &r.reel.brand)?,
@@ -182,6 +224,10 @@ fn gate_post(
             .unwrap_or_default(),
     };
     let mut inputs = Inputs::in_post(post, &name);
+    if formato.de_youtube() {
+        inputs = inputs.youtube_in(&publish_dir(post, reel)?, &name);
+    }
+    inputs.formato = formato;
     if let Some(m) = mp4 {
         inputs.mp4 = m;
     }
@@ -200,10 +246,17 @@ fn gate_post(
 fn pipeline_cmd(args: &[String]) -> ExitCode {
     let mut post = None;
     let (mut twice, mut check) = (false, true);
-    for a in args {
+    let mut formato = None;
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
         match a.as_str() {
             "--twice" => twice = true,
             "--no-check" => check = false,
+            "--formato" => match it.next().map(|f| Formato::de(f)) {
+                Some(Ok(f)) => formato = Some(f),
+                Some(Err(e)) => return fail(e),
+                None => return fail("--formato needs a value"),
+            },
             f if f.starts_with('-') => return fail(format!("unknown flag {f}\n{USAGE}")),
             p if post.is_none() => post = Some(PathBuf::from(p)),
             p => return fail(format!("unexpected argument {p}")),
@@ -214,7 +267,7 @@ fn pipeline_cmd(args: &[String]) -> ExitCode {
         Ok(p) => p,
         Err(e) => return fail(format!("{}: {e}", post.display())),
     };
-    match pipeline(&post, twice, check) {
+    match pipeline(&post, twice, check, formato) {
         Ok(true) => ExitCode::SUCCESS,
         Ok(false) => ExitCode::FAILURE,
         Err(e) => fail(e),
@@ -255,11 +308,14 @@ fn build_scene(post: &Path, r: &ReelToml) -> Result<PathBuf, String> {
     Ok(target.join("release").join(&r.scene.bin))
 }
 
-fn pipeline(post: &Path, twice: bool, check: bool) -> Result<bool, String> {
+fn pipeline(post: &Path, twice: bool, check: bool, flag: Option<Formato>) -> Result<bool, String> {
     let r = ReelToml::load(post)?;
     let name = r.name(post);
+    let formato = youtube::formato(post, Some(&r), flag)?;
+    // the scene and the sound render the format they are asked for
+    std::env::set_var(guion_reel::formato::VARIABLE, formato.nombre());
     let all = Instant::now();
-    println!("guion reel {}", post.display());
+    println!("guion reel {} ({formato})", post.display());
 
     // 1. the voice, if missing: it sets the clock
     let t = Instant::now();
@@ -329,14 +385,46 @@ fn pipeline(post: &Path, twice: bool, check: bool) -> Result<bool, String> {
         out.display()
     );
 
-    // 5. the caption and the alt text
-    let dir = match &r.publish {
-        Some(p) => path(post, &p.dir)?,
-        None => post.to_path_buf(),
-    };
-    let ex = guion_publish::export_file(&post.join("caption.md")).map_err(|e| e.to_string())?;
-    let (c, a) = ex.write_to(&dir).map_err(|e| e.to_string())?;
-    println!("  caption  {} + {}", c.display(), a.display());
+    // 5. the caption and the alt text (a reel, a TikTok; any format that has one)
+    let dir = publish_dir(post, Some(&r))?;
+    if formato.con_caption() || post.join("caption.md").exists() {
+        let ex = guion_publish::export_file(&post.join("caption.md")).map_err(|e| e.to_string())?;
+        let (c, a) = ex.write_to(&dir).map_err(|e| e.to_string())?;
+        println!("  caption  {} + {}", c.display(), a.display());
+    }
+
+    // 5b. YouTube: the title and the description; a long video, the .srt and the thumbnail
+    if formato.de_youtube() {
+        let (t, d) = youtube::textos(post, &r, &dir)?;
+        println!("  youtube  {} + {}", t.display(), d.display());
+    }
+    if formato == Formato::Youtube {
+        let srt = youtube::subtitulos(post, &name, &dir)?;
+        println!("  srt      {}", srt.display());
+        match r.youtube.as_ref().and_then(|y| y.miniatura) {
+            Some(t) => {
+                sh(Command::new(&bin)
+                    .args([&r.scene.miniatura_flag, &format!("{t}")])
+                    .current_dir(post)
+                    .stdout(std::process::Stdio::null()))?;
+                let png = post.join("miniatura.png");
+                if !png.is_file() {
+                    return Err(format!(
+                        "{} {} {t} wrote no {}: does the scene read guion-reel's Command?",
+                        bin.display(),
+                        r.scene.miniatura_flag,
+                        png.display()
+                    ));
+                }
+                if dir != post {
+                    std::fs::copy(&png, dir.join("miniatura.png"))
+                        .map_err(|e| format!("{}: {e}", dir.display()))?;
+                }
+                println!("  thumb    {t} s → {}", dir.join("miniatura.png").display());
+            }
+            None => println!("  thumb    none ([youtube] miniatura = <s> in reel.toml)"),
+        }
+    }
 
     // 6. the cover frame
     if let Some(cover) = r.reel.cover {
@@ -350,7 +438,17 @@ fn pipeline(post: &Path, twice: bool, check: bool) -> Result<bool, String> {
 
     // 7. the gate
     let pass = if check {
-        gate_post(post, Some(&r), None, None, compare.clone(), None)?
+        gate_post(
+            post,
+            Some(&r),
+            Gate {
+                brand: None,
+                mp4: None,
+                compare: compare.clone(),
+                json: None,
+                formato,
+            },
+        )?
     } else {
         true
     };

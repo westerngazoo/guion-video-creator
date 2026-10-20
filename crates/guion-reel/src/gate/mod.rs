@@ -20,6 +20,7 @@ pub mod profile;
 pub mod report;
 pub mod subtitles;
 pub mod video;
+pub mod youtube;
 
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -28,6 +29,7 @@ use std::time::Instant;
 pub use profile::Profile;
 pub use report::{Finding, Report};
 
+use crate::formato::Formato;
 use crate::narration::Narration;
 use pixels::{outside_safe, regions, set, Classifier};
 use report::{at_frame, MAX_AT};
@@ -67,11 +69,22 @@ pub struct Inputs {
     pub compare: Option<(PathBuf, PathBuf)>,
     /// The longest the reel may last, s.
     pub max_duration: Option<f64>,
+    /// The format it is checked as (R-0016): the profile's bands for it, its
+    /// platform's length, and its texts (the caption for a reel or TikTok;
+    /// the title and description for YouTube; the `.srt`, chapters and
+    /// thumbnail for a long YouTube video).
+    pub formato: Formato,
+    /// The YouTube deliverables: subtitles, title, description, thumbnail.
+    pub srt: PathBuf,
+    pub title: PathBuf,
+    pub description: PathBuf,
+    pub thumbnail: PathBuf,
 }
 
 impl Inputs {
     /// The usual layout of a post folder: `<name>-audio.mp4`, `voz.json`,
-    /// `eventos.json` and `caption.md`.
+    /// `eventos.json` and `caption.md`; for YouTube, `<name>.srt`,
+    /// `titulo.txt`, `descripcion.txt` and `miniatura.png`. A reel.
     pub fn in_post(post: &Path, name: &str) -> Inputs {
         Inputs {
             post: post.to_path_buf(),
@@ -81,7 +94,21 @@ impl Inputs {
             caption: post.join("caption.md"),
             compare: None,
             max_duration: None,
+            formato: Formato::Reel,
+            srt: post.join(format!("{name}.srt")),
+            title: post.join("titulo.txt"),
+            description: post.join("descripcion.txt"),
+            thumbnail: post.join("miniatura.png"),
         }
+    }
+
+    /// The YouTube texts and thumbnail in `dir` (where they were exported).
+    pub fn youtube_in(mut self, dir: &Path, name: &str) -> Inputs {
+        self.srt = dir.join(format!("{name}.srt"));
+        self.title = dir.join("titulo.txt");
+        self.description = dir.join("descripcion.txt");
+        self.thumbnail = dir.join("miniatura.png");
+        self
     }
 }
 
@@ -181,11 +208,19 @@ fn region_box(r: &pixels::Region) -> String {
     format!("[{}, {}, {}, {}]", r.x0, r.y0, r.x1 + 1, r.y1 + 1)
 }
 
-/// Runs every check. The report says PASS only if every finding does.
+/// Runs every check, with the brand profile `p` as it applies to
+/// `inputs.formato` ([`Profile::para`]). The report says PASS only if every
+/// finding does.
 pub fn run(inputs: &Inputs, p: &Profile) -> Result<Report, GateError> {
     let started = Instant::now();
-    for f in [&inputs.mp4, &inputs.voice, &inputs.events, &inputs.caption] {
+    let formato = inputs.formato;
+    let p = &p.para(formato);
+    let caption = formato.con_caption() || inputs.caption.exists();
+    for f in [&inputs.mp4, &inputs.voice, &inputs.events] {
         need(f)?;
+    }
+    if formato.con_caption() {
+        need(&inputs.caption)?;
     }
     let narration = Narration::load(&inputs.voice).map_err(|e| GateError::Input(e.to_string()))?;
     let meter = subtitles::SubtitleMeter::new(p)?;
@@ -401,8 +436,12 @@ pub fn run(inputs: &Inputs, p: &Profile) -> Result<Report, GateError> {
     let voice: Vec<(f64, f64)> = narration.lines.iter().map(|l| (l.t0, l.t1)).collect();
     findings.extend(motion::check(&moving, &voice, p));
 
-    // --- the clock and the length ---
-    findings.push(clock(inputs, n, fps)?);
+    // --- the clock and the length (the post's, the brand's and the platform's) ---
+    let max = match (inputs.max_duration, p.max_duration(formato)) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (a, b) => a.or(b),
+    };
+    findings.push(clock(&inputs.events, max, n, fps)?);
 
     // --- the audio ---
     findings.push(audio::loudness(&inputs.mp4, p)?);
@@ -414,7 +453,19 @@ pub fn run(inputs: &Inputs, p: &Profile) -> Result<Report, GateError> {
     )?);
 
     // --- the caption ---
-    findings.extend(caption::check(&inputs.caption, p));
+    if caption {
+        findings.extend(caption::check(&inputs.caption, p));
+    }
+
+    // --- YouTube (R-0016) ---
+    if formato.de_youtube() {
+        findings.extend(youtube::texts(&inputs.title, &inputs.description, p));
+    }
+    if formato == Formato::Youtube {
+        findings.push(youtube::srt(&inputs.srt, &narration));
+        findings.push(youtube::chapters(&inputs.description, n as f64 / fps));
+        findings.push(youtube::thumbnail(&inputs.thumbnail));
+    }
 
     // --- determinism ---
     findings.push(determinism(inputs.compare.as_ref())?);
@@ -466,16 +517,21 @@ fn events(path: &Path) -> Result<Vec<(String, f64)>, GateError> {
 
 /// The clock: the MP4 has the frames `eventos.json` says, at the profile's
 /// fps, and lasts no longer than allowed.
-fn clock(inputs: &Inputs, frames: usize, fps: f64) -> Result<Finding, GateError> {
+fn clock(
+    events: &Path,
+    max_duration: Option<f64>,
+    frames: usize,
+    fps: f64,
+) -> Result<Finding, GateError> {
     #[derive(serde::Deserialize)]
     struct Head {
         duracion: f64,
         fps: f64,
     }
-    let text = std::fs::read_to_string(&inputs.events)
-        .map_err(|e| GateError::Input(format!("{}: {e}", inputs.events.display())))?;
+    let text = std::fs::read_to_string(events)
+        .map_err(|e| GateError::Input(format!("{}: {e}", events.display())))?;
     let head: Head = serde_json::from_str(&text)
-        .map_err(|e| GateError::Input(format!("{}: {e}", inputs.events.display())))?;
+        .map_err(|e| GateError::Input(format!("{}: {e}", events.display())))?;
     let expected = (head.duracion * head.fps).round() as usize;
     let secs = frames as f64 / fps;
     let mut bad = Vec::new();
@@ -490,13 +546,12 @@ fn clock(inputs: &Inputs, frames: usize, fps: f64) -> Result<Finding, GateError>
             "eventos.json says {expected} frames, the MP4 has {frames}"
         ));
     }
-    if let Some(max) = inputs.max_duration {
+    if let Some(max) = max_duration {
         if secs > max {
             bad.push(format!("{secs:.2} s > {max:.1} s"));
         }
     }
-    let limit = inputs
-        .max_duration
+    let limit = max_duration
         .map(|m| format!(" ≤ {m:.1}"))
         .unwrap_or_default();
     Ok(Finding::from_misses(

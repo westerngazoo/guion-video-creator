@@ -40,6 +40,10 @@ pub enum ReelError {
     Subtitle(String),
     /// A command-line argument the studio does not understand (AC3).
     Usage(String),
+    /// What a format asks for that this reel cannot give (R-0016): a
+    /// thumbnail from a canvas that is not 16:9, or one over the platform's
+    /// weight.
+    Format(String),
 }
 
 impl fmt::Display for ReelError {
@@ -61,6 +65,7 @@ impl fmt::Display for ReelError {
             }
             ReelError::Subtitle(msg) => write!(f, "{msg}"),
             ReelError::Usage(msg) => write!(f, "{msg}"),
+            ReelError::Format(msg) => write!(f, "{msg}"),
         }
     }
 }

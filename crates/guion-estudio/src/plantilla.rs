@@ -7,7 +7,8 @@ use std::path::{Path, PathBuf};
 
 use guion_cuenta::Cuenta;
 use guion_gadget::Paleta;
-use guion_reel::{Canvas, FontLoader};
+use guion_reel::gate::Profile;
+use guion_reel::{Canvas, FontLoader, Formato};
 use motoreel::Rgb;
 use motoreel_typeset::{Face, Fonts};
 
@@ -140,6 +141,68 @@ impl Plantilla {
             Some(r) => Plantilla::de_cuenta(&r),
             None => Plantilla::neutra(cara),
         }
+    }
+
+    /// The template for format `f` (R-0016): its canvas and safe area. The
+    /// account's own format (the orientation of its canvas) stays as it is,
+    /// unless the account's gate profile (`brand/reel-perfil.toml`) writes a
+    /// `[formato.<f>]`; another orientation takes the profile's bands for `f`
+    /// (its overrides, else the house's defaults), at the account's fps, and
+    /// 600 px per unit on the short side as before.
+    pub fn para_formato(mut self, f: Formato) -> Result<Plantilla, String> {
+        let perfil = match &self.raiz {
+            Some(r) if r.join(guion_cuenta::perfil::RUTA).is_file() => {
+                Some(Profile::load(&r.join(guion_cuenta::perfil::RUTA)).map_err(|e| e.to_string()))
+            }
+            _ => None,
+        };
+        let vertical = self.canvas.height > self.canvas.width;
+        if f.vertical() == vertical {
+            // the account's own orientation: only its profile's override moves it
+            // (a profile that does not load is the gate's to report, not the studio's)
+            let propio = matches!(&perfil, Some(Ok(p)) if p.formato.contains_key(f.nombre()));
+            if !propio {
+                return Ok(self);
+            }
+        }
+        let perfil = perfil.transpose()?;
+        let (w, h, fps, seguro) = match &perfil {
+            Some(p) => {
+                let q = p.para(f);
+                let fps = if p
+                    .formato
+                    .get(f.nombre())
+                    .is_some_and(|o| o.canvas.is_some())
+                {
+                    q.canvas.fps
+                } else {
+                    self.canvas.fps
+                };
+                (
+                    q.canvas.width,
+                    q.canvas.height,
+                    fps,
+                    [q.safe.x[0], q.safe.y[0], q.safe.x[1], q.safe.y[1]],
+                )
+            }
+            None => {
+                let b = f.bandas();
+                (
+                    b.width,
+                    b.height,
+                    self.canvas.fps,
+                    [b.safe_x[0], b.safe_y[0], b.safe_x[1], b.safe_y[1]],
+                )
+            }
+        };
+        self.canvas = Canvas {
+            width: w,
+            height: h,
+            fps,
+            px_per_unit: f64::from(w.min(h)) / 1.8,
+        };
+        self.seguro = seguro;
+        Ok(self)
     }
 
     /// The faces, loaded (None without any).

@@ -31,15 +31,24 @@ demás. Lo genérico vive aquí; lo de cada cuenta, en su `cuenta.toml`, su
 |---|---|---|---|---|
 | Reel de Instagram | 9:16, 1080×1920, 30 fps | 60–90 s (meta) | MP4 + portada + caption + alt text | ≤ 5 hashtags, caption ≤ 2 200 caracteres; la portada se recorta a 3:4 |
 | TikTok | 9:16, 1080×1920 | igual que el reel | el mismo MP4 | sin portada propia: el primer cuadro manda |
-| YouTube Short | 9:16, 1080×1920 | hasta 3 min (reportado, ayuda de YouTube, 2024-10) | MP4 + título | el mismo MP4 del reel sirve si dura ≤ 3 min |
-| YouTube largo | 16:9, 1920×1080, 30 fps | 6–15 min | MP4 + miniatura 1280×720 (≤ 2 MB) + título (≤ 100) + descripción (≤ 5 000) con capítulos + subtítulos .srt | capítulos: el primero en 0:00, al menos tres, de ≥ 10 s cada uno (reportado, ayuda de YouTube; verifícalo antes de depender de ello) |
+| YouTube Short | 9:16, 1080×1920 | hasta 3 min (reportado, ayuda de YouTube: subidas desde el 2024-10-15) | MP4 + título + descripción | el mismo MP4 del reel sirve si dura ≤ 3 min |
+| YouTube largo | 16:9, 1920×1080, 30 fps | 6–15 min | MP4 + miniatura 1280×720 (≤ 2 MB) + título (≤ 100) + descripción (≤ 5 000 caracteres y bytes, sin `<` ni `>`) con capítulos + subtítulos .srt | capítulos: el primero en 00:00, al menos tres, de ≥ 10 s cada uno |
 
 Audio en todos: voz sobre la cama a **−14 LUFS**, pico real ≤ −1 dBTP.
 
-**Hoy (2026-10-20) el motor y la compuerta están hechos para 9:16.** El 16:9,
-la miniatura, los capítulos y el .srt son el requisito R-0016 (en curso): hasta
-que esté, un video largo de YouTube se arma como reels encadenados por capítulo
-y se avisa al dueño. No inventes un perfil 16:9 a mano en la cuenta.
+Los límites y sus fuentes están en `docs/specs/0016-formats.md` (R-0016), con
+cómo se verificó cada uno.
+
+**El formato es un campo del post:** `[reel] formato = "youtube"` en
+`reel.toml` (o `formato = "youtube"` en `escena.toml`; si están los dos, deben
+coincidir): `reel` (por omisión), `tiktok`, `short`, `youtube`. `--formato`
+en la línea de comandos manda sobre ambos. El lienzo sale de ahí: el studio,
+el `Contexto` de los gadgets y la compuerta lo usan; una escena en código lo lee
+de `GUION_FORMATO` (`Formato::desde_entorno()?.canvas()` en guion-reel) y
+decide su propio acomodo para 16:9. La compuerta usa las franjas del formato:
+las de `[formato.<nombre>]` del perfil de la cuenta (`brand/reel-perfil.toml`)
+o, si no las escribe, las de la casa. Un perfil 16:9 se escribe ahí, nunca
+como otro perfil a mano.
 
 ## 2. Crea el post
 
@@ -51,6 +60,24 @@ guion reel nuevo "<cuenta>" <slug> --titulo "<pregunta>"   # de la plantilla de 
   tensión constante?»). Una idea por video.
 - `README.md`: estado, nivel o serie, formato y la **tabla de números con su
   procedencia**.
+
+Para YouTube (Short o largo), el post lleva `youtube.md`:
+
+```markdown
+## Título
+¿Por qué el kart levanta una rueda?
+## Descripción
+La idea en un párrafo.
+## Capítulos
+- inicio | La pregunta
+- modelo | El modelo            # una línea de voz.toml, <id>.fin, un evento (beat-3), ± s
+- beat-3 | En la pista
+## Procedencia
+Lo calculado, medido o reportado, en palabras.
+```
+
+y en `reel.toml`, para el video largo, `[youtube] miniatura = <s>` (el cuadro de
+la miniatura).
 
 ## 3. Escribe la voz (`voz.toml`)
 
@@ -96,11 +123,16 @@ Instrumentos registrados por la cuenta; la cama no sube en huecos < 0.5 s
 ## 6. Render y compuerta, antes de cualquier revisión
 
 ```bash
-guion reel <post> --twice        # voz → escena → sonido → mezcla → caption → compuerta
-guion reel check <post>          # debe salir 18/18 con el perfil de la cuenta
+guion reel <post> --twice                 # voz → escena → sonido → mezcla → caption → compuerta
+guion reel check <post>                   # todo PASS con el perfil de la cuenta (18/18 en un reel)
+guion reel <post> --formato youtube       # + titulo.txt, descripcion.txt, <post>.srt, miniatura.png
+guion reel check <post> --formato short   # el mismo MP4 del reel, comprobado como Short (≤ 3 min, título)
+<bin-de-la-escena> --miniatura 12.0       # solo la miniatura (Command de guion-reel); guion studio <post> --miniatura 12.0
 ```
 
-Mismos bytes en las dos corridas. Mira la hoja de contacto tú mismo. Solo
+En YouTube la compuerta suma `yt-title` y `yt-description` (Short y largo) y,
+en el largo, `srt` (igual a `voz.json`), `chapters` (00:00, ≥ 3, ≥ 10 s) y
+`thumbnail` (1280×720, ≤ 2 MB). Mismos bytes en las dos corridas. Mira la hoja de contacto tú mismo. Solo
 entonces: **una ronda de revisión en paralelo** (revisor de contenido + designer)
 sobre la hoja, el informe de la compuerta y `voz.toml`. Junta todos los FIX en
 una sola pasada; las confirmaciones, con un modelo barato.
@@ -113,6 +145,8 @@ una sola pasada; las confirmaciones, con un modelo barato.
 - Paquete en `publicar/<cuenta>/<tema>/`: MP4 con audio, portada sin
   subtítulo (legible en la cuadrícula y en el recorte 3:4), `caption.txt`,
   `alt-text.txt`; su entrada en `ORDEN.md` con caption y alt text para pegar.
+- YouTube: `titulo.txt`, `descripcion.txt` (con capítulos y procedencia),
+  `<post>.srt` y `miniatura.png` van en el mismo `[publish] dir`.
 - Estado `listo` en el README; al dueño, el video y una línea de qué decide.
 
 ## Ahorro

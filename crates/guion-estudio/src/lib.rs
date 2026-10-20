@@ -34,8 +34,9 @@ uso:
   guion studio <post> [--puerto N] [--cara FUENTE.ttf]   el studio en http://127.0.0.1:N (7878; 0: uno libre)
   guion studio <post> --cuadro T [--r K] [--out F.png]   un cuadro como PNG (reducido K veces)
   guion studio <post> --check                            la escena y sus avisos, cuadro por cuadro
-  guion studio <post> --video | --sheet [T,…] | --frames T,… | --events
-                                                         el render de guion-reel desde escena.toml";
+  guion studio <post> --video | --sheet [T,…] | --frames T,… | --events | --miniatura T
+                                                         el render de guion-reel desde escena.toml
+                                                         (--miniatura: la miniatura de YouTube, 1280×720, en 16:9)";
 
 fn valor<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
     args.iter()
@@ -99,9 +100,16 @@ fn ejecutar(registro: Registro, args: &[String]) -> Result<(), (u8, String)> {
             Err((1, format!("{} avisos", avisos.len())))
         };
     }
-    if ["--video", "--sheet", "--frames", "--events", "--serial"]
-        .iter()
-        .any(|f| args.iter().any(|a| a == f))
+    if [
+        "--video",
+        "--sheet",
+        "--frames",
+        "--events",
+        "--serial",
+        "--miniatura",
+    ]
+    .iter()
+    .any(|f| args.iter().any(|a| a == f))
     {
         let c = Command::from_args(args).map_err(|x| (2, x.to_string()))?;
         for f in e.render(&c).map_err(|m| (1, m))? {

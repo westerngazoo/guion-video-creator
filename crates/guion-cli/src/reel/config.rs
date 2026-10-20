@@ -16,6 +16,9 @@ pub struct ReelToml {
     pub sound: SoundSpec,
     #[serde(default)]
     pub publish: Option<PublishSpec>,
+    /// What a YouTube upload needs besides the MP4 (R-0016).
+    #[serde(default)]
+    pub youtube: Option<YoutubeSpec>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -31,6 +34,10 @@ pub struct ReelSpec {
     /// The cover's time, s: a review frame is written there.
     #[serde(default)]
     pub cover: Option<f64>,
+    /// The delivery format (R-0016): `reel` (default), `tiktok`, `short`,
+    /// `youtube`. `guion reel --formato` overrides it.
+    #[serde(default)]
+    pub formato: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -57,10 +64,18 @@ pub struct SceneSpec {
     /// in guion-reel's `Command`; a studio may map its own).
     #[serde(default = "frames_flag")]
     pub frames_flag: String,
+    /// The flag the binary takes for the YouTube thumbnail (`--miniatura 12.0`
+    /// in guion-reel's `Command`, R-0016): it writes `miniatura.png` in the post.
+    #[serde(default = "miniatura_flag")]
+    pub miniatura_flag: String,
 }
 
 fn frames_flag() -> String {
     "--frames".into()
+}
+
+fn miniatura_flag() -> String {
+    "--miniatura".into()
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -83,6 +98,22 @@ fn sound_output() -> String {
 pub struct PublishSpec {
     /// Where `caption.txt` and `alt-text.txt` go (default: the post).
     pub dir: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct YoutubeSpec {
+    /// The title, description, chapters and provenance (guion-publish's
+    /// `youtube.md`), relative to the post.
+    #[serde(default = "youtube_texto")]
+    pub texto: String,
+    /// The thumbnail's time, s (a long YouTube video).
+    #[serde(default)]
+    pub miniatura: Option<f64>,
+}
+
+fn youtube_texto() -> String {
+    "youtube.md".into()
 }
 
 /// `${VAR}` replaced by the environment's value; an unset variable is an error.
@@ -131,6 +162,17 @@ pub fn path(post: &Path, s: &str) -> Result<PathBuf, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_format_and_youtube_are_optional() {
+        let t = "[reel]\nbrand = \"b.toml\"\nmax_duration = 900\nformato = \"youtube\"\n[voice]\nmodel = \"m\"\nvoices = \"v\"\n\
+                 [scene]\nmanifest = \"C.toml\"\nbin = \"x\"\n[sound]\ncommand = [\"true\"]\n[youtube]\nminiatura = 12.5\n";
+        let r: ReelToml = toml::from_str(t).unwrap();
+        assert_eq!(r.reel.formato.as_deref(), Some("youtube"));
+        let y = r.youtube.unwrap();
+        assert_eq!((y.texto.as_str(), y.miniatura), ("youtube.md", Some(12.5)));
+        assert_eq!(r.scene.miniatura_flag, "--miniatura");
+    }
 
     #[test]
     fn expands_the_environment_and_names_what_is_missing() {
