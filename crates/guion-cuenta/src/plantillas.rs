@@ -22,7 +22,10 @@ pub const TODAS: &[(&str, &str)] = &[
     (".gitignore", t!("gitignore")),
     ("docs/decisions.md", t!("docs/decisions.md")),
     ("brand/fonts/README.md", t!("docs/fuentes.md")),
-    ("motor/Cargo.toml", t!("motor/Cargo.toml")),
+    // A real `Cargo.toml` in this repo would be read by cargo as a package (and
+    // `{%slug%}` is no valid package name): any repo with this one as a git
+    // dependency would fail to resolve. So the template is `.plantilla`.
+    ("motor/Cargo.toml", t!("motor/Cargo.toml.plantilla")),
     ("motor/src/lib.rs", t!("motor/src/lib.rs")),
     ("plantillas/reel/README.md", t!("plantilla/README.md")),
     ("plantillas/reel/caption.md", t!("plantilla/caption.md")),
@@ -40,4 +43,27 @@ pub const TODAS: &[(&str, &str)] = &[
 /// One template, filled.
 pub fn render(plantilla: &str, valores: &[(&str, String)], nombre: &str) -> Result<String, String> {
     sustituir(plantilla, valores, nombre)
+}
+
+#[cfg(test)]
+mod sin_manifiestos {
+    /// No template may be named `Cargo.toml`: cargo would read it as a package
+    /// of this repo, and a git dependency on guion-video-creator would fail.
+    #[test]
+    fn ninguna_plantilla_se_llama_cargo_toml() {
+        fn buscar(d: &std::path::Path, malos: &mut Vec<String>) {
+            for e in std::fs::read_dir(d).unwrap().flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    buscar(&p, malos);
+                } else if p.file_name().is_some_and(|n| n == "Cargo.toml") {
+                    malos.push(p.display().to_string());
+                }
+            }
+        }
+        let raiz = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates");
+        let mut malos = Vec::new();
+        buscar(&raiz, &mut malos);
+        assert!(malos.is_empty(), "{malos:?}");
+    }
 }

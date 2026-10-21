@@ -28,7 +28,7 @@ templates/cuenta/                 # the generic templates (AC3, AC9)
 ├── CLAUDE.md  gitignore
 ├── agentes/{revisor,designer}.md  skill/SKILL.md
 ├── docs/{decisions,fuentes,posts,publicar-perfil}.md
-├── motor/{Cargo.toml,src/lib.rs}
+├── motor/{Cargo.toml.plantilla,src/lib.rs}
 └── plantilla/{README.md,caption.md,escena.rs,reel.toml,sonido.toml,voz.toml}
 ```
 
