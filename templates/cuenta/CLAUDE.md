@@ -34,7 +34,7 @@ R-0014); lo que aquí dice «por decidir» lo decide el dueño.
 El proceso es el genérico de la casa, rápido y barato:
 [`{%proceso%}`]({%proceso%}). No se copia aquí: se sigue. En corto:
 
-1. `guion reel nuevo "{%nombre%}" <slug> --titulo "…"` copia
+1. `guion reel nuevo "{%nombre%}" <slug> --titulo "…"` (con `--encargo E-NNNN` si el dueño lo pidió: `guion encargo lista`) copia
    `plantillas/reel/` a `posts/<slug>/` y registra la escena en `motor/`.
 2. Se escriben `voz.toml` (la voz manda el reloj), los beats de `escena.rs`,
    `caption.md` y el `README.md` del post (estado y números con procedencia).
