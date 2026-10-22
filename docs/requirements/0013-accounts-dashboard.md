@@ -84,6 +84,23 @@ registers the scene.
   dashboard lists the post at once. The `e` prompt takes an optional slug
   and does both. An existing folder, a bad slug or an account without a
   template is an error.
+- **AC11. An encargo with details.** Besides the idea, an encargo may carry
+  `formato` (reel, short, youtube), `prioridad` (alta, normal, baja), `para`
+  (`YYYY-MM-DD`), `nivel`, `variantes` (2 to 4 short lines: what the reel
+  compares), `remake` (the old post it remakes) and `notas`. They are
+  trimmed and checked before anything is written; an empty one is no field;
+  an encargo without them writes none of their keys. `guion encargo nuevo`
+  takes them as flags.
+- **AC12. An encargo follows its post.** `guion encargo tomar <id> <post>`
+  (and `guion reel nuevo … --encargo <id>`) sets `estado = "en curso"` and
+  links the post, which must be one of the encargo's account; `guion
+  encargo marcar <id> <estado>` sets pendiente, en curso, hecho or
+  descartado. Both rewrite only those two lines of that block: comments,
+  other keys and other blocks stay. What the dashboard shows (`vivo` in the
+  JSON) is the linked post's estado when the account has it (`listo` and
+  `publicado` as they are, anything before them `en curso`), `descartado`
+  when discarded, else the stored estado; with the post's deliverables'
+  folder (`paquete`). No one writes the encargo again when the post moves on.
 
 ## 4. Constraints & non-goals
 
@@ -97,9 +114,9 @@ registers the scene.
 
 - Q1. Should the dashboard watch the folders and refresh on its own? Today
   it re-reads when a job ends and on `g`.
-- Q2. Should encargos move through their estados from the dashboard
-  (pendiente → en curso → hecho)? Recommend: yes, as a small follow-up; the
-  agent edits them by hand meanwhile.
+- Q2. ~~Should encargos move through their estados from the dashboard?~~
+  Closed 2026-10-22 by AC12: the agent takes an encargo once, and from then
+  on it follows its post's README.
 
 ## 6. Decision log
 
@@ -109,8 +126,10 @@ registers the scene.
 | 2026-10-18 | The estado word is the first run of letters of the line's value | Real READMEs write `listo (2026-10-16): …`, `revisión — falta …`, `Publicado.` |
 | 2026-10-18 | `publicado` keeps the old value after `Antes:` | The READMEs carry their history in that line; a rewrite must not lose it |
 | 2026-10-18 | Templates and the scene's registration are the brand's (`plantilla`, `registro`) | The scene binary lives in each brand's motor manifest; a generic append with placeholders registers it without this repo knowing the motor |
+| 2026-10-22 | An encargo's shown estado is derived from its post, not stored | One fact in one place: the post's README already says where it is; storing it again in the encargo is what left every encargo «pendiente» |
 | 2026-10-18 | `mux_at_loudness` cuts with `-t <video duration>` instead of `-shortest` | The gate (R-0012 AC5) caught a template reel muxed with 213 of its 217 frames: with `-c:v copy`, `-shortest` dropped the video's tail; `-t` kept all 217 on the same inputs |
 
 ## Changelog
 
+- 2026-10-22 — AC11 (an encargo's details) and AC12 (it follows its post); Q2 closed. The owner asked for more options when requesting a reel, and the encargos never left «pendiente» (10 of 10 in the first repo that used them, one of them already delivered).
 - 2026-10-18 — created; realized by SPEC-0013 in the same change.

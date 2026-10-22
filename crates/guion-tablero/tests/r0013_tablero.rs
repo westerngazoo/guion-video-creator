@@ -605,3 +605,245 @@ fn ac10_a_new_post_from_the_accounts_template() {
         ("Cuenta A", "¿Tres?", Some("tercero"))
     );
 }
+
+#[test]
+fn ac11_an_encargo_carries_the_owners_details() {
+    let raiz = fixture("ac11");
+    let t = leer(&raiz);
+    let d = encargos::Detalles {
+        formato: Some(" Short ".into()),
+        prioridad: Some("alta".into()),
+        para: Some("2026-10-25".into()),
+        nivel: Some("1.3".into()),
+        variantes: vec!["pegado".into(), "inclinado \"atrás\"".into()],
+        remake: Some("31-triceps".into()),
+        notas: Some("Fuente: la del reel viejo.\nSin músculos.".into()),
+        post: None,
+    };
+    let e = t
+        .encargar_con("Cuenta A", "¿Pegado o inclinado?", "2026-10-22", &d)
+        .unwrap();
+    assert_eq!(e.formato.as_deref(), Some("short"), "trimmed, lower case");
+    let todos = encargos::load(&raiz).unwrap();
+    assert_eq!(todos.last(), Some(&e), "what was written reads back");
+    assert_eq!(e.variantes, ["pegado", "inclinado \"atrás\""]);
+    assert_eq!(
+        e.notas.as_deref(),
+        Some("Fuente: la del reel viejo.\nSin músculos.")
+    );
+    // an encargo with no details writes none of their keys
+    let solo = t
+        .encargar("Cuenta A", "¿Y siete?", "2026-10-22", None)
+        .unwrap();
+    let texto = std::fs::read_to_string(raiz.join("encargos.toml")).unwrap();
+    let bloque = texto.rsplit("[[encargo]]").next().unwrap();
+    assert!(
+        bloque.contains(&solo.id) && !bloque.contains("formato") && !bloque.contains("variantes")
+    );
+    // the closed fields and the date are checked, and nothing is written
+    for (malo, campo) in [
+        (
+            encargos::Detalles {
+                formato: Some("tiktok".into()),
+                ..Default::default()
+            },
+            "formato",
+        ),
+        (
+            encargos::Detalles {
+                prioridad: Some("urgente".into()),
+                ..Default::default()
+            },
+            "prioridad",
+        ),
+        (
+            encargos::Detalles {
+                para: Some("25/10/2026".into()),
+                ..Default::default()
+            },
+            "para",
+        ),
+        (
+            encargos::Detalles {
+                variantes: vec!["solo una".into()],
+                ..Default::default()
+            },
+            "variantes",
+        ),
+        (
+            encargos::Detalles {
+                nivel: Some("dos\nlíneas".into()),
+                ..Default::default()
+            },
+            "nivel",
+        ),
+        (
+            encargos::Detalles {
+                post: Some("no-existe".into()),
+                ..Default::default()
+            },
+            "no-existe",
+        ),
+    ] {
+        let err = t
+            .encargar_con("Cuenta A", "x", "2026-10-22", &malo)
+            .unwrap_err();
+        assert!(err.contains(campo), "{campo}: {err}");
+    }
+    assert_eq!(
+        encargos::load(&raiz).unwrap().len(),
+        3,
+        "the bad ones wrote nothing"
+    );
+    // empty text is no field
+    let vacios = encargos::Detalles {
+        formato: Some(" ".into()),
+        variantes: vec![" ".into(), "".into()],
+        ..Default::default()
+    };
+    let e = t
+        .encargar_con("Cuenta A", "¿Ocho?", "2026-10-22", &vacios)
+        .unwrap();
+    assert!(e.formato.is_none() && e.variantes.is_empty());
+}
+
+#[test]
+fn ac12_a_taken_encargo_follows_its_post() {
+    let raiz = fixture("ac12");
+    // a comment and an unknown-to-us order of keys must survive the rewrite
+    escribir(
+        &raiz,
+        "encargos.toml",
+        "# mis encargos\n\n[[encargo]]\nid = \"E-0001\"\nfecha = \"2026-10-17\"\ncuenta = \"Cuenta A\"\nidea = \"¿Por qué cinco?\"\nestado = \"pendiente\"\n# nota del agente\n\n[[encargo]]\nid = \"E-0002\"\nfecha = \"2026-10-18\"\ncuenta = \"Cuenta A\"\nidea = \"¿Y dos?\"\nestado = \"pendiente\"\nformato = \"reel\"\n\n[[encargo]]\nid = \"E-0003\"\nfecha = \"2026-10-18\"\ncuenta = \"Cuenta A\"\nidea = \"¿Tres?\"\nestado = \"pendiente\"\n",
+    );
+    let t = leer(&raiz);
+    assert_eq!(
+        t.encargos[0].vivo, "pendiente",
+        "no post: the stored estado"
+    );
+    // taking it links the post (by its folder's name or its path)
+    let e = t.marcar("E-0001", "en curso", Some("uno"), None).unwrap();
+    assert_eq!(
+        (e.estado.as_str(), e.post.as_deref()),
+        ("en curso", Some("uno"))
+    );
+    encargos::tomar(&raiz, "E-0002", "posts/dos").unwrap();
+    let texto = std::fs::read_to_string(raiz.join("encargos.toml")).unwrap();
+    assert!(texto.starts_with("# mis encargos\n") && texto.contains("# nota del agente"));
+    assert!(
+        texto.contains("estado = \"en curso\"\npost = \"posts/dos\"\nformato = \"reel\""),
+        "{texto}"
+    );
+    // the third block is untouched
+    assert!(texto.ends_with("idea = \"¿Tres?\"\nestado = \"pendiente\"\n"));
+    // the dashboard shows the post's estado: uno is listo, dos is in revisión
+    let t = leer(&raiz);
+    let vivo: Vec<(&str, &str, Option<&str>)> = t
+        .encargos
+        .iter()
+        .map(|e| (e.encargo.id.as_str(), e.vivo.as_str(), e.paquete.as_deref()))
+        .collect();
+    assert_eq!(
+        vivo,
+        [
+            ("E-0001", "listo", Some("publicar/nivel-1/uno")),
+            ("E-0002", "en curso", None),
+            ("E-0003", "pendiente", None),
+        ]
+    );
+    let c = t.cuenta("Cuenta A").unwrap();
+    assert_eq!(t.pedidos_de(c).count(), 3);
+    // the post publishes: the encargo follows with no one touching it
+    let uno = guion_tablero::tablero::post_de(t.cuenta("Cuenta A").unwrap(), "uno").unwrap();
+    acciones::publicar(uno, "2026-10-20", "").unwrap();
+    assert_eq!(leer(&raiz).encargos[0].vivo, "publicado");
+    // descartado stays descartado
+    let t = leer(&raiz);
+    t.marcar("E-0002", "descartado", None, None).unwrap();
+    assert_eq!(leer(&raiz).encargos[1].vivo, "descartado");
+    // errors name what is wrong, and write nothing
+    let antes = std::fs::read_to_string(raiz.join("encargos.toml")).unwrap();
+    let t = leer(&raiz);
+    assert!(t
+        .marcar("E-0009", "hecho", None, None)
+        .unwrap_err()
+        .contains("E-0009"));
+    assert!(t
+        .marcar("E-0003", "listo", None, None)
+        .unwrap_err()
+        .contains("estado"));
+    assert!(
+        t.marcar("E-0003", "en curso", Some("cuatro"), None)
+            .unwrap_err()
+            .contains("cuatro"),
+        "cuatro is Cuenta B's"
+    );
+    assert_eq!(
+        std::fs::read_to_string(raiz.join("encargos.toml")).unwrap(),
+        antes
+    );
+}
+
+#[test]
+fn ac12_reel_nuevo_takes_the_encargo_and_the_command_line_moves_it() {
+    let raiz = fixture("ac12-cli");
+    let r = raiz.display().to_string();
+    let a = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+    // an encargo of another account is refused before anything is made
+    guion_tablero::run_nuevo(&a(&[
+        "Cuenta B",
+        "seis",
+        "--encargo",
+        "E-0001",
+        "--repo",
+        &r,
+    ]));
+    assert!(!raiz.join("b/posts/seis").exists());
+    // reel nuevo makes the post and takes the encargo for it
+    guion_tablero::run_nuevo(&a(&[
+        "Cuenta A",
+        "cinco",
+        "--titulo",
+        "¿Por qué cinco?",
+        "--encargo",
+        "E-0001",
+        "--repo",
+        &r,
+    ]));
+    assert!(raiz.join("posts/cinco/README.md").is_file());
+    let e = &encargos::load(&raiz).unwrap()[0];
+    assert_eq!(
+        (e.estado.as_str(), e.post.as_deref()),
+        ("en curso", Some("cinco"))
+    );
+    assert_eq!(
+        leer(&raiz).encargos[0].vivo,
+        "en curso",
+        "the template's README says idea"
+    );
+    // `guion encargo nuevo` with details, then `marcar` with a dash for the space
+    guion_tablero::run_encargo(&a(&[
+        "nuevo",
+        "Cuenta B",
+        "¿Por",
+        "qué",
+        "seis?",
+        "--formato",
+        "youtube",
+        "--variante",
+        "A",
+        "--variante",
+        "B",
+        "--repo",
+        &r,
+    ]));
+    let todos = encargos::load(&raiz).unwrap();
+    let e = todos.last().unwrap();
+    assert_eq!(
+        (e.id.as_str(), e.idea.as_str(), e.formato.as_deref()),
+        ("E-0002", "¿Por qué seis?", Some("youtube"))
+    );
+    assert_eq!(e.variantes, ["A", "B"]);
+    guion_tablero::run_encargo(&a(&["marcar", "E-0002", "en-curso", "--repo", &r]));
+    assert_eq!(encargos::load(&raiz).unwrap()[1].estado, "en curso");
+}

@@ -14,7 +14,7 @@
 │                             ││                                                          ││hoja posts/uno/cuadros/hoja.png                │
 │                             ││                                                          ││publicar publicar/nivel-1/uno                  │
 │                             ││                                                          ││                                               │
-│                             ││                                                          ││encargos pendientes de Cuenta A                │
+│                             ││                                                          ││encargos abiertos de Cuenta A                  │
 │                             ││                                                          ││E-0001 2026-10-17 ¿Por qué cinco?              │
 │                             ││                                                          ││                                               │
 │                             ││                                                          ││                                               │

@@ -114,7 +114,8 @@
       "fecha": "2026-10-17",
       "cuenta": "Cuenta A",
       "idea": "¿Por qué cinco?",
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "vivo": "pendiente"
     }
   ]
 }

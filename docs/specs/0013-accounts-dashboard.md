@@ -17,10 +17,10 @@ guion-tablero/src/
 ├── tui.rs        # the terminal loop: 100 ms poll, job channel, background re-read
 ├── acciones.rs   # Accion → Comando (guion reel …), abrir, marcar_publicado (AC5–AC7)
 ├── trabajos.rs   # a queue, N worker threads, line-streamed stdout/stderr (AC5)
-├── encargos.rs   # encargos.toml: load, append-only add (AC8)
+├── encargos.rs   # encargos.toml: load, append with details, marcar/tomar one block, vivo (AC8, AC11, AC12)
 ├── nuevo.rs      # guion reel nuevo: copy, substitute, borrador, registro (AC10)
 ├── fecha.rs      # today (`date +%F`, else UTC by Hinnant's algorithm)
-└── cli.rs        # guion tablero [--json] | lote …; guion reel nuevo (AC3, AC9, AC10)
+└── cli.rs        # guion tablero [--json] | lote …; guion reel nuevo [--encargo]; guion encargo (AC3, AC9–AC12)
 ```
 
 ### `guion-cuentas.toml`
@@ -45,8 +45,19 @@ texto = "[[bin]]\nname = \"{{slug}}\"\npath = \"../content/posts/{{slug}}/escena
 guion tablero [--workspace DIR...] [--paralelo N]
 guion tablero --json [--workspace DIR...]
 guion tablero lote <render|check|voz> [--cuenta X] [--estado Y] [--paralelo N] [--dry-run] [--workspace DIR...]
-guion reel nuevo <cuenta> <slug> [--titulo "…"] [--workspace DIR...]
+guion reel nuevo <cuenta> <slug> [--titulo "…"] [--encargo E-NNNN] [--workspace DIR...]
+guion encargo nuevo <cuenta> "<idea>" [--formato F] [--prioridad P] [--para FECHA] [--nivel N] [--variante V]... [--remake POST] [--notas "…"] [--post POST]
+guion encargo tomar <E-NNNN> <post> [--cuenta X]
+guion encargo marcar <E-NNNN> <pendiente|en-curso|hecho|descartado> [--post POST] [--cuenta X]
+guion encargo lista [--cuenta X] [--json]
 ```
+
+`marcar` finds the encargo's block (from its `[[encargo]]` to the next
+table) and rewrites its `estado` line and its `post` line, adding `post`
+after `estado` when missing; it reads the result back before writing.
+`Tablero::leer` links each encargo to its post (`tablero::post_de`: the
+folder's name or its path, in the encargo's account and repo) and fills
+`vivo`, `post_ruta` and `paquete`.
 
 Without `--workspace`, the current folder. Keys: ↑↓/jk move, ←→/hl or Tab
 switch pane, space mark, `a` mark all, `f` filter, `r` render, `c` check,
@@ -75,6 +86,8 @@ thread when a job ends; `lote` drains it until every job ended.
 | AC7 | `ac7_mark_publicado_rewrites_the_estado_line` |
 | AC8 | `ac8_an_encargo_is_appended` |
 | AC9 | `ac9_lote_runs_an_action_over_a_filtered_set` |
+| AC11 | `ac11_an_encargo_carries_the_owners_details` |
+| AC12 | `ac12_a_taken_encargo_follows_its_post`, `ac12_reel_nuevo_takes_the_encargo_and_the_command_line_moves_it` |
 | AC10 | `ac10_a_new_post_from_the_accounts_template`; out of tree: the Rotor template, made with `guion reel nuevo` and rendered with `guion reel`, passed the gate 18/18 (rotorf-sico, 2026-10-18); the mix fix: `guion-encode` `ac6_la_mezcla_conserva_todos_los_cuadros` |
 
 ## 3. Decision log
