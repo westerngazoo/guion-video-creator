@@ -88,6 +88,7 @@ thread when a job ends; `lote` drains it until every job ended.
 | AC9 | `ac9_lote_runs_an_action_over_a_filtered_set` |
 | AC11 | `ac11_an_encargo_carries_the_owners_details` |
 | AC12 | `ac12_a_taken_encargo_follows_its_post`, `ac12_reel_nuevo_takes_the_encargo_and_the_command_line_moves_it` |
+| AC13 | `ac13_an_account_declares_its_picture_and_colour` |
 | AC10 | `ac10_a_new_post_from_the_accounts_template`; out of tree: the Rotor template, made with `guion reel nuevo` and rendered with `guion reel`, passed the gate 18/18 (rotorf-sico, 2026-10-18); the mix fix: `guion-encode` `ac6_la_mezcla_conserva_todos_los_cuadros` |
 
 ## 3. Decision log
