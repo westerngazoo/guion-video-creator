@@ -522,8 +522,8 @@ fn dibujar_cuentas(f: &mut Frame, app: &App, area: Rect) {
     for c in &app.tablero.cuentas {
         let pendientes = app
             .tablero
-            .encargos_de(c)
-            .filter(|e| e.estado == "pendiente")
+            .pedidos_de(c)
+            .filter(|e| e.vivo == "pendiente")
             .count();
         let mut conteo: Vec<Span> = vec![Span::raw("  ")];
         for e in Estado::TODOS {
@@ -685,19 +685,32 @@ fn dibujar_detalle(f: &mut Frame, app: &App, area: Rect) {
                 Span::raw(v.cloned().unwrap_or_else(|| "—".into())),
             ]));
         }
+        // the open ones: still pending, or taken and on their way (AC12)
         let encargos: Vec<_> = app
             .tablero
-            .encargos_de(c)
-            .filter(|e| e.estado == "pendiente")
+            .pedidos_de(c)
+            .filter(|e| e.vivo == "pendiente" || e.vivo == "en curso")
             .collect();
         if !encargos.is_empty() {
             l.push(Line::raw(""));
             l.push(Line::styled(
-                format!("encargos pendientes de {}", c.nombre),
+                format!("encargos abiertos de {}", c.nombre),
                 gris,
             ));
             for e in encargos {
-                l.push(Line::from(format!("{} {} {}", e.id, e.fecha, e.idea)));
+                let en_curso = match (
+                    &e.vivo[..],
+                    e.post_ruta.as_deref().or(e.encargo.post.as_deref()),
+                ) {
+                    ("en curso", Some(p)) => format!("  → {p}"),
+                    ("en curso", None) => "  (en curso)".into(),
+                    _ => String::new(),
+                };
+                let e2 = &e.encargo;
+                l.push(Line::from(format!(
+                    "{} {} {}{en_curso}",
+                    e2.id, e2.fecha, e2.idea
+                )));
             }
         }
     } else {

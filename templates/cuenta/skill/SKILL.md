@@ -9,7 +9,7 @@ El proceso es el genérico: `{%proceso%}`. Esto es lo que el autor necesita.
 
 ## Archivos del post
 
-`guion reel nuevo "{%nombre%}" <slug> --titulo "…"` crea `posts/<slug>/` con
+`guion reel nuevo "{%nombre%}" <slug> --titulo "…"` (con `--encargo E-NNNN` si el dueño lo pidió: `guion encargo lista`) crea `posts/<slug>/` con
 `reel.toml`, `voz.toml`, `sonido.toml`, `escena.rs` (solo los beats; los
 tiempos salen de `voz.json`, nunca a mano), `caption.md` y `README.md`
 (estado y números con procedencia). La marca es `cuenta.toml`: las escenas

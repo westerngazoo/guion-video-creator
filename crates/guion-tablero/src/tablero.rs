@@ -85,12 +85,27 @@ impl Cuenta {
     }
 }
 
-/// An encargo and the repo it lives in.
+/// An encargo, the repo it lives in, and what it is now (AC12).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct EncargoEn {
     pub repo: String,
     #[serde(flatten)]
     pub encargo: Encargo,
+    /// What the dashboard shows: the linked post's estado, else the stored
+    /// one ([`encargos::vivo`]).
+    pub vivo: String,
+    /// The linked post's folder, relative to the repo, when the account has it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub post_ruta: Option<String>,
+    /// The linked post's deliverables' folder, relative to the repo.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paquete: Option<String>,
+}
+
+/// The post of `c` that `nombre` names: its folder's name or its path.
+pub fn post_de<'a>(c: &'a Cuenta, nombre: &str) -> Option<&'a Post> {
+    let n = nombre.trim().trim_end_matches('/');
+    c.posts.iter().find(|p| p.nombre == n || p.ruta == n)
 }
 
 /// Everything the dashboard shows.
@@ -147,11 +162,26 @@ impl Tablero {
                 });
             }
             for e in encargos::load(raiz)? {
+                let vivo = e.estado.clone();
                 todos_encargos.push(EncargoEn {
                     repo: raiz.display().to_string(),
                     encargo: e,
+                    vivo,
+                    post_ruta: None,
+                    paquete: None,
                 });
             }
+        }
+        for e in &mut todos_encargos {
+            let post = e.encargo.post.as_deref().and_then(|n| {
+                cuentas
+                    .iter()
+                    .filter(|c| c.repo == e.repo && mismo_nombre(&c.nombre, &e.encargo.cuenta))
+                    .find_map(|c| post_de(c, n))
+            });
+            e.vivo = encargos::vivo(&e.encargo, post.map(|p| p.estado));
+            e.post_ruta = post.map(|p| p.ruta.clone());
+            e.paquete = post.and_then(|p| p.publicar.clone());
         }
         let mut t = Tablero {
             cuentas,
@@ -205,6 +235,70 @@ impl Tablero {
             .iter()
             .filter(move |e| e.repo == repo && mismo_nombre(&e.encargo.cuenta, &c.nombre))
             .map(|e| &e.encargo)
+    }
+
+    /// The encargos of an account with what they are now, newest last.
+    pub fn pedidos_de<'a>(&'a self, c: &'a Cuenta) -> impl Iterator<Item = &'a EncargoEn> + 'a {
+        let repo = c.raiz.display().to_string();
+        self.encargos
+            .iter()
+            .filter(move |e| e.repo == repo && mismo_nombre(&e.encargo.cuenta, &c.nombre))
+    }
+
+    /// Appends an encargo with the owner's details (AC11).
+    pub fn encargar_con(
+        &self,
+        cuenta: &str,
+        idea: &str,
+        fecha: &str,
+        detalles: &encargos::Detalles,
+    ) -> Result<Encargo, String> {
+        let c = self
+            .cuenta(cuenta)
+            .ok_or_else(|| format!("no account named «{cuenta}»"))?;
+        if let Some(n) = detalles.post.as_deref().filter(|n| !n.trim().is_empty()) {
+            post_de(c, n).ok_or_else(|| format!("{} has no post «{n}»", c.nombre))?;
+        }
+        encargos::agregar_con(&c.raiz, &c.nombre, idea, fecha, detalles)
+    }
+
+    /// Moves encargo `id` to `estado` and, when given, links `post`, which
+    /// must be a post of the encargo's account (AC12). An id two repos share
+    /// needs `cuenta`.
+    pub fn marcar(
+        &self,
+        id: &str,
+        estado: &str,
+        post: Option<&str>,
+        cuenta: Option<&str>,
+    ) -> Result<Encargo, String> {
+        let hay: Vec<&EncargoEn> = self
+            .encargos
+            .iter()
+            .filter(|e| e.encargo.id == id)
+            .filter(|e| cuenta.is_none_or(|n| mismo_nombre(&e.encargo.cuenta, n)))
+            .collect();
+        let e = match hay.as_slice() {
+            [e] => *e,
+            [] => return Err(format!("no encargo {id}")),
+            _ => return Err(format!("{id} is in {} repos: name its account", hay.len())),
+        };
+        if let Some(n) = post {
+            let c = self
+                .cuentas
+                .iter()
+                .find(|c| c.repo == e.repo && mismo_nombre(&c.nombre, &e.encargo.cuenta))
+                .ok_or_else(|| format!("{id}: no account «{}» in its repo", e.encargo.cuenta))?;
+            if post_de(c, n).is_none() {
+                let hay: Vec<&str> = c.posts.iter().map(|p| p.nombre.as_str()).collect();
+                return Err(format!(
+                    "{} has no post «{n}» (hay: {})",
+                    c.nombre,
+                    hay.join(", ")
+                ));
+            }
+        }
+        encargos::marcar(Path::new(&e.repo), id, estado, post)
     }
 
     /// Appends an encargo for the account named `cuenta` in its repo.

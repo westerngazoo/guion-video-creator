@@ -22,4 +22,6 @@ pub mod trabajos;
 mod tui;
 pub mod ui;
 
-pub use cli::{opciones, plan_lote, run, run_nuevo, Opciones, USO, USO_NUEVO};
+pub use cli::{
+    opciones, plan_lote, run, run_encargo, run_nuevo, Opciones, USO, USO_ENCARGO, USO_NUEVO,
+};

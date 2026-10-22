@@ -52,9 +52,19 @@ como otro perfil a mano.
 
 ## 2. Crea el post
 
+Antes, mira si el dueño lo pidió: `guion encargo lista --cuenta "<cuenta>"`. Un
+encargo trae la idea y, si los puso, el formato, la prioridad, para cuándo, el
+nivel, lo que compara (`variantes`), el post viejo que se rehace (`remake`) y
+notas: son el brief, y se respetan.
+
 ```bash
-guion reel nuevo "<cuenta>" <slug> --titulo "<pregunta>"   # de la plantilla de la cuenta (guion-cuentas.toml)
+guion reel nuevo "<cuenta>" <slug> --titulo "<pregunta>" --encargo E-NNNN   # de la plantilla de la cuenta; --encargo si lo hay
+guion encargo tomar E-NNNN <carpeta del post>                              # si el post ya existía o se hizo a mano
 ```
+
+Tomarlo una vez basta: desde ahí el tablero y la interfaz del dueño muestran el
+estado del README del post (en curso, listo, publicado). No vuelvas a editar el
+encargo; solo `guion encargo marcar E-NNNN descartado` si el dueño lo descarta.
 
 - **Gancho = la pregunta física/técnica**, nunca clickbait («¿La polea te da
   tensión constante?»). Una idea por video.
