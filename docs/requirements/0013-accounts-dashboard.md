@@ -101,6 +101,11 @@ registers the scene.
   `publicado` as they are, anything before them `en curso`), `descartado`
   when discarded, else the stored estado; with the post's deliverables'
   folder (`paquete`). No one writes the encargo again when the post moves on.
+- **AC13. An account's picture and colour.** `[[cuenta]]` may declare
+  `avatar` (a png, jpg, webp or svg, relative to the repo, never outside
+  it) and `color` (`#RRGGBB`), so a dashboard can show which account is
+  which at a glance. A bad one is an error naming the account; a declared
+  avatar that is not there yet is simply left out of the state.
 
 ## 4. Constraints & non-goals
 
@@ -131,5 +136,6 @@ registers the scene.
 
 ## Changelog
 
+- 2026-10-22 — AC13 (an account's picture and colour), for the owner's accounts UI.
 - 2026-10-22 — AC11 (an encargo's details) and AC12 (it follows its post); Q2 closed. The owner asked for more options when requesting a reel, and the encargos never left «pendiente» (10 of 10 in the first repo that used them, one of them already delivered).
 - 2026-10-18 — created; realized by SPEC-0013 in the same change.

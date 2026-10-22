@@ -68,6 +68,13 @@ pub struct Cuenta {
     pub perfil: Option<String>,
     /// The template `guion reel nuevo` copies, relative to the repo.
     pub plantilla: Option<String>,
+    /// The account's picture, relative to the repo, when the file is there
+    /// (AC13).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
+    /// Its accent colour, `#RRGGBB` (AC13).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
     pub conteo: Conteo,
     pub posts: Vec<Post>,
     /// The repo's root (not in the JSON).
@@ -79,6 +86,11 @@ pub struct Cuenta {
 }
 
 impl Cuenta {
+    /// The account's picture, absolute, when the repo declares one and it is there.
+    pub fn avatar_abs(&self) -> Option<PathBuf> {
+        self.avatar.as_ref().map(|a| self.raiz.join(a))
+    }
+
     /// The gate profile, absolute.
     pub fn perfil_abs(&self) -> Option<PathBuf> {
         self.perfil.as_ref().map(|p| self.raiz.join(p))
@@ -155,6 +167,8 @@ impl Tablero {
                     repo: raiz.display().to_string(),
                     perfil: c.perfil.clone(),
                     plantilla: c.plantilla.clone(),
+                    avatar: c.avatar.clone().filter(|a| raiz.join(a).is_file()),
+                    color: c.color.clone(),
                     conteo,
                     posts,
                     raiz: raiz.clone(),

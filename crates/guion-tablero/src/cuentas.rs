@@ -12,6 +12,8 @@
 //! publicar = ["publicar/nivel-*"]      # optional: folders holding <post>/ deliverables
 //! plantilla = "plantillas/reel"        # optional: the template `guion reel nuevo` copies
 //! nuevos = "content/posts"             # optional: where new posts go (default: from `posts`)
+//! avatar = "brand/avatar-1080.png"     # optional (AC13): the account's picture (png, jpg, webp, svg)
+//! color = "#e0322a"                    # optional (AC13): its accent, `#RRGGBB`
 //!
 //! [[cuenta.registro]]                  # optional: text appended on `guion reel nuevo`
 //! archivo = "motor/Cargo.toml"
@@ -59,6 +61,20 @@ pub struct CuentaToml {
     /// registered in its manifest, say), with the template's placeholders.
     #[serde(default)]
     pub registro: Vec<Registro>,
+    /// The account's picture, as the dashboards show it (R-0013 AC13).
+    #[serde(default)]
+    pub avatar: Option<String>,
+    /// The account's accent colour, `#RRGGBB` (R-0013 AC13).
+    #[serde(default)]
+    pub color: Option<String>,
+}
+
+/// The picture formats an avatar may be in.
+pub const AVATAR_EXT: [&str; 5] = ["png", "jpg", "jpeg", "webp", "svg"];
+
+/// `#RRGGBB`.
+pub fn es_color(s: &str) -> bool {
+    s.len() == 7 && s.starts_with('#') && s[1..].chars().all(|c| c.is_ascii_hexdigit())
 }
 
 /// A snippet `guion reel nuevo` appends to one of the repo's files.
@@ -109,11 +125,36 @@ pub fn parse(text: &str) -> Result<CuentasToml, String> {
             .chain(&cuenta.perfil)
             .chain(&cuenta.plantilla)
             .chain(&cuenta.nuevos)
+            .chain(&cuenta.avatar)
             .chain(cuenta.registro.iter().map(|r| &r.archivo));
         for r in rutas {
             if Path::new(r).is_absolute() {
                 return Err(format!("account «{n}»: «{r}» must be relative to the repo"));
             }
+        }
+        if let Some(a) = &cuenta.avatar {
+            let p = Path::new(a);
+            let ext = p
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(str::to_lowercase)
+                .unwrap_or_default();
+            if p.components()
+                .any(|c| matches!(c, std::path::Component::ParentDir))
+            {
+                return Err(format!(
+                    "account «{n}»: avatar «{a}» must stay inside the repo"
+                ));
+            }
+            if !AVATAR_EXT.contains(&ext.as_str()) {
+                return Err(format!(
+                    "account «{n}»: avatar «{a}» must be {}",
+                    AVATAR_EXT.join(", ")
+                ));
+            }
+        }
+        if let Some(c) = cuenta.color.as_deref().filter(|c| !es_color(c)) {
+            return Err(format!("account «{n}»: color «{c}» must be #RRGGBB"));
         }
     }
     Ok(c)

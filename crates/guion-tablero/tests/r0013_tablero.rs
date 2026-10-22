@@ -847,3 +847,46 @@ fn ac12_reel_nuevo_takes_the_encargo_and_the_command_line_moves_it() {
     guion_tablero::run_encargo(&a(&["marcar", "E-0002", "en-curso", "--repo", &r]));
     assert_eq!(encargos::load(&raiz).unwrap()[1].estado, "en curso");
 }
+
+#[test]
+fn ac13_an_account_declares_its_picture_and_colour() {
+    let raiz = fixture("ac13");
+    let cuentas = CUENTAS.replacen(
+        "plantilla = \"plantillas/reel\"\n",
+        "plantilla = \"plantillas/reel\"\navatar = \"marca/avatar.png\"\ncolor = \"#E0322a\"\n",
+        1,
+    );
+    escribir(&raiz, "guion-cuentas.toml", &cuentas);
+    // declared but not there yet: no avatar in the state, no error
+    let t = leer(&raiz);
+    let a = t.cuenta("Cuenta A").unwrap();
+    assert_eq!(
+        (a.avatar.as_deref(), a.color.as_deref()),
+        (None, Some("#E0322a"))
+    );
+    escribir(&raiz, "marca/avatar.png", "png");
+    let t = leer(&raiz);
+    let a = t.cuenta("Cuenta A").unwrap();
+    assert_eq!(a.avatar.as_deref(), Some("marca/avatar.png"));
+    assert_eq!(a.avatar_abs(), Some(raiz.join("marca/avatar.png")));
+    assert!(t.to_json().contains("\"avatar\": \"marca/avatar.png\""));
+    assert!(t.cuenta("Cuenta B").unwrap().avatar.is_none());
+    // what the dashboard serves must be a picture inside the repo
+    for (malo, dice) in [
+        ("avatar = \"../fuera.png\"", "inside the repo"),
+        ("avatar = \"marca/avatar.exe\"", "png"),
+        ("avatar = \"/etc/avatar.png\"", "relative"),
+        ("color = \"rojo\"", "#RRGGBB"),
+    ] {
+        let t = CUENTAS.replacen(
+            "plantilla = \"plantillas/reel\"\n",
+            &format!("plantilla = \"plantillas/reel\"\n{malo}\n"),
+            1,
+        );
+        let err = cuentas::parse(&t).unwrap_err();
+        assert!(
+            err.contains("Cuenta A") && err.contains(dice),
+            "{malo}: {err}"
+        );
+    }
+}
