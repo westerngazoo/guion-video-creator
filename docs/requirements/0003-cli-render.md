@@ -6,6 +6,8 @@
 - **Created:** 2026-08-28
 - **Depends on:** R-0001, R-0002
 - **Realized by:** SPEC-0003
+- **Extendido por:** R-0007 — el CLI reconoce el segundo dialecto,
+  `[comparacion]`. R-0003 daba por hecho que sólo había uno
 - **QA:** `qa` agent run scoped to this requirement
 
 ## 1. Statement

@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 mod check;
+mod comparacion;
 mod encode;
 mod narrate;
 mod path;

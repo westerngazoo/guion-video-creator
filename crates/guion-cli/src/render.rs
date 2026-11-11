@@ -4,7 +4,7 @@ use std::process::ExitCode;
 use guion_assemble::{assemble_at, duration};
 use guion_audio::timeline_duration;
 use guion_brand::{default_theme, postfx_dir};
-use guion_core::{load_and_check, Format};
+use guion_core::{dialecto, load_and_check, Dialecto, Format};
 use guion_motion::ModelRuntime;
 use motoreel::{FrameSink, PpmSink};
 
@@ -63,6 +63,31 @@ pub fn run(args: &[String]) -> ExitCode {
     if !path.exists() {
         eprintln!("{}", screenplay_not_found(Path::new(&raw), &path));
         return ExitCode::from(1);
+    }
+
+    // El dialecto se decide antes de leer. Ver `guion_core::dialecto`.
+    let texto = match std::fs::read_to_string(&path) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("{}: {e}", path.display());
+            return ExitCode::from(1);
+        }
+    };
+    match dialecto(&texto) {
+        Ok(Dialecto::Comparacion) => {
+            // Una repetición a los fps que pida el creador, 2 s por
+            // omisión: la gráfica no tiene timeline propio del que
+            // sacar una duración.
+            let fps = fps.unwrap_or(30.0);
+            let cuadros = frame_count(2.0, fps);
+            let dir = out.unwrap_or_else(|| default_out("comparacion"));
+            return crate::comparacion::render(&path, &dir, cuadros);
+        }
+        Ok(Dialecto::Escena) => {}
+        Err(e) => {
+            eprintln!("{}: {e}", path.display());
+            return ExitCode::from(1);
+        }
     }
 
     let sp = match load_and_check(&path) {
