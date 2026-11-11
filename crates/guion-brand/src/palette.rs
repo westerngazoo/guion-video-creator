@@ -15,6 +15,16 @@ pub struct Colors {
     pub paper: [u8; 3],
     pub accent: [u8; 3],
     pub accent2: [u8; 3],
+    /// El suelo del cintillo del pie. R-0008: es un campo y no un
+    /// derivado de `ink` porque es la SEGUNDA superficie de la pieza, y
+    /// sin nombrarla no se puede medir `accent2` contra el fondo en el
+    /// que de verdad se pinta. En `fbf` casi coincide con `ink`; en una
+    /// marca de suelo oscuro no coincide con nada.
+    ///
+    /// Va sin `default`: una marca que no dice de qué color es su
+    /// cintillo está incompleta, y un `[0,0,0]` silencioso sería
+    /// justamente el fallo callado que R-0008 viene a cerrar.
+    pub bar: [u8; 3],
 }
 
 #[derive(Debug, Clone, Deserialize)]

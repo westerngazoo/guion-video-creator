@@ -6,6 +6,7 @@ ink     = [20, 16, 12]
 paper   = [242, 230, 208]
 accent  = [193, 68, 14]
 accent2 = [224, 90, 43]
+bar     = [20, 16, 12]   # el cintillo del pie: casi `ink`, pero no es `ink`
 
 [[heat]]
 t = 0.0
