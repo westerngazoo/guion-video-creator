@@ -54,6 +54,11 @@ pub fn parse_duration(log: &str) -> Option<f64> {
 ///   teléfono decodifica un video HD con BT.709. Las dos cosas juntas mueven
 ///   el color: un oro (227, 169, 58) llegaba como (232, 167, 50). Se
 ///   convierte con BT.709, en rango de TV, y se etiqueta.
+/// - **Las etiquetas van en los cuadros (`setparams`).** Desde ffmpeg 8 las
+///   propiedades de color de los cuadros que salen del filtro ganan sobre
+///   `-color_primaries`/`-color_trc`: el cuadro RGB no trae primarios ni
+///   transferencia, y el MP4 salía `bt709/unknown/unknown`. `setparams` las
+///   fija en el cuadro; las banderas de salida se quedan para ffmpeg < 8.
 /// - **`+faststart` siempre (AC3).** El índice (`moov`) va antes de los
 ///   datos (`mdat`), así el video empieza a reproducirse sin descargarse
 ///   entero. Antes solo se ponía cuando había audio.
@@ -67,7 +72,8 @@ pub const VIDEO: &[&str] = &[
     "-movflags",
     "+faststart",
     "-vf",
-    "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p",
+    "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,\
+     setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv",
     "-colorspace",
     "bt709",
     "-color_primaries",
