@@ -21,6 +21,23 @@
 //! formula_band = [700.0, 900.0]
 //! max_duration = 900.0
 //! ```
+//!
+//! **Cover framing (R-0017).** Where a vertical cover's content must sit
+//! ([`crate::formato::Encuadre`]) comes from the house's defaults, scaled to
+//! the canvas the format is checked on; a brand overrides any of its four
+//! keys for its own (vertical) format in `[encuadre]`, and for one format in
+//! `[formato.<name>] encuadre`, the latter on top:
+//!
+//! ```toml
+//! [encuadre]
+//! min_top = 320.0
+//! max_bottom = 1500.0
+//! center_y = 940.0
+//! max_offset = 80.0
+//!
+//! [formato.short]
+//! encuadre = { max_offset = 40.0 }
+//! ```
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -28,7 +45,7 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 
 use super::GateError;
-use crate::formato::Formato;
+use crate::formato::{Encuadre, Formato};
 
 /// An RGB colour, `[r, g, b]` (an `[r, g, b, a]` token keeps only its colour:
 /// the gate never classifies translucent fills).
@@ -52,6 +69,10 @@ pub struct Profile {
     pub scan: ScanSpec,
     pub audio: AudioSpec,
     pub caption: CaptionSpec,
+    /// The cover framing of the brand's own (vertical) format (R-0017);
+    /// every key optional, the house's default for the rest.
+    #[serde(default)]
+    pub encuadre: Option<EncuadreBands>,
     /// Per-format overrides, by format name (R-0016).
     #[serde(default)]
     pub formato: BTreeMap<String, FormatoSpec>,
@@ -298,6 +319,35 @@ pub struct FormatoSpec {
     /// The longest the video may last here, s (never past the platform's).
     #[serde(default)]
     pub max_duration: Option<f64>,
+    /// The cover framing in this format (R-0017; vertical formats only).
+    #[serde(default)]
+    pub encuadre: Option<EncuadreBands>,
+}
+
+/// The cover framing's overrides (R-0017), px of the canvas the format is
+/// checked on; every key optional.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EncuadreBands {
+    #[serde(default)]
+    pub min_top: Option<f64>,
+    #[serde(default)]
+    pub max_bottom: Option<f64>,
+    #[serde(default)]
+    pub center_y: Option<f64>,
+    #[serde(default)]
+    pub max_offset: Option<f64>,
+}
+
+impl EncuadreBands {
+    fn over(&self, e: Encuadre) -> Encuadre {
+        Encuadre {
+            min_top: self.min_top.unwrap_or(e.min_top),
+            max_bottom: self.max_bottom.unwrap_or(e.max_bottom),
+            center_y: self.center_y.unwrap_or(e.center_y),
+            max_offset: self.max_offset.unwrap_or(e.max_offset),
+        }
+    }
 }
 
 /// The subtitle's geometry in one format.
@@ -398,6 +448,34 @@ impl Profile {
                     )));
                 }
             }
+            if o.encuadre.is_some() && !Formato::de(name).is_ok_and(Formato::vertical) {
+                return Err(GateError::Profile(format!(
+                    "formato.{name}.encuadre: the cover framing applies to vertical formats only"
+                )));
+            }
+        }
+        if p.encuadre.is_some() && p.canvas.height <= p.canvas.width {
+            return Err(GateError::Profile(
+                "[encuadre]: the cover framing applies to vertical formats only; this brand's \
+                 [canvas] is horizontal"
+                    .into(),
+            ));
+        }
+        for f in Formato::TODOS {
+            if let Some(e) = p.encuadre(f) {
+                let ok = [e.min_top, e.max_bottom, e.center_y, e.max_offset]
+                    .iter()
+                    .all(|v| v.is_finite())
+                    && e.min_top < e.max_bottom
+                    && e.max_offset >= 0.0;
+                if !ok {
+                    return Err(GateError::Profile(format!(
+                        "encuadre for {f}: min_top {} < max_bottom {} and max_offset {} ≥ 0, \
+                         all finite, are required",
+                        e.min_top, e.max_bottom, e.max_offset
+                    )));
+                }
+            }
         }
         Ok(p)
     }
@@ -475,6 +553,40 @@ impl Profile {
             (Some(a), Some(b)) => Some(a.min(b)),
             (a, b) => a.or(b),
         }
+    }
+
+    /// Where the cover's content must sit when format `f` is checked
+    /// (R-0017): `None` for a horizontal format. The house's default
+    /// ([`Formato::bandas`]) is scaled to the height of the canvas `f` is
+    /// checked on (Instagram's crops are proportional to the 9:16 frame);
+    /// then the brand's `[encuadre]` (its own orientation) and its
+    /// `[formato.<f>] encuadre`, in that canvas's pixels, on top.
+    pub fn encuadre(&self, f: Formato) -> Option<Encuadre> {
+        let b = f.bandas();
+        let base = b.encuadre?;
+        let own = self.formato.get(f.nombre());
+        let vertical = self.canvas.height > self.canvas.width;
+        let height = match own.and_then(|o| o.canvas.as_ref()) {
+            Some(c) => c.height,
+            None if f.vertical() == vertical => self.canvas.height,
+            None => b.height,
+        };
+        let k = f64::from(height) / f64::from(b.height);
+        let mut e = Encuadre {
+            min_top: base.min_top * k,
+            max_bottom: base.max_bottom * k,
+            center_y: base.center_y * k,
+            max_offset: base.max_offset * k,
+        };
+        if f.vertical() == vertical {
+            if let Some(o) = &self.encuadre {
+                e = o.over(e);
+            }
+        }
+        if let Some(o) = own.and_then(|o| o.encuadre.as_ref()) {
+            e = o.over(e);
+        }
+        Some(e)
     }
 
     /// A path from the profile, resolved against the profile's folder.

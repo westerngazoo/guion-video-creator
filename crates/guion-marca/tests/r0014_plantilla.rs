@@ -251,7 +251,14 @@ fn ac7_the_template_reel_builds_renders_and_passes_the_gate() {
     let mut i = Inputs::in_post(&post, "que-es-un-bit");
     i.max_duration = Some(90.0);
     i.compare = Some((primero, mp4));
+    // the cover framing (R-0017) on the title: the template's reel.toml puts
+    // the cover at 2.0 s, once the title is in on a real hook; this test's
+    // voice is short, so the title already fades out there: 1.0 s instead
+    assert!(std::fs::read_to_string(post.join("reel.toml"))
+        .unwrap()
+        .contains("cover = 2.0"));
+    i.cover = Some(1.0);
     let r = gate::run(&i, &p).expect("the gate runs");
     assert!(r.pass, "the template must pass its gate:\n{}", r.summary());
-    assert_eq!(r.findings.len(), 18, "{}", r.summary());
+    assert_eq!(r.findings.len(), 19, "{}", r.summary());
 }

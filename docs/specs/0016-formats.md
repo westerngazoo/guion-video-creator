@@ -78,7 +78,7 @@ max_duration = 900.0
 |---|---|---|
 | canvas | 1080 × 1920 | 1920 × 1080 |
 | subtitle band / baseline / centre / widest | 1460–1545 / 1500 / 540 / 840 | 940–1025 / 980 / 960 / 1400 |
-| safe x / y | 90–990 / 250–1545 | 96–1824 / 54–1025 |
+| safe x / y | 90–990 / 300–1545 (250 until R-0017) | 96–1824 / 54–1025 |
 | formula band | none | none |
 
 ### Use

@@ -14,6 +14,7 @@
 
 pub mod audio;
 pub mod caption;
+pub mod encuadre;
 pub mod motion;
 pub mod pixels;
 pub mod profile;
@@ -67,6 +68,10 @@ pub struct Inputs {
     pub caption: PathBuf,
     /// Two renders of the same reel: same bytes or FAIL (determinism).
     pub compare: Option<(PathBuf, PathBuf)>,
+    /// The cover's time, s (`[reel] cover` in `reel.toml`): the frame whose
+    /// framing is checked (R-0017). `None`: the first frame, which is what
+    /// Instagram takes when no cover is picked.
+    pub cover: Option<f64>,
     /// The longest the reel may last, s.
     pub max_duration: Option<f64>,
     /// The format it is checked as (R-0016): the profile's bands for it, its
@@ -93,6 +98,7 @@ impl Inputs {
             events: post.join("eventos.json"),
             caption: post.join("caption.md"),
             compare: None,
+            cover: None,
             max_duration: None,
             formato: Formato::Reel,
             srt: post.join(format!("{name}.srt")),
@@ -214,6 +220,7 @@ fn region_box(r: &pixels::Region) -> String {
 pub fn run(inputs: &Inputs, p: &Profile) -> Result<Report, GateError> {
     let started = Instant::now();
     let formato = inputs.formato;
+    let framing = p.encuadre(formato);
     let p = &p.para(formato);
     let caption = formato.con_caption() || inputs.caption.exists();
     for f in [&inputs.mp4, &inputs.voice, &inputs.events] {
@@ -279,8 +286,19 @@ pub fn run(inputs: &Inputs, p: &Profile) -> Result<Report, GateError> {
     let mut m_formula = Misses::new(stride, fps);
     let (mut max_red, mut max_focus) = (0, 0);
     let mut scanned = 0;
+    // the cover frame (R-0017): its time rounded to a frame
+    let cover = inputs.cover.unwrap_or(0.0);
+    let cover_frame = (cover.max(0.0) * fps).round() as usize;
+    let mut cover_rows = None;
+    let mut cover_seen = false;
     let mut i = 0;
     while frames.next_into(&mut rgb)? {
+        if framing.is_some() && i == cover_frame {
+            let mut c = Vec::new();
+            classes.classify(&rgb, &mut c);
+            cover_rows = encuadre::measure(&c, w, h, &ink, p);
+            cover_seen = true;
+        }
         motion::block_means(&rgb, w, h, band, &mut blocks);
         let m = i == 0 || motion::moved(&blocks, &anchor, &p.motion);
         moving.push(m);
@@ -433,6 +451,18 @@ pub fn run(inputs: &Inputs, p: &Profile) -> Result<Report, GateError> {
             "a formula crossing its band",
         ));
     }
+    findings.push(match &framing {
+        None => encuadre::skipped(formato),
+        Some(e) if cover_seen => encuadre::check(cover_rows, e, &at_frame(cover_frame, fps)),
+        Some(_) => Finding::fail(
+            encuadre::CHECK,
+            format!(
+                "the cover at {cover:.2} s (f{cover_frame}) is past the video's last frame (f{})",
+                n.saturating_sub(1)
+            ),
+            vec![at_frame(cover_frame, fps)],
+        ),
+    });
     let voice: Vec<(f64, f64)> = narration.lines.iter().map(|l| (l.t0, l.t1)).collect();
     findings.extend(motion::check(&moving, &voice, p));
 

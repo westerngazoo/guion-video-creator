@@ -89,7 +89,7 @@ TOML and JSON written by hand. `crear` checks every path before writing any.
 | AC4 | `ac4_refuses_to_overwrite_and_writes_nothing` |
 | AC5 | `ac5_inside_a_repo_the_entry_is_appended_and_shared_paths_go_to_the_root` |
 | AC6 | `guion-marca` `r0014_plantilla.rs` `ac6_the_scene_checks_its_subtitles_with_the_gates_rules` |
-| AC7 | `ac7_the_template_reel_builds_renders_and_passes_the_gate` (cargo builds the scaffolded motor in release into `target/cuenta-e2e`; two renders compared; the neutral kit; the mix; 18/18 checks). Out of tree, the same with `guion reel <post> --twice`: PASS 18/18 (2026-10-18) |
+| AC7 | `ac7_the_template_reel_builds_renders_and_passes_the_gate` (cargo builds the scaffolded motor in release into `target/cuenta-e2e`; two renders compared; the neutral kit; the mix; 18/18 checks; 19/19 since R-0017 added `encuadre`, with the scaffold's title baseline at 986). Out of tree, the same with `guion reel <post> --twice`: PASS 18/18 (2026-10-18) |
 | AC8 | `guion-tablero` `r0014_repos.rs` `ac8_*` (three tests); unit `repos::tests::*`; out of tree: `guion tablero --repo rotorf-sico --repo fisicobuenfisico --json` lists Rotor Físico, PMMO and fisicobuenfisico |
 | AC9 | `docs/proceso-reel.md`; the scaffolded `CLAUDE.md` and skill link it (checked in AC3) |
 

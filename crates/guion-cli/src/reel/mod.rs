@@ -233,6 +233,8 @@ fn gate_post(post: &Path, reel: Option<&ReelToml>, g: Gate) -> Result<bool, Stri
     }
     inputs.compare = compare;
     inputs.max_duration = reel.map(|r| r.reel.max_duration);
+    // R-0017: the framing is checked on the cover the owner will pick
+    inputs.cover = reel.and_then(|r| r.reel.cover);
     let report = gate::run(&inputs, &profile).map_err(|e| e.to_string())?;
     let out = json.unwrap_or_else(|| post.join("check.json"));
     std::fs::write(&out, report.to_json()).map_err(|e| format!("{}: {e}", out.display()))?;
