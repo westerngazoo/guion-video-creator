@@ -334,7 +334,7 @@ texto = {fx}
 
 [marca.titulo]
 tam = 88.0                              # px de em
-y = 760.0                               # línea base
+y = 986.0                               # línea base: el renglón queda centrado en 960 (R-0017)
 
 # El subtítulo: un renglón de 840 px o menos centrado, línea base 1500, la tinta
 # antes de 1540; solo palabras, 8 o menos; más de 6 s → `desde`; fundido de 0.15 s.

@@ -108,7 +108,7 @@ that creating an account be easy, before starting the fourth.
   account's template, with a two-line voice, builds, renders twice to the
   same bytes, takes its bed from the neutral kit (`guion reel sonido`, also
   `{guion}` in `reel.toml`'s sound command), mixes to −14 LUFS and passes
-  all 18 checks of `guion reel check` with the derived profile.
+  all 18 checks of `guion reel check` with the derived profile (19 since R-0017: `encuadre`).
 - **AC8. The dashboard across repos.** `guion tablero` (and `lote`, and
   `guion reel nuevo`) take `--repo DIR`, repeatable, besides `--workspace
   DIR...`; `--todas` adds the user's list (`$GUION_REPOS`, else

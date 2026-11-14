@@ -8,6 +8,10 @@
 //! | `short`   | 9:16, 1080 × 1920   | ≤ 3 min ([`SHORT_MAX_S`])                     |
 //! | `youtube` | 16:9, 1920 × 1080   | chapters, thumbnail, title, description, .srt |
 //!
+//! The vertical formats also carry where a cover's content must sit
+//! ([`Encuadre`], R-0017): Instagram crops a 9:16 reel in the profile grid
+//! and in the feed, and its own UI covers the bottom of the Reels viewer.
+//!
 //! The format is the post's (`formato` in `reel.toml` or `escena.toml`); a
 //! scene binary run by `guion reel` reads it from [`VARIABLE`]
 //! ([`Formato::desde_entorno`]). Nothing here belongs to a brand: the bands
@@ -58,7 +62,45 @@ pub struct Bandas {
     pub except: Vec<[f64; 4]>,
     /// The formula band, when the format has one.
     pub formula_band: Option<[f64; 2]>,
+    /// Where the cover's content must sit (R-0017); `None`: not checked
+    /// (a horizontal format is never cropped to a grid tile).
+    pub encuadre: Option<Encuadre>,
 }
+
+/// Where the content of a vertical cover must sit, px of a 1080 × 1920
+/// canvas, y down (R-0017). The gate measures the box of the cover frame's
+/// ink and fails when its top is above `min_top`, its bottom below
+/// `max_bottom`, or its centre further than `max_offset` from `center_y`.
+///
+/// What Instagram does with a 9:16 reel is *reportado* by third parties, not
+/// documented by Meta (R-0017 §2): the profile grid shows a centred 3:4 crop
+/// (1080 × 1440, y 240–1680), the main feed a centred 4:5 crop (1080 × 1350,
+/// y 285–1635), and the Reels viewer covers about the bottom 380 px with its
+/// UI. Sources: <https://posteverywhere.ai/blog/instagram-reels-aspect-ratio>,
+/// <https://moda.app/resources/sizes/instagram-reel>,
+/// <https://admakeai.com/blog/instagram-reel-size>.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Encuadre {
+    /// The highest the content may start: the 4:5 feed crop's top (285)
+    /// plus a 15 px margin.
+    pub min_top: f64,
+    /// The lowest the content may end: above the Reels UI (1920 − 380 ≈
+    /// 1540), on the subtitle band's bottom edge (1545).
+    pub max_bottom: f64,
+    /// The row the content's box is centred on: the 3:4 grid crop's centre
+    /// (and the canvas's).
+    pub center_y: f64,
+    /// How far, px, the box's centre may sit from `center_y`.
+    pub max_offset: f64,
+}
+
+/// The house's cover framing for 1080 × 1920 (R-0017 AC1).
+pub const ENCUADRE_VERTICAL: Encuadre = Encuadre {
+    min_top: 300.0,
+    max_bottom: 1545.0,
+    center_y: 960.0,
+    max_offset: 60.0,
+};
 
 impl Formato {
     /// Every format, in the order they are listed.
@@ -136,8 +178,10 @@ impl Formato {
     /// The house's default bands (supuestos, not platform values): what the
     /// gate checks a format with when the account's profile does not say.
     /// 9:16 keeps the margins the first studio measured (Rotor's §6 and §12:
-    /// 90 px at the sides, 250 at the top, the subtitle on 1500); 16:9 keeps
-    /// 5 % at the sides and the top and sets the subtitle on y = 980.
+    /// 90 px at the sides, the subtitle on 1500) with the top at 300, not 250:
+    /// ink above 300 is outside Instagram's 4:5 feed crop, which the cover
+    /// framing ([`Encuadre`], R-0017) fails anyway; 16:9 keeps 5 % at the
+    /// sides and the top and sets the subtitle on y = 980.
     pub fn bandas(self) -> Bandas {
         if self.vertical() {
             Bandas {
@@ -148,10 +192,11 @@ impl Formato {
                 center_x: 540.0,
                 max_width: 840.0,
                 safe_x: [90.0, 990.0],
-                safe_y: [250.0, 1545.0],
+                safe_y: [300.0, 1545.0],
                 free: Vec::new(),
                 except: Vec::new(),
                 formula_band: None,
+                encuadre: Some(ENCUADRE_VERTICAL),
             }
         } else {
             Bandas {
@@ -166,6 +211,7 @@ impl Formato {
                 free: Vec::new(),
                 except: Vec::new(),
                 formula_band: None,
+                encuadre: None,
             }
         }
     }

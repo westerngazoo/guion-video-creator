@@ -22,6 +22,7 @@ una máquina; lo que es juicio, una sola ronda de personas.
 | subtítulo: ancho, palabras, cifras y signos, líneas largas, uno a la vez | `sub-*` |
 | un acento por cuadro, un foco por beat | `red`, `focus` |
 | área segura y franja del subtítulo | `safe-area`, `sub-band` |
+| portada (`[reel] cover`, o el cuadro 0) centrada en el recorte 3:4 de la cuadrícula de Instagram, dentro del 4:5 del feed y arriba de su interfaz (R-0017; solo 9:16) | `encuadre` |
 | ningún cuadro quieto de más de ~4 s con voz; cierre quieto ≥ 1.5 s | `still-voice`, `closing-hold` |
 | duración máxima | `duration` |
 | −14 LUFS, pico real ≤ −1 dBTP; la cama no sube en huecos cortos | `loudness`, `bed-gaps` |
