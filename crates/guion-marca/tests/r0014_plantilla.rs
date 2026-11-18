@@ -167,7 +167,10 @@ fn ac6_the_scene_checks_its_subtitles_with_the_gates_rules() {
     match m.rejilla().as_slice() {
         [guion_marca::Prim2::Path { subpaths, style }] => {
             assert!(subpaths.len() > 40, "lines and pads");
-            assert_eq!(style.fill.unwrap().colour, m.color("panel"));
+            assert_eq!(
+                style.fill.unwrap().paint,
+                guion_marca::motoreel::Paint::Flat(m.color("panel"))
+            );
         }
         otro => panic!("{otro:?}"),
     }
