@@ -43,8 +43,8 @@ mod script;
 pub use engine::{engine_by_name, NarrationEngine, PiperEngine, ScaffoldEngine};
 pub use error::AudioError;
 pub use lines::{
-    narrate_lines, sentence_times, split_sentences, Line, Narration, Pacing, Sentence, SilenceRule,
-    TimedLine,
+    narrate_cast, narrate_lines, sentence_times, split_sentences, Line, Narration, Pacing,
+    Sentence, SilenceRule, TimedLine,
 };
 pub use pcm::{read_wav_pcm16, write_wav, write_wav_pcm16, Pcm16};
 pub use wav::{mix_buffers, WavBuffer, SAMPLE_RATE};

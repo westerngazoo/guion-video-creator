@@ -22,13 +22,24 @@
 //! pausa = 1.2                 # optional: extra silence after
 //! antes = 0.8                 # optional: extra silence before
 //! desde = 2                   # optional: the subtitle enters on sentence 2
+//! voz = "profe"               # optional: spoken by [voces.profe] (R-0018)
+//!
+//! [voces.profe]               # optional: another voice in the same reel
+//! modelo = "es_ES-davefx-medium"
+//! lento = 1.0                 # default: [voz] lento
 //! ```
+//!
+//! A line without `voz` is spoken by `[voz]`. Without `[voces]` the output is
+//! the same, byte for byte, as before R-0018: `voz.json` does not name the
+//! voice of each line (a scene knows its lines by `id`).
 //!
 //! Nothing is written unless everything was synthesized and checked.
 
 use std::path::{Path, PathBuf};
 
-use guion_audio::{narrate_lines, Line, Narration, Pacing, PiperEngine, SilenceRule};
+use guion_audio::{
+    narrate_cast, Line, Narration, NarrationEngine, Pacing, PiperEngine, SilenceRule,
+};
 
 const SR: u32 = 48_000;
 
@@ -37,12 +48,22 @@ struct Linea {
     linea: Line,
     subtitulo: String,
     desde: usize,
+    /// The voice that speaks it: `None` is `[voz]`, `Some(i)` is `voces[i]`.
+    voz: Option<usize>,
+}
+
+/// A voice of the reel's cast (R-0018): `[voces.<nombre>]`.
+struct Reparto {
+    nombre: String,
+    modelo: String,
+    lento: f64,
 }
 
 struct Guion {
     modelo: String,
     lento: f64,
     pacing: Pacing,
+    voces: Vec<Reparto>,
     lineas: Vec<Linea>,
 }
 
@@ -68,22 +89,24 @@ pub fn narrate(post: &Path, voice: &Voice) -> Result<(), String> {
             g.modelo
         ));
     }
-    let onnx = voice
-        .voices
-        .join(&g.modelo)
-        .join(format!("{}.onnx", g.modelo));
-    if !onnx.exists() {
-        return Err(format!("no voice at {}", onnx.display()));
-    }
-    let mut piper = PiperEngine::deterministic(onnx.display().to_string())
-        .length_scale(g.lento)
-        .sentence_silence(0.25);
-    if let Some(p) = &voice.piper {
-        piper = piper.binary(p.clone());
-    }
+    // every voice is found before anything is spoken (R-0018 AC2)
+    let principal = piper(voice, &g.modelo, g.lento)?;
+    let reparto = g
+        .voces
+        .iter()
+        .map(|r| piper(voice, &r.modelo, r.lento))
+        .collect::<Result<Vec<_>, _>>()?;
+    let motores: Vec<&dyn NarrationEngine> = g
+        .lineas
+        .iter()
+        .map(|l| match l.voz {
+            None => &principal as &dyn NarrationEngine,
+            Some(i) => &reparto[i],
+        })
+        .collect();
 
     let lineas: Vec<Line> = g.lineas.iter().map(|l| l.linea.clone()).collect();
-    let voz = narrate_lines(&lineas, &g.pacing, &SilenceRule::PIPER, &piper)
+    let voz = narrate_cast(&lineas, &motores, &g.pacing, &SilenceRule::PIPER)
         .map_err(|e| e.to_string())?;
     for (l, t) in g.lineas.iter().zip(&voz.lines) {
         if !(1..=t.sentences.len()).contains(&l.desde) {
@@ -109,9 +132,49 @@ pub fn narrate(post: &Path, voice: &Voice) -> Result<(), String> {
     Ok(())
 }
 
+/// The deterministic Piper for `modelo` (`<voices>/<modelo>/<modelo>.onnx`).
+fn piper(voice: &Voice, modelo: &str, lento: f64) -> Result<PiperEngine, String> {
+    let onnx = voice.voices.join(modelo).join(format!("{modelo}.onnx"));
+    if !onnx.exists() {
+        return Err(format!("no voice at {}", onnx.display()));
+    }
+    let mut p = PiperEngine::deterministic(onnx.display().to_string())
+        .length_scale(lento)
+        .sentence_silence(0.25);
+    if let Some(b) = &voice.piper {
+        p = p.binary(b.clone());
+    }
+    Ok(p)
+}
+
+/// `[voces.<nombre>]`: the reel's other voices, in name order (R-0018 AC1).
+fn leer_voces(raiz: &toml::Table, lento: f64) -> Result<Vec<Reparto>, String> {
+    let Some(v) = raiz.get("voces") else {
+        return Ok(Vec::new());
+    };
+    let v = v.as_table().ok_or("[voces] no es una tabla")?;
+    let mut voces = Vec::new();
+    for (nombre, t) in v {
+        let donde = format!("[voces.{nombre}]");
+        let t = t.as_table().ok_or(format!("{donde}: no es una tabla"))?;
+        claves(t, &donde, &["modelo", "lento"])?;
+        let modelo = t
+            .get("modelo")
+            .and_then(|m| m.as_str())
+            .ok_or(format!("{donde}: falta modelo (el nombre de una voz)"))?
+            .to_string();
+        voces.push(Reparto {
+            nombre: nombre.clone(),
+            modelo,
+            lento: numero(t, "lento", &donde)?.unwrap_or(lento),
+        });
+    }
+    Ok(voces)
+}
+
 fn leer_guion(fuente: &str) -> Result<Guion, String> {
     let raiz: toml::Table = fuente.parse().map_err(|e: toml::de::Error| e.to_string())?;
-    claves(&raiz, "", &["voz", "linea"])?;
+    claves(&raiz, "", &["voz", "voces", "linea"])?;
     let v = raiz
         .get("voz")
         .and_then(|v| v.as_table())
@@ -128,6 +191,7 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
         lead_in: numero(v, "inicio", "[voz]")?.unwrap_or(0.6),
         gap: numero(v, "pausa", "[voz]")?.unwrap_or(0.45),
     };
+    let voces = leer_voces(&raiz, lento)?;
     let tabla = raiz
         .get("linea")
         .and_then(|l| l.as_array())
@@ -139,7 +203,7 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
         claves(
             l,
             &donde,
-            &["id", "texto", "subtitulo", "pausa", "antes", "desde"],
+            &["id", "texto", "subtitulo", "pausa", "antes", "desde", "voz"],
         )?;
         let id = l
             .get("id")
@@ -165,6 +229,22 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
                 .ok_or(format!("{donde}: desde debe ser un entero ≥ 1"))?
                 as usize,
         };
+        let voz = match l.get("voz") {
+            None => None,
+            Some(n) => {
+                let n = n.as_str().ok_or(format!("{donde}: voz no es texto"))?;
+                let i = voces.iter().position(|r| r.nombre == n).ok_or_else(|| {
+                    let hay: Vec<&str> = voces.iter().map(|r| r.nombre.as_str()).collect();
+                    let hay = if hay.is_empty() {
+                        "ninguna".to_string()
+                    } else {
+                        hay.join(", ")
+                    };
+                    format!("{donde}: voz = «{n}» no está en [voces] (hay: {hay})")
+                })?;
+                Some(i)
+            }
+        };
         let mut linea = Line::new(id, texto);
         linea.before = numero(l, "antes", &donde)?.unwrap_or(0.0);
         linea.after = numero(l, "pausa", &donde)?.unwrap_or(0.0);
@@ -172,12 +252,14 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
             linea,
             subtitulo,
             desde,
+            voz,
         });
     }
     Ok(Guion {
         modelo,
         lento,
         pacing,
+        voces,
         lineas,
     })
 }
@@ -374,6 +456,83 @@ mod pruebas {
         }
         assert_eq!(redondo(0.03125), 0.0312);
         assert_eq!(redondo(12.34565), 12.3456);
+    }
+
+    /// R-0018 AC1: a line names a voice of `[voces]`; one without `voz` is
+    /// spoken by `[voz]`, and a cast voice without `lento` takes `[voz]`'s.
+    #[test]
+    fn reparto_por_linea() {
+        let g = leer_guion(concat!(
+            "[voz]\nmodelo = \"maistro\"\nlento = 1.1\n",
+            "[voces.profe]\nmodelo = \"es_ES-davefx-medium\"\n",
+            "[voces.coro]\nmodelo = \"c\"\nlento = 0.9\n",
+            "[[linea]]\nid = \"a\"\ntexto = \"Ya.\"\n",
+            "[[linea]]\nid = \"b\"\ntexto = \"Se fundamenta.\"\nvoz = \"profe\"\n",
+        ))
+        .unwrap();
+        assert_eq!(g.lineas[0].voz, None);
+        let i = g.lineas[1].voz.unwrap();
+        assert_eq!(g.voces[i].nombre, "profe");
+        assert_eq!(g.voces[i].modelo, "es_ES-davefx-medium");
+        assert_eq!(g.voces[i].lento, 1.1);
+        let coro = g.voces.iter().find(|r| r.nombre == "coro").unwrap();
+        assert_eq!(coro.lento, 0.9);
+    }
+
+    /// R-0018 AC2: an unknown voice, a cast voice without a model or with an
+    /// unknown key fail by name.
+    #[test]
+    fn reparto_invalido_falla_por_nombre() {
+        let e = leer_guion(concat!(
+            "[voz]\nmodelo = \"m\"\n",
+            "[[linea]]\nid = \"a\"\ntexto = \"Hi.\"\nvoz = \"profe\"\n",
+        ))
+        .err()
+        .unwrap();
+        assert!(
+            e.contains("«profe»") && e.contains("«a»") && e.contains("ninguna"),
+            "{e}"
+        );
+        let e = leer_guion(concat!(
+            "[voz]\nmodelo = \"m\"\n[voces.profe]\nlento = 1\n",
+            "[[linea]]\nid = \"a\"\ntexto = \"Hi.\"\n",
+        ))
+        .err()
+        .unwrap();
+        assert!(e.contains("[voces.profe]") && e.contains("modelo"), "{e}");
+        let e = leer_guion(concat!(
+            "[voz]\nmodelo = \"m\"\n[voces.profe]\nmodelo = \"p\"\nhablante = 0\n",
+            "[[linea]]\nid = \"a\"\ntexto = \"Hi.\"\n",
+        ))
+        .err()
+        .unwrap();
+        assert!(e.contains("[voces.profe]") && e.contains("hablante"), "{e}");
+    }
+
+    /// R-0018 AC2: a voice whose model is missing fails before anything is
+    /// spoken or written.
+    #[test]
+    fn una_voz_que_falta_no_escribe_nada() {
+        let dir = std::env::temp_dir().join(format!("guion-r0018-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("voces/m")).unwrap();
+        std::fs::write(dir.join("voces/m/m.onnx"), b"").unwrap();
+        std::fs::write(
+            dir.join("voz.toml"),
+            concat!(
+                "[voz]\nmodelo = \"m\"\n[voces.profe]\nmodelo = \"no-existe\"\n",
+                "[[linea]]\nid = \"a\"\ntexto = \"Hi.\"\nvoz = \"profe\"\n",
+            ),
+        )
+        .unwrap();
+        let v = Voice {
+            voices: dir.join("voces"),
+            piper: None,
+            model: None,
+        };
+        let e = narrate(&dir, &v).unwrap_err();
+        assert!(e.contains("no-existe"), "{e}");
+        assert!(!dir.join("voz.wav").exists() && !dir.join("voz.json").exists());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

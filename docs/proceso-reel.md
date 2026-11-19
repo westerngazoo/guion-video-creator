@@ -49,6 +49,9 @@ reel se comprueba como Short con `guion reel check <post> --formato short`.
    solo sus beats. El reloj de la voz, los subtítulos, la cama, la mezcla, el
    caption y las comprobaciones viven en guion-video-creator; la cuenta pone
    sus tokens (y, si los tiene, sus instrumentos y primitivas propias).
+   Un diálogo lleva su reparto en `voz.toml`: `[voces.<nombre>]` (modelo y
+   `lento`) y `voz = "<nombre>"` en cada línea que no dice la voz del reel
+   (R-0018); el reloj sigue siendo uno.
 2. **El autor escribe bien a la primera.** Un solo agente por reel, con la
    skill de la cuenta (las reglas de juicio en una lista) y un encargo de
    menos de 40 líneas. No relee manuales enteros: la skill, `cuenta.toml` y
