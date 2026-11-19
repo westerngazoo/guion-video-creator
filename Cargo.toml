@@ -24,6 +24,8 @@ members = [
     # R-0015: the studio: the gadget contract, and `guion studio <post>` on localhost
     "crates/guion-gadget",
     "crates/guion-estudio",
+    # modo profesor: clases narradas en video con capítulos y sidecar para el aula
+    "crates/guion-profesor",
     "apps/guion-studio",
     "apps/guion-playground",
 ]

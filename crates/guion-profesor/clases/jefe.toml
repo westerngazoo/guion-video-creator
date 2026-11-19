@@ -1,0 +1,58 @@
+# Mundo Mecánica · jefe — clase en video de «La muralla» (akademos
+# lesson-core `mec-jefe`): muralla de 9 m a 17.5 m, zona de 30 a 34 m.
+
+[class]
+title = "La muralla"
+slug = "mec-jefe"
+kicker = "Mundo Mecánica · Jefe"
+guide = "Nova"
+
+[narration]
+voice = "Paulina"
+
+[escena]
+kind = "tiro"
+muralla = { x = 17.5, ancho = 1.0, alto = 9.0 }
+zona = [30.0, 34.0]
+alcance = 36.0
+
+[[beat]]
+capitulo = "El guardián"
+say = "Llegaste al guardián de la Mecánica. Una muralla de nueve metros, a diecisiete metros y medio. Detrás, la zona verde, entre treinta y treinta y cuatro metros. Necesitas altura y alcance a la vez."
+pizarra = ["muralla: 9 m a 17.5 m", "zona: 30 – 34 m"]
+
+[[beat]]
+capitulo = "Demasiado bajo"
+say = "Primer intento: cuarenta y cinco grados, diecisiete metros y medio por segundo."
+demo = { th = 45.0, v0 = 17.5 }
+
+[[beat]]
+say = "¡Chocó! Al llegar a la muralla la bala iba por debajo de nueve metros."
+pizarra = ["45°: choca con la muralla"]
+
+[[beat]]
+capitulo = "Demasiado corto"
+say = "Subamos el ángulo a sesenta y cinco grados, con la misma rapidez."
+demo = { th = 65.0, v0 = 17.5 }
+
+[[beat]]
+say = "Pasó la muralla, pero se quedó corta. Más ángulo da más altura, pero menos alcance."
+pizarra = ["65°: pasa, cae a 23.9 m", "más θ → más altura, menos R"]
+
+[[beat]]
+capitulo = "El equilibrio"
+say = "La clave es combinar las dos ideas. El ángulo decide cuánto sube. La rapidez, al cuadrado, decide cuán lejos llega. Un ángulo alto y algo más de rapidez."
+pizarra = ["altura: h = (v₀·sinθ)² / (2g)", "alcance: R = v₀²·sin(2θ) / g"]
+
+[[beat]]
+capitulo = "Ponte a prueba"
+say = "Pregunta. El tiro a sesenta y cinco grados pasó la muralla pero se quedó corto. ¿Qué cambias?"
+pregunta = { prompt = "Pasa la muralla pero cae corto. ¿Qué cambias?", opciones = ["bajo mucho el ángulo", "subo la rapidez", "subo más el ángulo"], correcta = "subo la rapidez", explica = "Más v₀ aumenta altura y alcance a la vez; bajar mucho θ lo estrella contra la muralla." }
+
+[[beat]]
+say = "Subir la rapidez. Gana altura y alcance a la vez, y el ángulo alto lo mantiene por encima de la muralla."
+
+[[beat]]
+capitulo = "La batalla"
+say = "Es tu turno. Ángulo alto, entre cincuenta y sesenta grados, y ajusta la rapidez hasta caer en la zona verde. ¡Vence al guardián!"
+pizarra = ["θ alto (50° – 60°)", "ajusta v₀ hasta la zona", "30 m ≤ R ≤ 34 m"]

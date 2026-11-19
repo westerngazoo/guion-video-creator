@@ -1552,6 +1552,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "guion-profesor"
+version = "0.1.0"
+dependencies = [
+ "motoreel",
+ "motoreel-typeset",
+ "serde",
+ "serde_json",
+ "toml 0.8.23",
+]
+
+[[package]]
 name = "guion-publish"
 version = "0.1.0"
 
