@@ -1,0 +1,57 @@
+# Mundo Mecánica · estrella 3 — clase en video del laboratorio «Plano
+# inclinado» (akademos lesson-core `mec-plano`): rampa de 9 m, μ = 0.2.
+
+[class]
+title = "Plano inclinado"
+slug = "mec-plano"
+kicker = "Mundo Mecánica · Estrella 3"
+guide = "Nova"
+
+[narration]
+voice = "Paulina"
+
+[escena]
+kind = "plano"
+largo = 9.0
+mu = 0.2
+
+[[beat]]
+capitulo = "El reto"
+say = "Un bloque sobre una rampa con fricción. Tu misión será inclinarla para que el bloque baje con una aceleración de exactamente dos metros por segundo al cuadrado."
+pizarra = ["μ = 0.2", "meta: a = 2 m/s²"]
+
+[[beat]]
+capitulo = "Las fuerzas"
+say = "El peso del bloque se reparte en dos. A lo largo de la rampa tira hacia abajo. Contra la rampa la aprieta, y de ese apretón nace la fricción que lo frena."
+pizarra = ["tira:  m·g·sinθ", "frena: μ·m·g·cosθ"]
+
+[[beat]]
+say = "Lo suelto a diez grados."
+demo = { th = 10.0 }
+
+[[beat]]
+say = "No se mueve. A diez grados la fricción gana al tirón del peso."
+pizarra = ["10°: 0.174 < 0.2·0.985", "la fricción lo sujeta"]
+
+[[beat]]
+capitulo = "Newton en la rampa"
+say = "Inclinemos a treinta y cinco grados."
+demo = { th = 35.0 }
+
+[[beat]]
+say = "Ahora baja, con cuatro metros por segundo al cuadrado. Por la segunda ley de Newton, masa por aceleración es el tirón menos la fricción. La masa aparece en todos los términos y se cancela."
+pizarra = ["m·a = m·g·sinθ − μ·m·g·cosθ", "a = g·(sinθ − μ·cosθ)", "35° → a = 4.02 m/s²"]
+
+[[beat]]
+capitulo = "Ponte a prueba"
+say = "Pregunta. Sin fricción, si duplicas la masa del bloque, ¿qué pasa con su aceleración al bajar?"
+pregunta = { prompt = "Sin fricción, con el doble de masa, la aceleración…", opciones = ["se duplica", "se reduce a la mitad", "no cambia"], correcta = "no cambia", explica = "a = g·sinθ: la masa se cancela, porque el peso crece igual que la inercia." }
+
+[[beat]]
+say = "No cambia. Más masa es más peso, pero también más inercia, y una cosa compensa la otra."
+pizarra = ["sin fricción: a = g·sinθ", "la masa no aparece"]
+
+[[beat]]
+capitulo = "Tu misión"
+say = "A diez grados no baja y a treinta y cinco baja demasiado rápido. Tu ángulo está en medio. Usa la fórmula y suelta el bloque."
+pizarra = ["a = g·(sinθ − μ·cosθ)", "quieres a = 2 m/s²", "10° < θ < 35°"]

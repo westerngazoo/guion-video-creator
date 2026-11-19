@@ -1,0 +1,71 @@
+# Mundo Mecánica · estrella 1 — la clase en video del laboratorio «Frenado»
+# (akademos lesson-core `mec-frenado`). Mismas cifras que la práctica:
+# v₀ = 8 m/s, bandera a 16 m, precipicio a 20 m, g = 9.8 m/s².
+
+[class]
+title = "Frenado"
+slug = "mec-frenado"
+kicker = "Mundo Mecánica · Estrella 1"
+guide = "Nova"
+
+[narration]
+voice = "Paulina"
+speed = 1.0
+pause = 0.6
+
+[escena]
+kind = "frenado"
+v0 = 8.0
+bandera = 16.0
+acantilado = 20.0
+
+[[beat]]
+capitulo = "El reto"
+say = "Hola, soy Nova. Este carrito va a ocho metros por segundo. A veinte metros hay un precipicio, y tu misión será detenerlo justo en la bandera, a dieciséis metros."
+pizarra = ["v₀ = 8 m/s", "bandera: 16 m", "precipicio: 20 m"]
+
+[[beat]]
+say = "Para lograrlo no basta con adivinar. Hoy vas a entender qué decide la distancia de frenado."
+
+[[beat]]
+capitulo = "Frenar es desacelerar"
+say = "Frenar es desacelerar. Con una desaceleración de cuatro metros por segundo al cuadrado, el carrito pierde cuatro metros por segundo de rapidez cada segundo. Míralo."
+pizarra = ["a = 4 m/s²", "cada segundo: −4 m/s"]
+demo = { a = 4.0 }
+
+[[beat]]
+say = "Se detuvo en ocho metros. Le tomó dos segundos: ocho entre cuatro."
+pizarra = ["t = v₀ / a = 8 / 4 = 2 s", "d = 8 m"]
+
+[[beat]]
+capitulo = "La regla del frenado"
+say = "¿De dónde sale ese ocho? La distancia de frenado es la rapidez inicial al cuadrado, dividida entre dos veces la desaceleración."
+pizarra = ["d = v₀² / (2a)"]
+
+[[beat]]
+say = "Con nuestros números: ocho al cuadrado es sesenta y cuatro, entre dos por cuatro, que es ocho. Ocho metros, justo lo que vimos."
+pizarra = ["d = 8² / (2·4)", "d = 64 / 8 = 8 m ✓"]
+
+[[beat]]
+capitulo = "Frenar más suave"
+say = "Ahora frenemos más suave, con un metro por segundo al cuadrado. ¿Llegará a la bandera?"
+pizarra = ["a = 1 m/s²", "d = 64 / (2·1) = 32 m"]
+demo = { a = 1.0 }
+
+[[beat]]
+say = "Treinta y dos metros. Se pasó del precipicio. Frenar cuatro veces más suave pide cuatro veces más pista: la distancia es inversa a la desaceleración."
+pizarra = ["a ÷ 4  →  d × 4"]
+
+[[beat]]
+capitulo = "Ponte a prueba"
+say = "Una pregunta antes de seguir. Si el carrito fuera al doble de rapidez, con la misma desaceleración, ¿cuánta distancia necesitaría para frenar?"
+pregunta = { prompt = "Al doble de rapidez y la misma a, la distancia de frenado es…", opciones = ["el doble", "el triple", "el cuádruple"], correcta = "el cuádruple", explica = "d = v₀²/(2a): la distancia crece con el cuadrado de la rapidez. Doble rapidez, cuatro veces la distancia." }
+
+[[beat]]
+say = "Es el cuádruple, porque la rapidez va al cuadrado. Doble rapidez, cuatro veces la pista."
+pizarra = ["v₀ × 2  →  d × 4"]
+
+[[beat]]
+capitulo = "Tu misión"
+say = "Ya tienes la regla. En la práctica tú eliges la desaceleración. Despeja a de la fórmula, con d igual a dieciséis metros, y lanza. Si fallas, te daré pistas. ¡A por la estrella!"
+pizarra = ["d = v₀² / (2a)", "a = v₀² / (2d)", "d = 16 m  →  a = ?"]

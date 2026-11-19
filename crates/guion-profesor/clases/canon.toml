@@ -1,0 +1,60 @@
+# Mundo Mecánica · estrella 2 — clase en video del laboratorio «El cañón»
+# (akademos lesson-core `mec-canon`): blanco a 30 m, g = 9.8 m/s².
+
+[class]
+title = "El cañón"
+slug = "mec-canon"
+kicker = "Mundo Mecánica · Estrella 2"
+guide = "Nova"
+
+[narration]
+voice = "Paulina"
+
+[escena]
+kind = "tiro"
+blanco = 30.0
+alcance = 34.0
+
+[[beat]]
+capitulo = "El reto"
+say = "Bienvenido al cañón. Allá, a treinta metros, hay un blanco. Tú vas a elegir el ángulo y la rapidez de la bala para acertarle."
+pizarra = ["blanco: 30 m", "controles: θ y v₀"]
+
+[[beat]]
+capitulo = "Dos movimientos en uno"
+say = "Una bala lanzada hace dos movimientos a la vez. En horizontal avanza con velocidad constante. En vertical, la gravedad la frena, la detiene y la hace caer. Disparo a sesenta grados, con quince metros por segundo."
+pizarra = ["v_x = v₀·cosθ  (constante)", "v_y = v₀·sinθ − g·t"]
+demo = { th = 60.0, v0 = 15.0 }
+
+[[beat]]
+say = "Subió muy alto, pero cayó a casi veinte metros. Pasó mucho tiempo en el aire con poca velocidad horizontal."
+pizarra = ["60° → cae a 19.9 m"]
+
+[[beat]]
+capitulo = "Ángulos gemelos"
+say = "Ahora a treinta grados, con la misma rapidez. Fíjate dónde cae."
+demo = { th = 30.0, v0 = 15.0 }
+
+[[beat]]
+say = "¡En el mismo sitio! Treinta y sesenta suman noventa grados, y dos ángulos así llegan igual de lejos."
+pizarra = ["30° → cae a 19.9 m", "30° + 60° = 90°  →  mismo alcance"]
+
+[[beat]]
+capitulo = "La fórmula del alcance"
+say = "El alcance es la rapidez al cuadrado, por el seno del doble del ángulo, entre la gravedad. Como el seno de sesenta es igual al seno de ciento veinte, los dos tiros caen juntos."
+pizarra = ["R = v₀²·sin(2θ) / g", "sin(60°) = sin(120°)"]
+
+[[beat]]
+capitulo = "Ponte a prueba"
+say = "Pregunta. Con la misma rapidez, ¿con qué ángulo llega más lejos la bala?"
+pregunta = { prompt = "Con la misma v₀, ¿qué ángulo da el mayor alcance?", opciones = ["30°", "45°", "60°"], correcta = "45°", explica = "R = v₀²·sin(2θ)/g es máximo cuando 2θ = 90°, o sea θ = 45°." }
+
+[[beat]]
+say = "Cuarenta y cinco grados. Ahí el seno del doble del ángulo vale uno, su máximo. Míralo."
+pizarra = ["2θ = 90°  →  θ = 45°", "45° → cae a 23.0 m"]
+demo = { th = 45.0, v0 = 15.0 }
+
+[[beat]]
+capitulo = "Tu misión"
+say = "Con quince metros por segundo ni el mejor ángulo llega a treinta metros. En la práctica también controlas la rapidez. Usa la fórmula, apunta y dispara. ¡A por el blanco!"
+pizarra = ["R = v₀²·sin(2θ) / g", "quieres R = 30 m", "más v₀ → mucho más R"]
