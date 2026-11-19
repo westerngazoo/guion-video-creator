@@ -790,7 +790,7 @@ fn ac12_reel_nuevo_takes_the_encargo_and_the_command_line_moves_it() {
     let r = raiz.display().to_string();
     let a = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
     // an encargo of another account is refused before anything is made
-    guion_tablero::run_nuevo(&a(&[
+    let _ = guion_tablero::run_nuevo(&a(&[
         "Cuenta B",
         "seis",
         "--encargo",
@@ -800,7 +800,7 @@ fn ac12_reel_nuevo_takes_the_encargo_and_the_command_line_moves_it() {
     ]));
     assert!(!raiz.join("b/posts/seis").exists());
     // reel nuevo makes the post and takes the encargo for it
-    guion_tablero::run_nuevo(&a(&[
+    let _ = guion_tablero::run_nuevo(&a(&[
         "Cuenta A",
         "cinco",
         "--titulo",
@@ -822,7 +822,7 @@ fn ac12_reel_nuevo_takes_the_encargo_and_the_command_line_moves_it() {
         "the template's README says idea"
     );
     // `guion encargo nuevo` with details, then `marcar` with a dash for the space
-    guion_tablero::run_encargo(&a(&[
+    let _ = guion_tablero::run_encargo(&a(&[
         "nuevo",
         "Cuenta B",
         "¿Por",
@@ -844,7 +844,7 @@ fn ac12_reel_nuevo_takes_the_encargo_and_the_command_line_moves_it() {
         ("E-0002", "¿Por qué seis?", Some("youtube"))
     );
     assert_eq!(e.variantes, ["A", "B"]);
-    guion_tablero::run_encargo(&a(&["marcar", "E-0002", "en-curso", "--repo", &r]));
+    let _ = guion_tablero::run_encargo(&a(&["marcar", "E-0002", "en-curso", "--repo", &r]));
     assert_eq!(encargos::load(&raiz).unwrap()[1].estado, "en curso");
 }
 

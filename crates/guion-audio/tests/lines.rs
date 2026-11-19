@@ -186,3 +186,64 @@ fn ac6_failures_name_the_line() {
         other => panic!("{other:?}"),
     }
 }
+
+/// R-0018: each line spoken by its own engine (a cast of voices).
+mod cast {
+    use super::*;
+    use guion_audio::narrate_cast;
+
+    /// Speaks every word as 0.5 s of a constant level: the level tells
+    /// which voice spoke.
+    struct Level(i16);
+
+    impl NarrationEngine for Level {
+        fn name(&self) -> &'static str {
+            "level"
+        }
+        fn synthesize(&self, _: &str) -> Result<Vec<f32>, AudioError> {
+            unreachable!()
+        }
+        fn synthesize_pcm16(&self, text: &str, sr: u32) -> Result<Vec<i16>, AudioError> {
+            Ok(vec![
+                self.0;
+                text.split_whitespace().count() * (sr / 2) as usize
+            ])
+        }
+    }
+
+    /// AC3: line i is spoken by engine i, laid out as narrate_lines would.
+    #[test]
+    fn ac3_each_line_by_its_own_voice() {
+        let lines = [
+            Line::new("profe", "Se fundamenta."),
+            Line::new("maistro", "Ya, profe."),
+        ];
+        let (a, b) = (Level(1000), Level(-2000));
+        let n = narrate_cast(&lines, &[&a, &b], &pacing(), &SilenceRule::PIPER).unwrap();
+        let at = |t: f64| n.samples[(t * SR as f64) as usize];
+        assert_eq!(at(n.lines[0].t0 + 0.1), 1000);
+        assert_eq!(at(n.lines[1].t0 + 0.1), -2000);
+        // the same layout as one voice: only the samples differ
+        let one = narrate_lines(&lines, &pacing(), &SilenceRule::PIPER, &a).unwrap();
+        let times =
+            |x: &guion_audio::Narration| x.lines.iter().map(|l| (l.t0, l.t1)).collect::<Vec<_>>();
+        assert_eq!(times(&n), times(&one));
+    }
+
+    /// AC3: with the same engine on every line, the cast is narrate_lines.
+    #[test]
+    fn ac3_one_voice_cast_is_narrate_lines() {
+        let lines = [Line::new("a", "One two. Three."), Line::new("b", "Four.")];
+        let cast = narrate_cast(&lines, &[&Fake, &Fake], &pacing(), &SilenceRule::PIPER).unwrap();
+        let one = narrate_lines(&lines, &pacing(), &SilenceRule::PIPER, &Fake).unwrap();
+        assert_eq!(cast, one);
+    }
+
+    /// AC4: one engine per line, or nothing.
+    #[test]
+    fn ac4_engines_and_lines_must_match() {
+        let lines = [Line::new("a", "One."), Line::new("b", "Two.")];
+        let e = narrate_cast(&lines, &[&Fake], &pacing(), &SilenceRule::PIPER).unwrap_err();
+        assert!(e.to_string().contains("2 lines and 1 voices"), "{e}");
+    }
+}

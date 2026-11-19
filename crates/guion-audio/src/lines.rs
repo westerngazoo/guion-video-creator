@@ -130,6 +130,29 @@ pub fn narrate_lines(
     rule: &SilenceRule,
     engine: &dyn NarrationEngine,
 ) -> Result<Narration, AudioError> {
+    narrate_cast(lines, &vec![engine; lines.len()], pacing, rule)
+}
+
+/// Like [`narrate_lines`], but each line is spoken by its own engine: line
+/// `i` by `engines[i]` (R-0018, a cast of voices in one reel). The layout,
+/// the sentence timing and the failures are those of [`narrate_lines`]; with
+/// the same engine on every line the result is the same, sample for sample.
+///
+/// Fails, writing nothing, when `engines` and `lines` differ in length
+/// (R-0018 AC4), and on everything [`narrate_lines`] fails on.
+pub fn narrate_cast(
+    lines: &[Line],
+    engines: &[&dyn NarrationEngine],
+    pacing: &Pacing,
+    rule: &SilenceRule,
+) -> Result<Narration, AudioError> {
+    if engines.len() != lines.len() {
+        return Err(AudioError::InvalidScript(format!(
+            "{} lines and {} voices: one voice per line",
+            lines.len(),
+            engines.len()
+        )));
+    }
     for l in lines {
         if l.text.trim().is_empty() {
             return Err(invalid(l, "el texto está vacío"));
@@ -157,7 +180,7 @@ pub fn narrate_lines(
     for (i, l) in lines.iter().enumerate() {
         silence(&mut track, l.before, sr);
         let t0 = track.len() as f64 / sr as f64;
-        let speech = engine.synthesize_pcm16(&l.text, sr)?;
+        let speech = engines[i].synthesize_pcm16(&l.text, sr)?;
         track.extend_from_slice(&speech);
         let t1 = track.len() as f64 / sr as f64;
         let sentences = sentence_times(&l.text, &speech, sr, t0, rule).map_err(|e| match e {
