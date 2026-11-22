@@ -4,7 +4,12 @@
   phase starts only after he OKs its requirement or spec.
 - **Decision:** [ADR-0006](decisions/0006-layered-architecture-kit-and-finishes.md)
 - **Repos:** guion-video-creator (gvc), rotorf-sico (rs), motoreel (mr),
-  physics-lab (pl). All are under `~/projects`.
+  physics-lab (pl), and fitAI, which this plan only reads: its changes go
+  through its own process. All are under `~/projects`.
+- **Revised 2026-11-22:** the fitness app already exists (fitAI, «Goose
+  Physics»: Flutter client, web first, Axum server, garust as the mechanics
+  kernel). Phase 4, phase 8 and «App: decisiones pendientes» were rewritten
+  for it.
 
 ## Rules for every phase
 
@@ -18,7 +23,10 @@
    order, same constants, same tessellation counts. Re-associating
    `a + b + c` or "tidying" a loop changes the last bit and the frame.
    Clean-ups come in a later PR that is allowed to change goldens, and that
-   PR says so.
+   PR says so. **The one planned exception is phase 4c:** moving fbf onto the
+   app's engine changes numbers by design. Each such PR names the reels it
+   changes, and the owner's 4.0 decision says whether the published reel is
+   frozen or republished.
 3. **Each moved piece carries its tests.** Wherever it lands, a moved piece
    brings an oracle test: the old function, copied as a test-only oracle and
    cited with its source commit, compared with `PartialEq` on `Prim2`.
@@ -89,7 +97,8 @@ already identical.
   `fbf/motor/src/bin/` are **not** merged here, because they have 5
   distinct bodies (phase 3b).
 - **Precondition for phase 4:** `curl_tecnica.rs` and `barra_rebote.rs`
-  stop importing `tablero_vs::{Fila, Procedencia}`. Their row building
+  stop importing `tablero_vs::{Fila, Procedencia}`, so a model never depends
+  on a drawing. Their row building
   moves to their `*_dibujo.rs` files. **Size:** ≈ 120, its own PR, done
   first.
 - **Size:** 2a decouple ≈ 120; 2b `tablero` ≈ 750 (gvc +400 with tests, rs
@@ -130,25 +139,87 @@ The largest move. It is split three ways and runs after phase 2, because
   (motoreel `project-specifics.md`). Golden runs must happen on the same
   machine before and after a PR, and CI's golden needs a pinned image.
 
-## Phase 4 — Physics to physics-lab
+## Phase 4 — The reels' numbers from the app's engine
 
-One model per PR, each into `physics-lab/mecanica` with its oracles. fbf
-already depends on `mecanica`.
+*Revised 2026-11-22.* This phase is no longer "physics to physics-lab". The
+owner decided **one engine for the app and the reels** (fitAI SPEC-0045
+§5.7(b), 2026-10-17). fitAI ADR 0001 made garust the mechanics kernel, with
+`physics-lab/oraculos` as the check. fbf's manual says "cada número del reel
+es uno que la app tendrá que sostener". So fbf's models must come from the
+**same lift models on the same garust multibody kernel** that the app
+serves.
 
-| PR | From (rs) | Lines | Note |
-|----|-----------|-------|------|
-| 4a | `fbf/motor/src/guia_profundidad.rs` | 230 | Already built on `mecanica::{maquina_humana, palanca}`. It needs the squat pose from `estilo_monito`, so 4d's pose part may come first |
-| 4b | `fbf/motor/src/curl_tecnica.rs` | 423 | Uses `crate::curl::{G, LF}`. Reconcile with `mecanica::curl` and do not duplicate `G` |
-| 4c | `fbf/motor/src/barra_rebote.rs` | 324 | A damped bar with steel constants. Needs a physics-lab requirement (a new area, not gym biomechanics only) |
-| 4d | `fbf/motor/src/estilo_monito.rs` (model half: torques, levers, `pose`) | ~150 | The drawing constants stay in fbf |
+### How fitAI builds a lift on garust (as of `2173f0d`, R-0066 slice 66-a2)
 
-- **Size:** each 300–600 including tests. Four PRs in pl, four switch-over
-  PRs in rs (≈ 50 each).
-- **Risk:** numeric drift. A model that moves must return the same `f64`
-  bits, because the reel's frames depend on them. Byte-identity tests on
-  the model outputs (and `golden-reels.sh`) gate each PR. physics-lab's
-  wasm release profile (`opt-level = "z"`, LTO) does not affect the native
-  build the motors use.
+- `backend/crates/core/src/biomech/kernel.rs` is the only module that imports
+  garust. Its `PlanarTree` is built **at a posture**: one link per joint
+  centre, each joint a revolute about `z` through that centre (the
+  `Motor::translator` offset from the parent), and `Weight`s for each segment
+  and the bar at their centres of mass. Moments are garust's
+  `joint_torque`, accepted only when they agree with `generalized_torque`
+  (virtual work, step `1e-6` rad, tolerance `1e-4` N·m + `1e-9` relative).
+  A sign `Side` maps garust's `τ_z` to "resisting".
+- `biomech/squat.rs` solves the posture in closed form. Balance puts the
+  combined centre of mass of segments and bar over the mid-foot line, and
+  since `Σ m·x` is affine in `(sin δ, sin θ)`, the trunk angle comes out
+  directly. The solver then builds the tree and asks the kernel.
+- `biomech/anthro.rs` holds the Winter table and its scaling, with measured
+  lengths as overrides. `exercise/` is the R-0066 library (the back squat is
+  served; curl, triceps pushdown, lat pulldown, 45° leg press and hack squat
+  are next per R-0066 OQ-1).
+- garust comes in by git, pinned to rev `55e9140…`, via `garust-core`,
+  `garust-geo` and `garust-physics`.
+
+### Divergences with fbf today (checked by reading, not by re-running)
+
+| fbf (`fbf/motor/src/`) | fitAI | Effect |
+|---|---|---|
+| `estilo_monito.rs`, `guia_profundidad.rs`, `sentadilla.rs`: **bar only** ("the body's own weight is not counted") | Segments **plus** bar | The hip moment rises. fitAI's own case (SPEC-0045 §2.4.3): the reel's 274 N·m becomes 370.6 N·m (+35%), and the bar-only part comes back as 273.62 |
+| The bar **plumb over the midfoot**; trunk solved for that | The **combined centre of mass** over the midfoot; bar over midfoot only as the heavy-bar limit | A different trunk angle for the same legs, so `estilo_monito`'s hip ratio and `guia_profundidad`'s hip/knee split move. `guia_profundidad`'s identity τ_hip + τ_knee = m·g·femur·cos α holds for the bar-only component only |
+| Lengths from `mecanica::maquina_humana::largo` (Winter at 1.75 m) | Winter scaled, with measured overrides | fitAI ADR 0001 §5 rejected `mecanica` because of this. SPEC-0045 finding 16 gives a 0.429 m femur at 1.75 m against the reel's 0.40 m |
+| `curl_tecnica.rs`: `momento_quieto` (static) **and** `energia`, `trabajo_brazo_rep` over a minimum-jerk rep (dynamic) | Quasi-static only. "Full inverse dynamics with acceleration terms is not in garust's `multibody` yet" (fitAI ADR 0001) | The static part can come from the kernel. The energy and swing parts need a garust change, or they stay fbf's with their provenance said |
+| `barra_rebote.rs`: a damped vibrating bar (steel constants, `ZETA`) | Out of R-0066 scope (no speed, no momentum) | Not a lift posture model. It stays a closed form, best moved to physics-lab with oracles, its own small requirement there |
+
+I did not compute the new values for each reel. 4b does that, as a report
+before anything changes.
+
+### The shared boundary (proposed)
+
+- **One pure crate for the lift models,** extracted from `fitai-core`
+  inside the fitAI repo (the extraction SPEC-0045 §5.7(b) already decided;
+  slice E's "the reels' consumption" is the part left to do). It holds
+  `anthro`, `kernel`, the posture solvers and the `exercise` library. It
+  has no I/O and builds for `wasm32-unknown-unknown`. `fitai-core` keeps
+  `pub use <crate> as biomech;`, so fitAI's callers do not move.
+- **rotorf-sico depends on it pinned by git rev** (SPEC-0045 §5.7(b)(d)),
+  next to the garust it already uses. fbf's model files shrink to "the
+  reel's declared inputs → the crate → the numbers on the board".
+- **The kit never sees the crate.** fbf's script passes numbers to the
+  board and poses to the toy.
+- **physics-lab/oraculos gains a case per exercise the reels use,** with
+  literals computed by hand or cited, as its rule says.
+- **Rejected:** the kernel glue alone in garust, with each repo building its
+  own trees. The 35% came from anthropometry and the balance convention,
+  which this would still duplicate (ADR-0006 alternative 5).
+
+### PRs
+
+| PR | Repo | What | Size |
+|----|------|------|------|
+| 4.0 | — | **Owner decisions, blocking:** (a) the crate's licence (`backend/Cargo.toml` is `UNLICENSED`; the reels' other dependencies are `MIT OR Apache-2.0`); (b) the published reels and `fixtures/dorados.json` (135 samples at 2%): freeze them on the old model, republish them with corrected numbers, or pin the bar-only component (SPEC-0045 §5.7(b)(e)) | — |
+| 4a | fitAI (its own process) | Extract the crate. `LoadKg` moves down or gets its own type (§5.7(b)(a)). CI for `wasm32` | ≈ 300–500 changed (mostly `git mv` inside one repo; blame survives) |
+| 4b | rs | fbf/motor depends on the crate. A **parity report** test: each fbf squat model against the crate for the reel's declared assumptions, printing both and the gap. No reel changes | ≈ 300 |
+| 4c… | rs | One PR per exercise as it enters R-0066: squat (`estilo_monito`, `guia_profundidad`, `sentadilla`), curl (`curl`, the static part of `curl_tecnica`), triceps pushdown, lat pulldown, leg press, hack squat. Each changes numbers **on purpose**: a new reel or a republished one, never a silent re-render | 150–400 each |
+| 4d | pl | `barra_rebote`'s model, with oracles | ≈ 400 |
+
+- **Byte identity:** 4a and 4b keep every reel byte-identical. Each 4c PR
+  changes numbers by design, and the 4.0(b) decision says what happens to
+  the published reel. `golden-reels.sh` is updated only in a 4c PR that says
+  so, reel by reel.
+- **Risk:** the crate is git-pinned in two consumers, so a garust bump needs
+  fitAI's parity tests **and** fbf's golden green. A fitAI-only change to
+  anthropometry reaches the reels only when rotorf-sico moves its pin,
+  deliberately.
 
 ## Phase 5 — The finish trait with `Facetas`
 
@@ -187,22 +258,27 @@ already depends on `mecanica`.
   guards translation. Occlusion needs its own test in the `Pintura`
   requirement.
 
-## Phase 8 — Real-time backend spike (the app)
+## Phase 8 — Spike: the kit to fitAI's web client
 
-A POC, not a product. It lives in `~/code/lab/YYYY-MM-fbf-app-tiempo-real`
-with a hypothesis, success criteria and a kill date (global working
-agreement for POCs).
+*Revised 2026-11-22.* The app exists, so there is no new real-time engine.
+The question is how the kit's visuals (toy figure, x-ray, VS board) reach
+fitAI's **Flutter** client, **web first**. Today the client already draws a
+side-view figure natively (`mobile/lib/src/physics/presentation/figure_painter.dart`,
+a `CustomPainter`, R-0059), and it already depends on `flutter_svg`. Every
+number on its screen comes from the Axum server (R-0067).
 
-- **Hypothesis:** the kit's description of one fbf scene (two toys, VS
-  board, x-ray sweep) and one physics-lab model can be rendered at 60 fps
-  on a mid-range phone, with no copy of either.
-- **Success:** it builds for the chosen platform. It depends on `guion-kit`
-  without the `motoreel` feature, and on `mecanica`, by path. A side-by-side
-  with the motoreel frame is recognisably the same piece.
-- **Size:** ≈ 800, throwaway.
-- **Risk:** the seam fails. If the description needs motoreel types to be
-  useful, ADR-0006 alternative 6 (the kit emits `Prim2`) wins, and the
-  description is cut back.
+The spike is a POC in `~/code/lab/YYYY-MM-kit-fitai-web`, with a hypothesis,
+success criteria and a kill date. It reads fitAI and does not change it. It
+tries the options in «App: decisiones pendientes» on **one** scene: the
+back squat from the R-0066 library, as the toy figure with the x-ray sweep and
+one row of the VS board. It measures:
+- frame time on a mid-range phone browser;
+- payload per interaction;
+- visual equality with the motoreel frame.
+
+- **Size:** ≈ 300–600 per option tried, throwaway.
+- **Risk:** the seam fails. If no option is worth it, the client keeps its
+  own painter, the kit stays video-only, and ADR-0006 is amended to say so.
 
 ## Summary
 
@@ -212,48 +288,41 @@ agreement for POCs).
 | 1 | Logo and watermark machinery into `guion-kit` | gvc, rs | ≈ 830 + 150 (3 PRs) | Low |
 | 2 | VS scoreboard and `vs_dibujo` | rs, gvc | ≈ 120 + 750 + 600 | Medium (wip branch) |
 | 3 | Light, x-ray, toy figure | gvc, rs | ≈ 750 + 500 + 1 100 (5 PRs) | High (libm, breadth) |
-| 4 | Physics to physics-lab | pl, rs | 4 × (300–600) + 4 × 50 | Medium (bit drift) |
+| 4 | The reels' numbers from the app's engine (shared lift crate on garust) | fitAI, rs, pl | 4a ≈ 300–500, 4b ≈ 300, 4c 150–400 per exercise, 4d ≈ 400 | High: changes numbers on purpose; blocked by 4.0 owner decisions |
 | 5 | R-0017 trait + `Facetas` | mr, gvc, rs | ≈ 700 + 300 + 150 | Medium |
 | 6 | R-0018 faceted 3D + a 3D toy | mr, gvc | ≈ 900 + 500 | Medium |
 | 7 | `Pintura` pilot | mr, rs | ≈ 600 + a reel | Medium (flicker) |
-| 8 | Real-time spike | lab | ≈ 800 (throwaway) | The point is to find out |
+| 8 | Spike: kit → fitAI web client (options A, B, C) | lab | ≈ 300–600 per option (throwaway) | The point is to find out |
 
 ## App: decisiones pendientes
 
-The owner decides these before phase 8 starts.
+*Revised 2026-11-22.* Most of the first draft's questions are already
+answered by the app that exists (fitAI, «Goose Physics»):
 
-### 1. Platform
+| Question | Answer (already decided in fitAI) |
+|---|---|
+| Platform | **Web first**, then mobile. The web build is live on Cloudflare Workers |
+| Client | **Flutter** (`mobile/`: iOS, Android, web) |
+| Server and physics | Rust **Axum** on Neon Postgres. garust is the mechanics kernel (fitAI ADR 0001), and every number on screen comes from the server (R-0067) |
+| v1 scope | fitAI's own roadmap: the squat animated (R-0059, met), the exercise library (R-0066) and the interactive model (R-0067). The reels' MP4s are not shipped in the app (R-0066, 2026-11-21) |
+| A real-time engine (Bevy) | **Withdrawn**: the app has its stack |
 
-| Option | For | Against |
-|--------|-----|---------|
-| **iOS + Android** | Where a gym user is, with the phone in hand | Two stores, two review processes, device fragmentation (Android GPUs) |
-| **iOS first** | One target, a uniform GPU family, the simulator already in the toolchain | Leaves out Android, which is widely reported as the majority platform in Mexico (confirm with a current source before deciding) |
-| **Web first (PWA)** | No store, one link from the Instagram bio, and physics-lab already ships Rust to wasm32 for its web lab | Weaker offline and sensor access. WebGPU support is still uneven across mobile browsers, so a WebGL2 fallback is likely |
+### What remains open: how the kit reaches the Flutter client
 
-### 2. v1 scope
+The options are listed without a decision. The phase-8 spike informs the
+choice.
 
-What the first release must do decides the backend. Candidates:
-- **a)** explain one exercise interactively (the reel, but you scrub and
-  change the load);
-- **b)** a rep counter or tempo coach using phone sensors;
-- **c)** a workout log with the physics as commentary.
+| Option | How | For | Against |
+|---|---|---|---|
+| **A. Rendered assets from motoreel** | The kit and motoreel render SVG (or PNG) for the postures the server already computes. They are served by the Axum backend next to the numbers, or pre-rendered at build time, and drawn with the client's `flutter_svg` | One renderer, so the app's toy and the reel's toy look exactly the same. Deterministic. Nothing ported to Dart | Every change in R-0067's interactive model is a server round trip, which already happens for the numbers, plus image payload. A smooth rep needs many frames or a client-side tween. The owner decided MP4s do not ship in the app (R-0066), so this is per-posture images, not video |
+| **B. motoreel compiled to WASM in the client** | The kit and motoreel are built for `wasm32` and called from Flutter web through JS interop. They return an RGBA buffer or an SVG string per frame | The same pixels as the reels, animated locally | Two integration paths: web through WASM interop, and mobile through native Rust over FFI. motoreel rasterises on the CPU, measured at ~11 frames/s at 1080×1920 in the cloud (rotorf-sico `docs/decisions.md`, 2026-09-30). A smaller canvas may reach 60 fps on a phone or may not, and the spike measures it. Adds a Rust build to a Flutter app |
+| **C. Flutter-native drawing from the same data** | The kit's description (pose, tones, board rows, sweep position) is serialised and sent by the server. The client's painters (like today's `figure_painter.dart`) draw it | Native frame rate and interaction. Fits what the client already does. No new toolchain in the app | A second implementation of each piece and finish, so the looks can drift: only "the same look by name". Tessellations (capsule segments, faceted circles) and the finishes must be ported and kept in step |
+| **A + C** | C for the interactive screen; A for a shareable still or the closing card | Interaction where it matters, the exact look where it is shared | Both costs, smaller each |
 
-(a) needs the kit and the real-time backend. (b) needs sensors, not 3D.
-(c) barely needs graphics. *Recommendation:* (a) alone, because it is the
-only one that reuses what exists.
-
-### 3. Real-time backend
-
-| Option | For | Against |
-|--------|-----|---------|
-| **Bevy** (Rust, wgpu) | Same language as the whole stack: it can depend on `guion-kit` and `mecanica` by path, with no FFI. ECS fits "a description evaluated per frame". iOS, Android and web targets | Pre-1.0: breaking releases every few months. Mobile is less mature than desktop. Large binary and slow compiles. App UI (forms, lists, settings) is weak compared with native UI toolkits |
-| **Native UI + Rust core** (SwiftUI / Jetpack Compose, with the kit and physics via UniFFI) | Best platform UI and store polish. The Rust core stays shared | Drawing has to be written twice (Metal/Canvas and Compose Canvas) or through a shared wgpu surface. Two UI codebases |
-| **Flutter + Rust** (`flutter_rust_bridge`) | One UI codebase for both stores, mature tooling | A third language (Dart). The scene is drawn in Flutter's canvas, so the kit's pieces are re-implemented, not reused |
-| **Web: wasm + WebGL2/WebGPU** (e.g. wgpu on the web, or a thin canvas renderer) | Reuses the physics-lab wasm pipeline. Zero install | The same platform trade-offs as above. Mobile browser performance limits are the main risk |
-| **A lighter Rust renderer** (macroquad/miniquad) | Small, quick to build, runs on mobile and web | Small ecosystem. Less in the box for UI and 3D than Bevy |
-
-*Recommendation:* decide platform and v1 scope first. If the answer is
-"(a), iOS + Android", spike Bevy in phase 8, with the native-UI + Rust core
-option as the fallback the spike is compared against. Bevy is the only
-option where the app reuses the kit's Rust code directly instead of
-re-implementing it.
+**Also open, for the owner:**
+- **The shared lift crate's licence and the reels' golden numbers.** These
+  are the phase 4.0 decisions. They are not app questions, but the app is
+  why they exist.
+- **Whether the kit's description becomes a wire format** (it would under
+  option A from the server or option C). If so, it needs versioning and its
+  own requirement in this repo.
