@@ -22,6 +22,8 @@
 //! tono = "…"
 //! trato = "tuteo"
 //! prohibido = ["increíble"]
+//! [voz.prosodia]                   # optional (R-0019): the account's natural voice
+//! ruido_w = 0.7                    # noise_w; also ruido (noise_scale), silencio (s)
 //!
 //! [marca]
 //! direccion = "por decidir"        # the design direction, decided by hand
@@ -120,6 +122,23 @@ pub struct Voz {
     /// Words never published.
     #[serde(default)]
     pub prohibido: Vec<String>,
+    /// The account's natural voice (R-0019 AC2): its numbers replace preset
+    /// «C»'s for every post whose `voz.toml` says `prosodia = "natural"`.
+    #[serde(default)]
+    pub prosodia: Option<ProsodiaCuenta>,
+}
+
+/// `[voz.prosodia]`: Piper's noise and pause for the account's natural voice
+/// (R-0019 AC2). Each is optional; a missing one keeps preset «C»'s.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProsodiaCuenta {
+    /// `noise_scale`.
+    pub ruido: Option<f64>,
+    /// `noise_w`.
+    pub ruido_w: Option<f64>,
+    /// `sentence_silence`, seconds.
+    pub silencio: Option<f64>,
 }
 
 /// The brand tokens: everything a neutral primitive or the gate needs.
@@ -343,6 +362,17 @@ impl Cuenta {
         }
         if self.voz.modelo.trim().is_empty() {
             return Err("voz.modelo is empty".into());
+        }
+        if let Some(p) = &self.voz.prosodia {
+            for (k, v) in [
+                ("ruido", p.ruido),
+                ("ruido_w", p.ruido_w),
+                ("silencio", p.silencio),
+            ] {
+                if let Some(v) = v.filter(|v| !(v.is_finite() && *v >= 0.0)) {
+                    return Err(format!("voz.prosodia.{k} = {v}: must be a number ≥ 0"));
+                }
+            }
         }
         let m = &self.marca;
         if m.lienzo.ancho == 0 || m.lienzo.alto == 0 || m.lienzo.fps.is_nan() || m.lienzo.fps <= 0.0
