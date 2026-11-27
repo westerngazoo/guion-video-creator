@@ -126,6 +126,24 @@ fn ac1_el_video_va_etiquetado_bt709() {
     assert!(info.contains("yuv420p(tv, bt709, progressive)"), "{info}");
 }
 
+/// El píxel es cuadrado y lo dice (`SAR 1:1`): sin la etiqueta, el MP4
+/// salía con la proporción de píxel sin definir (`N/A`), y cada plataforma
+/// la adivina a su modo al subirlo.
+#[test]
+fn el_pixel_va_etiquetado_cuadrado() {
+    let d = dir("sar");
+    let mp4 = d.join("v.mp4");
+    escribir(&mp4, &(0..8).map(cuadro).collect::<Vec<_>>());
+    let info = Command::new(ff())
+        .arg("-hide_banner")
+        .arg("-i")
+        .arg(&mp4)
+        .output()
+        .unwrap();
+    let info = String::from_utf8_lossy(&info.stderr);
+    assert!(info.contains("SAR 1:1"), "{info}");
+}
+
 /// AC2: un color llega como se mandó (±3 por canal) al decodificarlo como
 /// BT.709. Con la matriz BT.601 de antes, el oro salía a 5 o más.
 #[test]
