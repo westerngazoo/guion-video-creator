@@ -19,6 +19,7 @@ formalization of ADR-0003.
 | [0003](0003-qualified-binding-tokens.md) | Model outputs are referenced qualified (`@model.output`) | Accepted |
 | [0004](0004-deny-unknown-fields-and-kind-tagging.md) | `deny_unknown_fields` + internal `kind` tagging | Accepted |
 | [0005](0005-two-phase-error-taxonomy.md) | Two-phase error taxonomy (`LoadError` vs `ValidateError`) | Accepted |
+| [0006](0006-layered-architecture-kit-and-finishes.md) | Layered architecture across the ecosystem: physics-lab → kit (`guion-kit`) → backends (motoreel offline, real-time for the app) → finishes. Plan: [migration-kit-and-finishes.md](../migration-kit-and-finishes.md) | Proposed |
 
 ## Format
 
