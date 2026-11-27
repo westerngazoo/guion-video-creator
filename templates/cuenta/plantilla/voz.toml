@@ -12,9 +12,15 @@
 #   signos), sin repetir ni adelantar la pantalla. Una línea de más de 6 s
 #   empieza su subtítulo en la frase que lo dice: `desde = n`.
 # - Cada id es un evento de eventos.json (`voz:<id>`).
+# - La voz natural (R-0019): las líneas de un párrafo, sin renglón en blanco
+#   entre ellas, se dicen de un tirón (un bloque); un renglón en blanco empieza
+#   otro. Dentro de un bloque cada línea cierra su frase con . ? o !
+#   Cada bloque se graba una vez en voz.tomas/, que va al repo con el post.
+# - Cómo se dice un término (no cambia el subtítulo): `lexico` y [lexico].
 [voz]
 modelo = "{%voz_modelo%}"
-prosodia = "natural"                    # R-0019: la voz con respiración; cada bloque se graba una vez (voz.tomas/, va al repo)
+prosodia = "natural"                    # «C»; "determinista" es la voz plana de antes
+lexico = {%voz_lexico%}                  # "guion:es": la lista de la casa; o un archivo con [lexico]
 inicio = 0.5
 pausa = 0.3
 lento = 1.0

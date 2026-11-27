@@ -28,8 +28,10 @@
 //! `sonido.toml` + `eventos.json` (+ `voz.wav`, `voz.json`) → `audio.wav`,
 //! with the instruments registered by the caller.
 
+mod compose;
 mod engine;
 mod error;
+mod lexicon;
 mod lines;
 mod pcm;
 mod take;
@@ -48,10 +50,12 @@ mod narrate;
 #[cfg(feature = "screenplay")]
 mod script;
 
+pub use compose::compose;
 pub use engine::{
     engine_by_name, resample_pcm16, NarrationEngine, PiperEngine, Prosody, ScaffoldEngine,
 };
 pub use error::AudioError;
+pub use lexicon::Lexicon;
 pub use lines::{
     narrate_cast, narrate_lines, sentence_times, split_sentences, Line, Narration, Pacing,
     Sentence, SilenceRule, TimedLine,

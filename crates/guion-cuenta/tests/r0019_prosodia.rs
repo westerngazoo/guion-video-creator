@@ -57,6 +57,12 @@ fn ac2_a_new_post_asks_for_the_natural_voice() {
         voz.lines().any(|l| l.starts_with("prosodia = \"natural\"")),
         "{voz}"
     );
+    // AC11: a Spanish account's posts read with the house's starter lexicon
+    assert!(
+        voz.lines()
+            .any(|l| l.starts_with("lexico = [\"guion:es\"]")),
+        "{voz}"
+    );
 }
 
 #[test]

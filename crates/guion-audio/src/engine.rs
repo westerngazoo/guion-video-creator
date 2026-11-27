@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use crate::compose::compose;
 use crate::error::AudioError;
 use crate::pcm::{read_wav_pcm16, Pcm16};
 use crate::take::{fingerprint_file, Fnv, Voice};
@@ -244,6 +245,17 @@ impl PiperEngine {
     }
 
     fn run(&self, text: &str, wav: &Path) -> Result<(), AudioError> {
+        self.run_with(text, wav, &[]).map(|_| ())
+    }
+
+    /// Runs Piper on `text` with `extra` flags; returns what it logged.
+    ///
+    /// The text is composed first (R-0019 AC10: espeak-ng reads «u» + a
+    /// combining acute as a plain «u»), and the PyPI build is told to read
+    /// its stdin as UTF-8 whatever the locale (with a Latin-1 locale, «ú»
+    /// would arrive as two letters). Composed text is unchanged, so the
+    /// legacy voice keeps its bytes.
+    fn run_with(&self, text: &str, wav: &Path, extra: &[&str]) -> Result<String, AudioError> {
         use std::io::Write;
         let piper = match &self.binary {
             Some(b) => b.display().to_string(),
@@ -252,6 +264,8 @@ impl PiperEngine {
         // The text goes on stdin, not through a shell: no quoting to get wrong.
         let mut child = Command::new(&piper)
             .args(self.args(wav))
+            .args(extra)
+            .env("PYTHONIOENCODING", "utf-8")
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::piped())
@@ -261,15 +275,71 @@ impl PiperEngine {
             .stdin
             .take()
             .expect("stdin is piped")
-            .write_all(text.as_bytes())?;
+            .write_all(compose(text).as_bytes())?;
         let out = child.wait_with_output()?;
+        let log = String::from_utf8_lossy(&out.stderr).into_owned();
         if !out.status.success() {
+            return Err(AudioError::Engine(log.trim().to_string()));
+        }
+        Ok(log)
+    }
+
+    /// The phonemes Piper speaks for `text`, one string per sentence, read
+    /// from its own `--debug` log: the exact path of synthesis (espeak-ng
+    /// with the voice's language, R-0019 AC9). Only the PyPI build logs them;
+    /// with another, or a text on several lines, it fails saying so.
+    pub fn phonemes(&self, text: &str) -> Result<Vec<String>, AudioError> {
+        if text.contains('\n') {
             return Err(AudioError::Engine(
-                String::from_utf8_lossy(&out.stderr).trim().to_string(),
+                "phonemes: one line at a time (Piper reads each line apart)".into(),
             ));
         }
-        Ok(())
+        let tmp = TempDir::new()?;
+        let log = self.run_with(text, &tmp.0.join("piper.wav"), &["--debug"])?;
+        log.lines()
+            .find_map(|l| l.rfind("phonemes=[").map(|i| &l[i + "phonemes=".len()..]))
+            .map(parse_phoneme_log)
+            .ok_or_else(|| {
+                AudioError::Engine(
+                    "phonemes: this Piper logs no `phonemes=` with --debug (the PyPI build does)"
+                        .into(),
+                )
+            })
     }
+}
+
+/// `[['p', 'ˈ', 'u'], ['l', 'a']]` (Python's repr of Piper's phonemes, one
+/// list per sentence, one code point per item) → `["pˈu", "la"]`, composed.
+fn parse_phoneme_log(repr: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut sentence = String::new();
+    let mut depth = 0;
+    let mut chars = repr.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '[' => depth += 1,
+            ']' => {
+                depth -= 1;
+                if depth == 1 {
+                    out.push(compose(&std::mem::take(&mut sentence)));
+                }
+                if depth == 0 {
+                    break;
+                }
+            }
+            q @ ('\'' | '"') if depth == 2 => {
+                while let Some(c) = chars.next() {
+                    match c {
+                        '\\' => sentence.extend(chars.next()),
+                        c if c == q => break,
+                        c => sentence.push(c),
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    out
 }
 
 impl NarrationEngine for PiperEngine {
@@ -674,6 +744,20 @@ mod tests {
         std::fs::write(&bin, b"\x7fELF...").unwrap();
         assert!(piper_build(&bin).unwrap().starts_with("bin:"));
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// R-0019 AC9: Piper's `--debug` line (as piper-tts 1.8.0 logs it) reads
+    /// back as one phoneme string per sentence.
+    #[test]
+    fn the_phoneme_log_reads_back() {
+        let line = "DEBUG:piper.voice:text=¿Cómo? Lo hago como tú., phonemes=[['k', 'ˈ', 'o', \
+                    'm', 'o', '?'], ['l', 'o', ' ', 'ˈ', 'a', 'ɣ', 'o', ' ', 'k', 'ˌ', 'o', 'm', \
+                    'o', ' ', 't', 'ˈ', 'u', '.', \"'\"]]";
+        let i = line.rfind("phonemes=[").unwrap();
+        assert_eq!(
+            parse_phoneme_log(&line[i + "phonemes=".len()..]),
+            ["kˈomo?", "lo ˈaɣo kˌomo tˈu.'"]
+        );
     }
 
     /// R-0007 AC7: the C++ build's padding after the last sentence goes;

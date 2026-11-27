@@ -57,6 +57,10 @@ reel se comprueba como Short con `guion reel check <post> --formato short`.
    `voz.tomas/`, que va al repo con el post (una toma con ruido no se puede
    repetir). Volver a correr la voz no graba nada si no cambió el texto; para
    grabar otra vez una línea, se borra su WAV (lo dice `voz.tomas/tomas.txt`).
+   Las líneas de un párrafo, sin renglón en blanco entre ellas, se dicen de un
+   tirón (un bloque, una toma); dentro de un bloque cada línea cierra su frase.
+   Cómo se dice un término (sin tocar el subtítulo) va en el léxico:
+   `lexico = ["guion:es"]` (la lista de la casa) y `[lexico]` del post.
 2. **El autor escribe bien a la primera.** Un solo agente por reel, con la
    skill de la cuenta (las reglas de juicio en una lista) y un encargo de
    menos de 40 líneas. No relee manuales enteros: la skill, `cuenta.toml` y

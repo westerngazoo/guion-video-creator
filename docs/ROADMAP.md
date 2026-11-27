@@ -112,12 +112,16 @@ a person pastes in Instagram, refusing more than 5 hashtags or more than 2 200
 characters before writing anything. Meant for `rotorf-sico`'s
 `publicar.sh`, which still runs its own `caption` (byte-identical on its 20 captions).
 
-[R-0019](requirements/0019-voz-natural.md) (in progress) adds the natural
+[R-0019](requirements/0019-voz-natural.md) (in review) adds the natural
 voice: Piper's prosody noise on (the owner's preset «C»), each utterance
 spoken once and kept as a take in the post (`voz.tomas/`, committed) so the
 clock stays byte-identical, and lines and sentences cut at the exact zeros
-Piper writes between sentences. A `voz.toml` opts in with
-`prosodia = "natural"`; without it the voice is the legacy one, byte for byte.
+Piper writes between sentences. Lines with no blank line between them are
+one block, spoken as one utterance; text reaches espeak-ng composed (NFD lost
+the stress), and a pronunciation lexicon (a starter list for the house's
+terms) rewrites what the voice says, never what is written. A `voz.toml`
+opts in with `prosodia = "natural"`; without it the voice is the legacy one,
+byte for byte.
 
 ## M3 — Brand
 
