@@ -1,9 +1,11 @@
+use std::cell::OnceCell;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::error::AudioError;
 use crate::pcm::{read_wav_pcm16, Pcm16};
+use crate::take::{fingerprint_file, Fnv, Voice};
 use crate::wav::SAMPLE_RATE;
 
 /// Synthesizes speech samples for one narration cue.
@@ -56,6 +58,65 @@ fn scaffold_secs(text: &str) -> f64 {
     (words as f64 * 0.18).clamp(0.35, 6.0)
 }
 
+/// Piper's prosody (R-0019 AC1): the four numbers that decide how a voice
+/// breathes. `noise_scale` varies the pitch and timbre, `noise_w` the length
+/// of each phoneme; `length_scale` > 1 speaks slower; `sentence_silence` is
+/// the pause Piper writes between two sentences, in seconds.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Prosody {
+    pub noise_scale: f64,
+    pub noise_w: f64,
+    pub length_scale: f64,
+    pub sentence_silence: f64,
+}
+
+impl Prosody {
+    /// Preset «C», the owner's choice (2026-11-26, heard on
+    /// `es_MX-claude-high`): fluid, and different on every run, so its takes
+    /// are kept ([`crate::TakeStore`]). The default for new voices.
+    pub const NATURAL: Prosody = Prosody {
+        noise_scale: 0.75,
+        noise_w: 0.9,
+        length_scale: 1.0,
+        sentence_silence: 0.35,
+    };
+
+    /// R-0007's voice: no noise, so the same text, voice and build give the
+    /// same bytes. Flat; explicit only.
+    pub const DETERMINISTIC: Prosody = Prosody {
+        noise_scale: 0.0,
+        noise_w: 0.0,
+        length_scale: 1.0,
+        sentence_silence: 0.25,
+    };
+
+    /// Every number finite, the noises and the silence ≥ 0, `length_scale`
+    /// > 0. `Err` names the first parameter out of range.
+    pub fn check(&self) -> Result<(), String> {
+        for (name, v, ok) in [
+            ("noise_scale", self.noise_scale, self.noise_scale >= 0.0),
+            ("noise_w", self.noise_w, self.noise_w >= 0.0),
+            ("length_scale", self.length_scale, self.length_scale > 0.0),
+            (
+                "sentence_silence",
+                self.sentence_silence,
+                self.sentence_silence >= 0.0,
+            ),
+        ] {
+            if !(v.is_finite() && ok) {
+                return Err(format!("{name} = {v} is out of range"));
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Default for Prosody {
+    fn default() -> Self {
+        Prosody::NATURAL
+    }
+}
+
 /// Offline TTS via the `piper` CLI.
 ///
 /// Works with both builds the ecosystem has used: the standalone C++ binary
@@ -69,6 +130,11 @@ fn scaffold_secs(text: &str) -> f64 {
 /// same text, voice and build give the same bytes. Different builds of
 /// Piper (another espeak-ng or onnxruntime) give slightly different speech:
 /// pin the build.
+///
+/// **Natural voice (R-0019).** [`PiperEngine::with_prosody`] with
+/// [`Prosody::NATURAL`] turns the noise on; as a [`Voice`] it then makes
+/// takes that a [`crate::TakeStore`] keeps, keyed by the model's bytes, the
+/// build and the prosody.
 pub struct PiperEngine {
     model: String,
     binary: Option<PathBuf>,
@@ -76,6 +142,7 @@ pub struct PiperEngine {
     noise_w: Option<f64>,
     length_scale: Option<f64>,
     sentence_silence: Option<f64>,
+    identity: OnceCell<String>,
 }
 
 impl PiperEngine {
@@ -88,7 +155,18 @@ impl PiperEngine {
             noise_w: None,
             length_scale: None,
             sentence_silence: None,
+            identity: OnceCell::new(),
         }
+    }
+
+    /// Piper with every prosody number set (R-0019 AC1).
+    pub fn with_prosody(model: impl Into<String>, p: Prosody) -> Self {
+        let mut e = PiperEngine::new(model);
+        e.noise_scale = Some(p.noise_scale);
+        e.noise_w = Some(p.noise_w);
+        e.length_scale = Some(p.length_scale);
+        e.sentence_silence = Some(p.sentence_silence);
+        e
     }
 
     /// Piper with `noise_scale = 0` and `noise_w = 0`: same input, same bytes.
@@ -231,6 +309,20 @@ impl NarrationEngine for PiperEngine {
     }
 }
 
+/// Mono 16-bit `pcm` at `sample_rate`: the samples as they are when the rate
+/// already matches, else resampled by ffmpeg in bit-exact mode (R-0007 AC1).
+pub fn resample_pcm16(pcm: &Pcm16, sample_rate: u32) -> Result<Vec<i16>, AudioError> {
+    if pcm.sample_rate == sample_rate && pcm.channels == 1 {
+        return Ok(pcm.samples.clone());
+    }
+    let tmp = TempDir::new()?;
+    let src = tmp.0.join("in.wav");
+    crate::pcm::write_wav(&src, pcm)?;
+    let fine = tmp.0.join("resampled.wav");
+    resample_file(&src, &fine, sample_rate)?;
+    Ok(read_wav_pcm16(&std::fs::read(&fine)?)?.samples)
+}
+
 /// `input` → mono 16-bit at `sample_rate`, with ffmpeg's bit-exact flags
 /// (no encoder tag, the same bytes on every run).
 fn resample_file(input: &Path, output: &Path, sample_rate: u32) -> Result<(), AudioError> {
@@ -256,6 +348,148 @@ fn resample_file(input: &Path, output: &Path, sample_rate: u32) -> Result<(), Au
         ));
     }
     Ok(())
+}
+
+impl PiperEngine {
+    /// The `piper` this engine runs: [`PiperEngine::binary`], else
+    /// `GUION_PIPER`, else `PATH`.
+    fn executable(&self) -> Result<PathBuf, AudioError> {
+        Ok(match &self.binary {
+            Some(b) => b.clone(),
+            None => PathBuf::from(which_piper()?),
+        })
+    }
+
+    fn compute_identity(&self) -> Result<String, AudioError> {
+        let model = Path::new(&self.model);
+        let mut h = Fnv::default();
+        h.write(&fingerprint_file(model)?.to_le_bytes());
+        let config = PathBuf::from(format!("{}.json", self.model));
+        h.write(&fingerprint_file(&config)?.to_le_bytes());
+        let name = model
+            .file_stem()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let num = |x: Option<f64>| x.map_or("default".to_string(), |v| format!("{v}"));
+        Ok(format!(
+            "piper {name} model={:016x} build=«{}» noise_scale={} noise_w={} length_scale={} \
+             sentence_silence={}",
+            h.finish(),
+            piper_build(&self.executable()?)?,
+            num(self.noise_scale),
+            num(self.noise_w),
+            num(self.length_scale),
+            num(self.sentence_silence),
+        ))
+    }
+}
+
+/// Piper as a maker of takes (R-0019). The identity hashes the model and its
+/// config (`<model>.json`, Piper's own convention) once per engine.
+impl Voice for PiperEngine {
+    fn identity(&self) -> Result<String, AudioError> {
+        if let Some(id) = self.identity.get() {
+            return Ok(id.clone());
+        }
+        let id = self.compute_identity()?;
+        Ok(self.identity.get_or_init(|| id).clone())
+    }
+
+    fn take(&self, text: &str) -> Result<Pcm16, AudioError> {
+        let pcm = self.synthesize_native(text)?;
+        if pcm.channels != 1 {
+            // Piper voices are mono; a stereo WAV would not cut into lines
+            return Err(AudioError::Engine(format!(
+                "{}: {} channels, mono expected",
+                self.model, pcm.channels
+            )));
+        }
+        Ok(pcm)
+    }
+
+    fn sentence_silence(&self) -> f64 {
+        self.sentence_silence.unwrap_or(0.0)
+    }
+}
+
+/// The Piper build, for the take key (R-0019 AC4): `piper-tts <v> +
+/// onnxruntime <v>` when `piper` is a Python launcher whose packages can be
+/// found (the PyPI build: its `dist-info` folders in the launcher's or the
+/// interpreter's environment, or in a `PYTHONPATH=` the launcher sets, as
+/// rotorf-sico's `tools/setup.sh` wrapper does); else the executable's
+/// bytes. A launcher holds its machine's paths, so hashing it would tie a
+/// committed take to one machine.
+fn piper_build(exe: &Path) -> Result<String, AudioError> {
+    let bytes =
+        std::fs::read(exe).map_err(|e| AudioError::Engine(format!("{}: {e}", exe.display())))?;
+    if bytes.starts_with(b"#!") {
+        if let Some(v) = python_release(exe, &String::from_utf8_lossy(&bytes)) {
+            return Ok(v);
+        }
+    }
+    let mut h = Fnv::default();
+    h.write(&bytes);
+    Ok(format!("bin:{:016x}", h.finish()))
+}
+
+/// The `piper-tts` (and `onnxruntime`) release a Python launcher runs.
+fn python_release(exe: &Path, script: &str) -> Option<String> {
+    let exe = exe.canonicalize().unwrap_or_else(|_| exe.to_path_buf());
+    let mut envs: Vec<PathBuf> = Vec::new();
+    // <env>/bin/piper → <env>
+    if let Some(v) = exe.parent().and_then(Path::parent) {
+        envs.push(v.to_path_buf());
+    }
+    // #!<env>/bin/python3.12 → <env>
+    let shebang = script.lines().next().unwrap_or_default();
+    if let Some(interp) = shebang.trim_start_matches("#!").split_whitespace().next() {
+        if let Some(v) = Path::new(interp).parent().and_then(Path::parent) {
+            envs.push(v.to_path_buf());
+        }
+    }
+    let mut sites: Vec<PathBuf> = Vec::new();
+    for env in envs {
+        for lib in ["lib", "lib64"] {
+            if let Ok(rd) = std::fs::read_dir(env.join(lib)) {
+                let mut pythons: Vec<PathBuf> = rd.flatten().map(|e| e.path()).collect();
+                pythons.sort();
+                sites.extend(pythons.into_iter().map(|p| p.join("site-packages")));
+            }
+        }
+    }
+    // `PYTHONPATH=<dir> exec …`: a wrapper around a `pip install --target`
+    for (i, _) in script.match_indices("PYTHONPATH=") {
+        let value = script[i + "PYTHONPATH=".len()..]
+            .split_whitespace()
+            .next()
+            .unwrap_or_default();
+        sites.extend(
+            value
+                .trim_matches(['"', '\''])
+                .split(':')
+                .map(PathBuf::from),
+        );
+    }
+    let release = |site: &Path, package: &str| -> Option<String> {
+        let prefix = format!("{package}-");
+        let mut found: Vec<String> = std::fs::read_dir(site)
+            .ok()?
+            .flatten()
+            .filter_map(|e| {
+                let n = e.file_name().to_string_lossy().into_owned();
+                n.strip_prefix(&prefix)?
+                    .strip_suffix(".dist-info")
+                    .map(str::to_string)
+            })
+            .collect();
+        found.sort();
+        found.pop()
+    };
+    sites.iter().find_map(|site| {
+        let piper = release(site, "piper_tts")?;
+        let ort = release(site, "onnxruntime").unwrap_or_else(|| "?".into());
+        Some(format!("piper-tts {piper} + onnxruntime {ort}"))
+    })
 }
 
 pub fn engine_by_name(
@@ -358,6 +592,91 @@ mod tests {
         // the default engine leaves Piper's own (random) prosody
         let a = PiperEngine::new("m.onnx").args(Path::new("o.wav"));
         assert!(!a.iter().any(|x| x.starts_with("--noise")));
+    }
+
+    /// R-0019 AC1: the natural preset is the owner's «C», passed with the
+    /// spellings both builds accept; a number out of range is named.
+    #[test]
+    fn the_natural_preset_is_c() {
+        let a = PiperEngine::with_prosody("m.onnx", Prosody::NATURAL).args(Path::new("o.wav"));
+        assert_eq!(
+            a[2..10],
+            [
+                "--noise_scale",
+                "0.75",
+                "--noise_w",
+                "0.9",
+                "--length_scale",
+                "1",
+                "--sentence_silence",
+                "0.35"
+            ]
+        );
+        assert_eq!(Prosody::default(), Prosody::NATURAL);
+        let d = Prosody::DETERMINISTIC;
+        assert_eq!(
+            (d.noise_scale, d.noise_w, d.sentence_silence),
+            (0.0, 0.0, 0.25)
+        );
+        let bad = Prosody {
+            length_scale: 0.0,
+            ..Prosody::NATURAL
+        };
+        assert!(bad.check().unwrap_err().contains("length_scale"));
+        let bad = Prosody {
+            noise_w: f64::NAN,
+            ..Prosody::NATURAL
+        };
+        assert!(bad.check().unwrap_err().contains("noise_w"));
+        assert!(Prosody::NATURAL.check().is_ok());
+    }
+
+    /// R-0019 AC4: a Python launcher is known by its release, wherever it
+    /// lives (a venv, or rotorf-sico's `PYTHONPATH` wrapper); a binary by its
+    /// bytes.
+    #[test]
+    fn the_build_is_the_release_not_the_launcher() {
+        let root = std::env::temp_dir().join(format!("guion-build-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        // a venv: <venv>/bin/piper, <venv>/lib/python3.12/site-packages/…
+        let site = root.join("venv/lib/python3.12/site-packages");
+        std::fs::create_dir_all(site.join("piper_tts-1.8.0.dist-info")).unwrap();
+        std::fs::create_dir_all(site.join("onnxruntime-1.31.1.dist-info")).unwrap();
+        std::fs::create_dir_all(root.join("venv/bin")).unwrap();
+        let exe = root.join("venv/bin/piper");
+        std::fs::write(
+            &exe,
+            format!(
+                "#!{}/venv/bin/python3.12\nfrom piper.__main__ import main\n",
+                root.display()
+            ),
+        )
+        .unwrap();
+        let venv = piper_build(&exe).unwrap();
+        assert_eq!(venv, "piper-tts 1.8.0 + onnxruntime 1.31.1");
+        // a wrapper elsewhere, pointing at a `pip install --target` folder
+        let target = root.join("py");
+        std::fs::create_dir_all(target.join("piper_tts-1.8.0.dist-info")).unwrap();
+        std::fs::create_dir_all(target.join("onnxruntime-1.31.1.dist-info")).unwrap();
+        let wrapper = root.join("piper-wrapper");
+        std::fs::write(
+            &wrapper,
+            format!(
+                "#!/bin/sh\nPYTHONPATH={0} exec {0}/bin/piper \"$@\"\n",
+                target.display()
+            ),
+        )
+        .unwrap();
+        assert_eq!(
+            piper_build(&wrapper).unwrap(),
+            venv,
+            "same release, same build"
+        );
+        // a binary: its bytes
+        let bin = root.join("piper-cpp");
+        std::fs::write(&bin, b"\x7fELF...").unwrap();
+        assert!(piper_build(&bin).unwrap().starts_with("bin:"));
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     /// R-0007 AC7: the C++ build's padding after the last sentence goes;

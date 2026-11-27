@@ -13,6 +13,12 @@
 //!   result reports when each line, and each sentence inside it, starts and
 //!   ends, measured on the samples. No screenplay needed.
 //!
+//! - **From takes** (R-0019, [`narrate_utterances`]): the natural voice.
+//!   Blocks of lines are spoken as one utterance each with prosody noise
+//!   ([`Prosody::NATURAL`]); each utterance is spoken once and kept
+//!   ([`TakeStore`]), and its lines and sentences are cut where the voice
+//!   wrote exact silence, so the same takes give the same bytes.
+//!
 //! And one way out for a reel's sound (R-0008, [`synth`]): generic,
 //! deterministic synthesis (oscillators, envelopes, seeded noise, filters, a
 //! level-stable room, pan, buses, ducking under the voice) to a 16-bit stereo
@@ -26,6 +32,8 @@ mod engine;
 mod error;
 mod lines;
 mod pcm;
+mod take;
+mod utterance;
 mod wav;
 
 pub mod synth;
@@ -40,13 +48,17 @@ mod narrate;
 #[cfg(feature = "screenplay")]
 mod script;
 
-pub use engine::{engine_by_name, NarrationEngine, PiperEngine, ScaffoldEngine};
+pub use engine::{
+    engine_by_name, resample_pcm16, NarrationEngine, PiperEngine, Prosody, ScaffoldEngine,
+};
 pub use error::AudioError;
 pub use lines::{
     narrate_cast, narrate_lines, sentence_times, split_sentences, Line, Narration, Pacing,
     Sentence, SilenceRule, TimedLine,
 };
 pub use pcm::{read_wav_pcm16, write_wav, write_wav_pcm16, Pcm16};
+pub use take::{fingerprint_file, Fnv, TakeStore, TakeUse, Voice, INDEX as TAKE_INDEX};
+pub use utterance::{cut_take, narrate_utterances, LineCut, TakeNarration, Utterance};
 pub use wav::{mix_buffers, WavBuffer, SAMPLE_RATE};
 
 #[cfg(feature = "screenplay")]

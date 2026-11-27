@@ -153,26 +153,7 @@ pub fn narrate_cast(
             engines.len()
         )));
     }
-    for l in lines {
-        if l.text.trim().is_empty() {
-            return Err(invalid(l, "el texto está vacío"));
-        }
-        for (name, v) in [("before", l.before), ("after", l.after)] {
-            if !(v.is_finite() && v >= 0.0) {
-                return Err(invalid(l, &format!("{name} = {v}: debe ser ≥ 0")));
-            }
-        }
-    }
-    if !(pacing.lead_in.is_finite()
-        && pacing.lead_in >= 0.0
-        && pacing.gap.is_finite()
-        && pacing.gap >= 0.0)
-    {
-        return Err(AudioError::InvalidScript(format!(
-            "pacing: lead_in = {}, gap = {}: deben ser ≥ 0",
-            pacing.lead_in, pacing.gap
-        )));
-    }
+    validate(lines, pacing)?;
     let sr = pacing.sample_rate;
     let mut track: Vec<i16> = Vec::new();
     silence(&mut track, pacing.lead_in, sr);
@@ -218,6 +199,32 @@ pub fn narrate_cast(
     })
 }
 
+/// The checks every narration makes before speaking (AC6): no empty line, no
+/// negative or non-finite pause, a valid pacing.
+pub(crate) fn validate(lines: &[Line], pacing: &Pacing) -> Result<(), AudioError> {
+    for l in lines {
+        if l.text.trim().is_empty() {
+            return Err(invalid(l, "el texto está vacío"));
+        }
+        for (name, v) in [("before", l.before), ("after", l.after)] {
+            if !(v.is_finite() && v >= 0.0) {
+                return Err(invalid(l, &format!("{name} = {v}: debe ser ≥ 0")));
+            }
+        }
+    }
+    if !(pacing.lead_in.is_finite()
+        && pacing.lead_in >= 0.0
+        && pacing.gap.is_finite()
+        && pacing.gap >= 0.0)
+    {
+        return Err(AudioError::InvalidScript(format!(
+            "pacing: lead_in = {}, gap = {}: deben ser ≥ 0",
+            pacing.lead_in, pacing.gap
+        )));
+    }
+    Ok(())
+}
+
 fn invalid(l: &Line, message: &str) -> AudioError {
     AudioError::InvalidLine {
         line: l.id.clone(),
@@ -226,7 +233,7 @@ fn invalid(l: &Line, message: &str) -> AudioError {
 }
 
 /// `secs` of silence, rounded to the nearest sample (ties to even).
-fn silence(track: &mut Vec<i16>, secs: f64, sr: u32) {
+pub(crate) fn silence(track: &mut Vec<i16>, secs: f64, sr: u32) {
     let n = (secs * sr as f64).round_ties_even() as usize;
     track.resize(track.len() + n, 0);
 }
