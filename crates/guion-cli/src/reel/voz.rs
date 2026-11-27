@@ -71,13 +71,20 @@
 //! lexicon changes what the voice says, never what is written (`voz.json`).
 //! Without `prosodia` the voice is the legacy one, byte for byte.
 //!
+//! **An external voice (R-0020).** `externa = "<file>"` in `[voz]` (with
+//! `prosodia = "natural"`, without Piper's numbers) makes the main voice a
+//! program ([`guion_audio::CommandVoice`]) described by that TOML file:
+//! `programa`, `argumentos` (with `{salida}` and `{silencio}`), `silencio`,
+//! `identidad`; its takes are kept like Piper's.
+//!
 //! Nothing is written unless everything was synthesized and checked.
 
 use std::path::{Path, PathBuf};
 
 use guion_audio::{
-    compose, narrate_cast, narrate_utterances, Lexicon, Line, Narration, NarrationEngine, Pacing,
-    PiperEngine, Prosody, SilenceRule, TakeNarration, TakeStore, Utterance,
+    compose, narrate_cast, narrate_utterances, CommandVoice, Lexicon, Line, Narration,
+    NarrationEngine, Pacing, PiperEngine, Prosody, SilenceRule, TakeNarration, TakeStore,
+    Utterance,
 };
 
 const SR: u32 = 48_000;
@@ -136,6 +143,9 @@ struct Guion {
     lexicos: Vec<String>,
     /// `[lexico]` of `voz.toml` itself: it comes last.
     lexico: Lexicon,
+    /// `[voz] externa`: the file describing an external voice (R-0020),
+    /// relative to the post.
+    externa: Option<String>,
 }
 
 /// The starter list's name in `[voz] lexico` (R-0019 AC11).
@@ -255,10 +265,13 @@ fn natural(
         Preset::Natural => ajustes_de_cuenta(post)?,
         Preset::Determinista => Ajustes::default(),
     };
-    let principal = hacer(
-        &g.modelo,
-        prosodia(preset, cuenta, g.ajustes, Ajustes::default(), g.lento)?,
-    )?;
+    let principal = match &g.externa {
+        Some(e) => Box::new(externa(&post.join(e))?) as Box<dyn guion_audio::Voice>,
+        None => hacer(
+            &g.modelo,
+            prosodia(preset, cuenta, g.ajustes, Ajustes::default(), g.lento)?,
+        )?,
+    };
     let reparto = g
         .voces
         .iter()
@@ -455,6 +468,62 @@ fn piper_natural(voice: &Voice, modelo: &str, p: Prosody) -> Result<PiperEngine,
     Ok(e)
 }
 
+/// The external voice described by the TOML file at `ruta` (R-0020):
+///
+/// ```toml
+/// programa = "${QWEN_TTS_PYTHON}"      # ${VAR} comes from the environment
+/// argumentos = ["-I", "voz_qwen.py", "--silencio", "{silencio}", "{salida}"]
+/// silencio = 0.3                       # s of zeros between two sentences
+/// identidad = ["serena.wav", "serena.txt"]   # files whose bytes decide a take
+/// ```
+///
+/// The program runs in the file's folder. The voice's identity is
+/// `programa` and `argumentos` as written (never expanded: no machine's
+/// paths) and the bytes of each `identidad` file. Fails on an unknown or a
+/// missing key, a variable not set, or what [`CommandVoice::new`] refuses.
+fn externa(ruta: &Path) -> Result<CommandVoice, String> {
+    let donde = ruta.display().to_string();
+    let fuente = std::fs::read_to_string(ruta).map_err(|e| format!("{donde}: {e}"))?;
+    let t: toml::Table = fuente
+        .parse()
+        .map_err(|e: toml::de::Error| format!("{donde}: {e}"))?;
+    claves(
+        &t,
+        &donde,
+        &["programa", "argumentos", "silencio", "identidad"],
+    )?;
+    let texto = |k: &str| -> Result<String, String> {
+        t.get(k)
+            .and_then(|x| x.as_str())
+            .map(str::to_string)
+            .ok_or(format!("{donde}: falta {k} (texto)"))
+    };
+    let lista = |k: &str| -> Result<Vec<String>, String> {
+        t.get(k)
+            .and_then(|x| x.as_array())
+            .and_then(|a| a.iter().map(|s| s.as_str().map(str::to_string)).collect())
+            .ok_or(format!("{donde}: falta {k} (una lista de textos)"))
+    };
+    let programa = texto("programa")?;
+    let argumentos = lista("argumentos")?;
+    let identidad = lista("identidad")?;
+    let silencio = numero(&t, "silencio", &donde)?.ok_or(format!("{donde}: falta silencio"))?;
+    let expandir = |s: &String| super::config::expand(s).map_err(|e| format!("{donde}: {e}"));
+    let dir = ruta.parent().unwrap_or(Path::new(".")).to_path_buf();
+    CommandVoice::new(
+        expandir(&programa)?,
+        argumentos.iter().map(expandir).collect::<Result<_, _>>()?,
+        dir,
+        silencio,
+        format!("{programa} {}", argumentos.join(" ")),
+        identidad
+            .iter()
+            .map(|s| expandir(s).map(PathBuf::from))
+            .collect::<Result<_, _>>()?,
+    )
+    .map_err(|e| format!("{donde}: {e}"))
+}
+
 /// `<voices>/<modelo>/<modelo>.onnx`, which must exist.
 fn onnx(voice: &Voice, modelo: &str) -> Result<String, String> {
     let onnx = voice.voices.join(modelo).join(format!("{modelo}.onnx"));
@@ -548,7 +617,7 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
         "[voz]",
         &[
             "modelo", "inicio", "pausa", "lento", "prosodia", "ruido", "ruido_w", "silencio",
-            "lexico",
+            "lexico", "externa",
         ],
     )?;
     let modelo = v
@@ -576,6 +645,27 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
     };
     let ajustes = leer_ajustes(v, "[voz]")?;
     revisar_prosodia(prosodia, &ajustes, lento, "[voz]")?;
+    let externa = match v.get("externa") {
+        None => None,
+        Some(e) => {
+            let e = e
+                .as_str()
+                .ok_or("[voz]: externa es la ruta de un archivo (la voz externa, R-0020)")?;
+            if prosodia != Some(Preset::Natural) {
+                return Err(
+                    "[voz]: externa pide prosodia = \"natural\" (sus tomas se guardan)".into(),
+                );
+            }
+            if ajustes != Ajustes::default() || v.contains_key("lento") {
+                return Err(
+                    "[voz]: ruido, ruido_w, silencio y lento son de Piper; una voz externa \
+                     trae su silencio en su archivo"
+                        .into(),
+                );
+            }
+            Some(e.to_string())
+        }
+    };
     let voces = leer_voces(&raiz, lento)?;
     for r in &voces {
         revisar_prosodia(
@@ -726,6 +816,7 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
         ajustes,
         lexicos,
         lexico,
+        externa,
     })
 }
 
@@ -1221,6 +1312,95 @@ mod pruebas {
         );
         assert!(tomas.join(".gitignore").is_file() && tomas.join(TAKE_INDEX).is_file());
         let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// A post whose `[voz] externa` names `voz/externa.toml`: `sh` counts its
+    /// calls and copies a take with two sentences cut by 0.3 s of zeros.
+    fn post_externo(nombre: &str, voz_extra: &str, archivo: &str) -> (PathBuf, Voice) {
+        let toml = format!(
+            "[voz]\nmodelo = \"serena\"\nprosodia = \"natural\"\nexterna = \"voz/externa.toml\"\n\
+             {voz_extra}\n[[linea]]\nid = \"a\"\ntexto = \"Uno dos. Tres.\"\n"
+        );
+        let (d, v) = post(nombre, &toml);
+        let voz = d.join("post/voz");
+        std::fs::create_dir_all(&voz).unwrap();
+        let mut take: Vec<i16> = (0..4800)
+            .map(|k| if k % 2 == 0 { 6000 } else { -6000 })
+            .collect();
+        take.resize(4800 + 7200, 0);
+        take.extend((0..4800).map(|k| if k % 2 == 0 { 5000 } else { -5000 }));
+        guion_audio::write_wav_pcm16(&voz.join("ref.wav"), 24_000, &take).unwrap();
+        std::fs::write(voz.join("externa.toml"), archivo).unwrap();
+        (d, v)
+    }
+
+    const EXTERNA: &str = "programa = \"sh\"\n\
+        argumentos = [\"-c\", \"cat > dicho.txt; echo x >> llamadas.txt; cp ref.wav \\\"$0\\\"\", \"{salida}\"]\n\
+        silencio = 0.3\nidentidad = [\"ref.wav\"]\n";
+
+    fn sin_piper() -> impl Fn(&str, Prosody) -> Result<Box<dyn guion_audio::Voice>, String> {
+        |_: &str, _: Prosody| Err("una voz externa no llama a Piper".to_string())
+    }
+
+    /// R-0020 AC1, AC2: an external voice speaks the block through its
+    /// program, sentence by sentence on stdin, once; a re-run reads the take.
+    #[test]
+    fn una_voz_externa_habla_una_vez_por_su_programa() {
+        let (d, v) = post_externo("externa", "", EXTERNA);
+        let p = d.join("post");
+        narrate_con(&p, &v, &sin_piper()).unwrap();
+        let voz = p.join("voz");
+        assert_eq!(
+            std::fs::read_to_string(voz.join("dicho.txt")).unwrap(),
+            "Uno dos.\nTres.\n"
+        );
+        let json = std::fs::read_to_string(p.join("voz.json")).unwrap();
+        assert!(json.contains("\"texto\": \"Tres.\""), "{json}");
+        let wav = std::fs::read(p.join("voz.wav")).unwrap();
+        narrate_con(&p, &v, &sin_piper()).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(voz.join("llamadas.txt")).unwrap(),
+            "x\n",
+            "a re-run speaks nothing"
+        );
+        assert_eq!(std::fs::read(p.join("voz.wav")).unwrap(), wav);
+        let indice = std::fs::read_to_string(p.join(TOMAS).join(TAKE_INDEX)).unwrap();
+        assert!(indice.contains("voice: command sh -c"), "{indice}");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// R-0020 AC3: what an external voice cannot take fails by name.
+    #[test]
+    fn la_voz_externa_invalida_falla_por_nombre() {
+        let casos = [
+            ("lento = 0.9", EXTERNA.to_string(), "lento"),
+            ("ruido = 0.5", EXTERNA.to_string(), "ruido"),
+            (
+                "",
+                EXTERNA.replace("silencio = 0.3\n", ""),
+                "falta silencio",
+            ),
+            ("", EXTERNA.replace("{salida}", "x.wav"), "{salida}"),
+            (
+                "",
+                EXTERNA.replace("\"sh\"", "\"${GUION_R0020_NO_ESTA}\""),
+                "GUION_R0020_NO_ESTA",
+            ),
+            ("", format!("{EXTERNA}voz = 1\n"), "voz"),
+        ];
+        for (i, (extra, archivo, espera)) in casos.iter().enumerate() {
+            let (d, v) = post_externo(&format!("externa-mal-{i}"), extra, archivo);
+            let e = narrate_con(&d.join("post"), &v, &sin_piper()).unwrap_err();
+            assert!(e.contains(espera), "caso {i}: «{e}» no nombra «{espera}»");
+            assert!(
+                !d.join("post/voz.wav").exists(),
+                "caso {i}: nothing is written"
+            );
+            let _ = std::fs::remove_dir_all(&d);
+        }
+        let sin = "[voz]\nmodelo = \"m\"\nexterna = \"x.toml\"\n[[linea]]\nid = \"a\"\ntexto = \"Hola.\"\n";
+        let e = leer_guion(sin).err().unwrap();
+        assert!(e.contains("prosodia"), "{e}");
     }
 
     /// R-0019 AC2: the account's `[voz.prosodia]` reaches its natural posts;
