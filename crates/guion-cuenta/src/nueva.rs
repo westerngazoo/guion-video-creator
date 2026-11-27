@@ -309,6 +309,10 @@ modelo = {voz}                          # el modelo de Piper (voz.toml lo nombra
 tono = {tono}
 trato = {trato}
 prohibido = {prohibido}                 # la compuerta los rechaza en el caption
+# [voz.prosodia]                        # opcional (R-0019): la voz natural de la cuenta; sin esto, «C»
+# ruido = 0.75                          # noise_scale
+# ruido_w = 0.9                         # noise_w
+# silencio = 0.35                       # la pausa entre frases, s
 
 [marca]
 direccion = "por decidir"               # la dirección de diseño la decide el dueño (R-0014 §4)

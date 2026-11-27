@@ -52,6 +52,11 @@ reel se comprueba como Short con `guion reel check <post> --formato short`.
    Un diálogo lleva su reparto en `voz.toml`: `[voces.<nombre>]` (modelo y
    `lento`) y `voz = "<nombre>"` en cada línea que no dice la voz del reel
    (R-0018); el reloj sigue siendo uno.
+   La voz natural (R-0019) es `prosodia = "natural"` en `[voz]` (la plantilla
+   ya lo trae): cada línea se graba **una vez** y su toma queda en
+   `voz.tomas/`, que va al repo con el post (una toma con ruido no se puede
+   repetir). Volver a correr la voz no graba nada si no cambió el texto; para
+   grabar otra vez una línea, se borra su WAV (lo dice `voz.tomas/tomas.txt`).
 2. **El autor escribe bien a la primera.** Un solo agente por reel, con la
    skill de la cuenta (las reglas de juicio en una lista) y un encargo de
    menos de 40 líneas. No relee manuales enteros: la skill, `cuenta.toml` y

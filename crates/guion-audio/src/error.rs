@@ -21,6 +21,16 @@ pub enum AudioError {
         gaps: usize,
         min_gap: f64,
     },
+    /// A take whose runs of exact zeros are not its sentence cuts (R-0019
+    /// AC6): the voice cut sentences where guion did not (an abbreviation,
+    /// a number with a point, «…»), or left a silence inside one. Names the
+    /// lines, both counts and the take, which stays in the store.
+    TakeTiming {
+        lines: String,
+        expected: usize,
+        found: usize,
+        key: String,
+    },
     /// A WAV the engine or ffmpeg wrote that this crate cannot read.
     Wav(String),
     /// ffmpeg was not found or failed while resampling.
@@ -58,6 +68,17 @@ impl fmt::Display for AudioError {
             } => write!(
                 f,
                 "línea «{line}»: tiene {sentences} frases y solo {gaps} silencios de {min_gap} s entre ellas"
+            ),
+            AudioError::TakeTiming {
+                lines,
+                expected,
+                found,
+                key,
+            } => write!(
+                f,
+                "la toma {key} («{lines}»): se esperaban {expected} silencios entre frases y la voz \
+                 dejó {found}. Escribe con letras lo que la voz corta distinto (abreviaturas, \
+                 números con punto, «…»), o borra la toma para grabarla otra vez"
             ),
             AudioError::Wav(msg) => write!(f, "wav: {msg}"),
             AudioError::Resample(msg) => write!(f, "remuestreo (ffmpeg): {msg}"),
