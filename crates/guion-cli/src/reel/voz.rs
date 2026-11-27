@@ -43,22 +43,41 @@
 //! ruido = 0.75                # optional: noise_scale (also in [voces.x])
 //! ruido_w = 0.9               # optional: noise_w
 //! silencio = 0.35             # optional: Piper's pause between sentences, s
+//! lexico = ["guion:es", "../../lexico.toml"]   # optional: how terms are said
+//!
+//! [lexico]                    # optional: this post's own terms (they win)
+//! "backprop" = "bácprop"
+//!
+//! [[linea]]                   # no blank line between two lines: one block,
+//! id = "a"                    # spoken as one utterance
+//! texto = "Primera frase."
+//! [[linea]]
+//! id = "b"
+//! texto = "Segunda frase."
+//!
+//! [[linea]]                   # a blank line: a new block
+//! id = "c"
+//! texto = "Otra."
+//! sigue = true                # …unless `sigue` says otherwise (true/false)
 //! ```
 //!
 //! An account's `cuenta.toml` `[voz.prosodia]` replaces «C»'s numbers for its
-//! natural posts; `voz.toml`'s own replace the account's. Each line is then
+//! natural posts; `voz.toml`'s own replace the account's. Each block is then
 //! spoken once and kept in `voz.tomas/` (commit it: a take with noise cannot
 //! be made again), and `voz.wav` and `voz.json` are derived from the takes,
-//! so a re-run speaks nothing and gives the same bytes. Without `prosodia`
-//! the voice is the legacy one, byte for byte.
+//! so a re-run speaks nothing and gives the same bytes. Inside a block each
+//! line but the last ends its sentence, and the pause between lines is the
+//! voice's own (plus `pausa`/`antes`); `[voz] pausa` separates blocks. The
+//! lexicon changes what the voice says, never what is written (`voz.json`).
+//! Without `prosodia` the voice is the legacy one, byte for byte.
 //!
 //! Nothing is written unless everything was synthesized and checked.
 
 use std::path::{Path, PathBuf};
 
 use guion_audio::{
-    narrate_cast, narrate_utterances, Line, Narration, NarrationEngine, Pacing, PiperEngine,
-    Prosody, SilenceRule, TakeNarration, TakeStore, Utterance,
+    compose, narrate_cast, narrate_utterances, Lexicon, Line, Narration, NarrationEngine, Pacing,
+    PiperEngine, Prosody, SilenceRule, TakeNarration, TakeStore, Utterance,
 };
 
 const SR: u32 = 48_000;
@@ -91,6 +110,9 @@ struct Linea {
     desde: usize,
     /// The voice that speaks it: `None` is `[voz]`, `Some(i)` is `voces[i]`.
     voz: Option<usize>,
+    /// It starts a block: an utterance of its own (R-0019 AC7). The first
+    /// line always does.
+    bloque: bool,
 }
 
 /// A voice of the reel's cast (R-0018): `[voces.<nombre>]`.
@@ -110,7 +132,14 @@ struct Guion {
     /// `None`: the legacy voice (R-0019 AC3).
     prosodia: Option<Preset>,
     ajustes: Ajustes,
+    /// `[voz] lexico`: the lists, in order (R-0019 AC11).
+    lexicos: Vec<String>,
+    /// `[lexico]` of `voz.toml` itself: it comes last.
+    lexico: Lexicon,
 }
+
+/// The starter list's name in `[voz] lexico` (R-0019 AC11).
+const LEXICO_GUION: &str = "guion:es";
 
 /// Makes the natural voice of a model with a prosody (Piper, or a fake in
 /// the tests).
@@ -240,24 +269,124 @@ fn natural(
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let utterances: Vec<Utterance> = g
-        .lineas
-        .iter()
-        .enumerate()
-        .map(|(i, l)| Utterance {
-            lines: i..i + 1,
-            voice: match l.voz {
-                None => principal.as_ref(),
-                Some(k) => reparto[k].as_ref(),
-            },
-        })
-        .collect();
+    let lexico = lexico(post, g)?;
+    // one utterance per block (R-0019 AC7)
+    let mut utterances: Vec<Utterance> = Vec::new();
+    for (i, l) in g.lineas.iter().enumerate() {
+        if l.bloque || utterances.is_empty() {
+            utterances.push(Utterance {
+                lines: i..i + 1,
+                voice: match l.voz {
+                    None => principal.as_ref(),
+                    Some(k) => reparto[k].as_ref(),
+                },
+            });
+        } else if let Some(u) = utterances.last_mut() {
+            u.lines.end = i + 1;
+        }
+    }
     let lineas: Vec<Line> = g.lineas.iter().map(|l| l.linea.clone()).collect();
-    let dichas: Vec<String> = lineas.iter().map(|l| l.text.clone()).collect();
+    // what the voice says: composed (AC10), then the lexicon (AC11)
+    let dichas: Vec<String> = lineas
+        .iter()
+        .map(|l| lexico.apply(&compose(&l.text)))
+        .collect();
     let store = TakeStore::new(post.join(TOMAS));
     let r = narrate_utterances(&lineas, &dichas, &utterances, &g.pacing, &store)
         .map_err(|e| e.to_string())?;
     Ok((r, store))
+}
+
+/// The voice's lexicon (R-0019 AC11): the lists of `[voz] lexico` in order
+/// (`"guion:es"`, the starter list, or a TOML file with a `[lexico]` table,
+/// relative to the post), then `voz.toml`'s own `[lexico]`.
+fn lexico(post: &Path, g: &Guion) -> Result<Lexicon, String> {
+    let mut l = Lexicon::new();
+    for fuente in &g.lexicos {
+        if fuente == LEXICO_GUION {
+            l.extend(&Lexicon::starter_es());
+            continue;
+        }
+        if fuente.starts_with("guion:") {
+            return Err(format!(
+                "[voz] lexico: «{fuente}» no existe (la lista de la casa es «{LEXICO_GUION}»)"
+            ));
+        }
+        let ruta = post.join(fuente);
+        let texto =
+            std::fs::read_to_string(&ruta).map_err(|e| format!("{}: {e}", ruta.display()))?;
+        let raiz: toml::Table = texto
+            .parse()
+            .map_err(|e: toml::de::Error| format!("{}: {e}", ruta.display()))?;
+        claves(&raiz, "", &["lexico"]).map_err(|e| format!("{}: {e}", ruta.display()))?;
+        let tabla = raiz
+            .get("lexico")
+            .and_then(|t| t.as_table())
+            .ok_or(format!("{}: falta la tabla [lexico]", ruta.display()))?;
+        l.extend(&leer_lexico(
+            tabla,
+            &format!("{} [lexico]", ruta.display()),
+        )?);
+    }
+    l.extend(&g.lexico);
+    Ok(l)
+}
+
+/// A `[lexico]` table: `"término" = "como lo dice la voz"`.
+fn leer_lexico(t: &toml::Table, donde: &str) -> Result<Lexicon, String> {
+    let mut l = Lexicon::new();
+    for (k, v) in t {
+        let v = v.as_str().ok_or(format!("{donde}: «{k}» no es texto"))?;
+        l.insert(&compose(k), &compose(v))
+            .map_err(|e| format!("{donde}: {e}"))?;
+    }
+    Ok(l)
+}
+
+/// For each `[[linea]]` after the first, whether a blank line comes between
+/// it and the one before (R-0019 AC7: a blank line starts a block). Read
+/// from the source, since TOML forgets its layout: a header is a line that
+/// says `[[linea]]` (spaces inside the brackets and a comment after allowed);
+/// a blank line inside a multi-line string does not count; any other table
+/// between two lines counts as a blank line.
+fn blancos_entre_lineas(fuente: &str) -> Vec<bool> {
+    let mut out = Vec::new();
+    let mut blanco = false;
+    let mut cabeceras = 0;
+    let mut cadena: Option<&str> = None;
+    for renglon in fuente.lines() {
+        if let Some(q) = cadena {
+            if renglon.contains(q) {
+                cadena = None;
+            }
+            continue;
+        }
+        let t = renglon.trim();
+        for q in ["\"\"\"", "'''"] {
+            if t.matches(q).count() % 2 == 1 {
+                cadena = Some(q);
+            }
+        }
+        let cabecera: String = t
+            .split('#')
+            .next()
+            .unwrap_or_default()
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect();
+        if t.is_empty() {
+            blanco = true;
+        } else if cabecera == "[[linea]]" {
+            if cabeceras > 0 {
+                out.push(blanco);
+            }
+            cabeceras += 1;
+            blanco = false;
+        } else if t.starts_with('[') {
+            blanco = true;
+        }
+    }
+    out
 }
 
 /// The prosody of one voice (R-0019 AC1, AC2): the preset, then (natural
@@ -409,7 +538,7 @@ fn revisar_prosodia(
 
 fn leer_guion(fuente: &str) -> Result<Guion, String> {
     let raiz: toml::Table = fuente.parse().map_err(|e: toml::de::Error| e.to_string())?;
-    claves(&raiz, "", &["voz", "voces", "linea"])?;
+    claves(&raiz, "", &["voz", "voces", "linea", "lexico"])?;
     let v = raiz
         .get("voz")
         .and_then(|v| v.as_table())
@@ -419,6 +548,7 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
         "[voz]",
         &[
             "modelo", "inicio", "pausa", "lento", "prosodia", "ruido", "ruido_w", "silencio",
+            "lexico",
         ],
     )?;
     let modelo = v
@@ -455,18 +585,56 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
             &format!("[voces.{}]", r.nombre),
         )?;
     }
+    // the pronunciation lexicon (R-0019 AC11): the natural voice only
+    let lexicos = match v.get("lexico") {
+        None => Vec::new(),
+        Some(x) => x
+            .as_array()
+            .and_then(|a| a.iter().map(|s| s.as_str().map(str::to_string)).collect())
+            .ok_or("[voz]: lexico es una lista de nombres (\"guion:es\" o un archivo)")?,
+    };
+    let lexico = match raiz.get("lexico") {
+        None => Lexicon::new(),
+        Some(t) => leer_lexico(t.as_table().ok_or("[lexico] no es una tabla")?, "[lexico]")?,
+    };
+    if prosodia.is_none() && (!lexicos.is_empty() || !lexico.is_empty()) {
+        return Err(
+            "el léxico ([voz] lexico, [lexico]) pide [voz] prosodia = \"natural\" o \
+             \"determinista\" (sin prosodia, la voz es la de antes)"
+                .into(),
+        );
+    }
     let tabla = raiz
         .get("linea")
         .and_then(|l| l.as_array())
         .ok_or("faltan las líneas ([[linea]])")?;
-    let mut lineas = Vec::new();
+    // blocks: a blank line in the source, or `sigue` (R-0019 AC7)
+    let blancos = blancos_entre_lineas(fuente);
+    if prosodia.is_some() && blancos.len() + 1 != tabla.len() {
+        return Err(format!(
+            "no se pudo leer el acomodo de las {} líneas (se ven {} cabeceras [[linea]]): \
+             marca los bloques con `sigue` en cada línea",
+            tabla.len(),
+            blancos.len() + 1
+        ));
+    }
+    let mut lineas: Vec<Linea> = Vec::new();
     for (i, l) in tabla.iter().enumerate() {
         let donde = format!("[[linea]] {}", i + 1);
         let l = l.as_table().ok_or(format!("{donde}: no es una tabla"))?;
         claves(
             l,
             &donde,
-            &["id", "texto", "subtitulo", "pausa", "antes", "desde", "voz"],
+            &[
+                "id",
+                "texto",
+                "subtitulo",
+                "pausa",
+                "antes",
+                "desde",
+                "voz",
+                "sigue",
+            ],
         )?;
         let id = l
             .get("id")
@@ -508,6 +676,35 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
                 Some(i)
             }
         };
+        let sigue = match l.get("sigue") {
+            None => None,
+            Some(s) => Some(
+                s.as_bool()
+                    .ok_or(format!("{donde}: sigue es true o false"))?,
+            ),
+        };
+        if prosodia.is_none() && sigue.is_some() {
+            return Err(format!(
+                "{donde}: sigue pide [voz] prosodia = \"natural\" o \"determinista\" (sin \
+                 prosodia, cada línea se dice sola)"
+            ));
+        }
+        let bloque = match lineas.last() {
+            None => true,
+            Some(antes) if antes.voz != voz => {
+                if sigue == Some(true) {
+                    return Err(format!(
+                        "{donde}: sigue = true, pero la dice otra voz que la línea anterior: \
+                         cada voz habla en su propio bloque"
+                    ));
+                }
+                true
+            }
+            Some(_) => match sigue {
+                Some(s) => !s,
+                None => prosodia.is_none() || blancos[i - 1],
+            },
+        };
         let mut linea = Line::new(id, texto);
         linea.before = numero(l, "antes", &donde)?.unwrap_or(0.0);
         linea.after = numero(l, "pausa", &donde)?.unwrap_or(0.0);
@@ -516,6 +713,7 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
             subtitulo,
             desde,
             voz,
+            bloque,
         });
     }
     Ok(Guion {
@@ -526,6 +724,8 @@ fn leer_guion(fuente: &str) -> Result<Guion, String> {
         lineas,
         prosodia,
         ajustes,
+        lexicos,
+        lexico,
     })
 }
 
@@ -816,16 +1016,17 @@ mod pruebas {
 
     // ---------- R-0019: the natural voice ----------
 
-    use std::cell::{Cell, RefCell};
+    use std::cell::RefCell;
     use std::rc::Rc;
 
     use guion_audio::{split_sentences, AudioError, Pcm16, TAKE_INDEX};
 
     /// Speaks like Piper with noise: 0.2 s per word at a level that changes
-    /// on every call, and exact zeros between sentences. (A sibling of the
-    /// fake in guion-audio's `tests/takes.rs`: a test crate cannot share it.)
+    /// on every call, and exact zeros between sentences; it keeps every text
+    /// it was given. (A sibling of the fake in guion-audio's
+    /// `tests/takes.rs`: a test crate cannot share it.)
     struct Ruidosa {
-        llamadas: Rc<Cell<usize>>,
+        llamadas: Rc<RefCell<Vec<String>>>,
         silencio: f64,
         id: String,
     }
@@ -835,14 +1036,14 @@ mod pruebas {
             Ok(self.id.clone())
         }
         fn take(&self, text: &str) -> Result<Pcm16, AudioError> {
-            let n = self.llamadas.get() + 1;
-            self.llamadas.set(n);
+            self.llamadas.borrow_mut().push(text.to_string());
+            let n = self.llamadas.borrow().len();
             let nivel = 6000 + 41 * n as i16;
             let mut out = Vec::new();
             let frases = split_sentences(text);
             for (i, f) in frases.iter().enumerate() {
                 for _ in f.split_whitespace() {
-                    out.extend((0..3200).map(|k| if (k / 8) % 2 == 0 { nivel } else { -nivel }));
+                    out.extend((0..9600).map(|k| if (k / 8) % 2 == 0 { nivel } else { -nivel }));
                 }
                 if i + 1 < frases.len() {
                     out.resize(out.len() + (self.silencio * 48_000.0) as usize, 0);
@@ -875,7 +1076,7 @@ mod pruebas {
 
     /// A factory of noisy voices that records the prosody each was asked for.
     fn fabrica(
-        llamadas: &Rc<Cell<usize>>,
+        llamadas: &Rc<RefCell<Vec<String>>>,
         pedidas: &Rc<RefCell<Vec<(String, Prosody)>>>,
     ) -> impl Fn(&str, Prosody) -> Result<Box<dyn guion_audio::Voice>, String> {
         let (llamadas, pedidas) = (llamadas.clone(), pedidas.clone());
@@ -965,18 +1166,18 @@ mod pruebas {
     fn la_voz_natural_se_graba_una_vez() {
         let (d, v) = post("una-vez", NATURAL);
         let p = d.join("post");
-        let llamadas = Rc::new(Cell::new(0));
+        let llamadas = Rc::new(RefCell::new(Vec::new()));
         let pedidas = Rc::new(RefCell::new(Vec::new()));
         let hacer = fabrica(&llamadas, &pedidas);
         narrate_con(&p, &v, &hacer).unwrap();
-        assert_eq!(llamadas.get(), 2);
+        assert_eq!(llamadas.borrow().len(), 2);
         assert_eq!(pedidas.borrow()[0].1, Prosody::NATURAL);
         let wav = std::fs::read(p.join("voz.wav")).unwrap();
         let json = std::fs::read_to_string(p.join("voz.json")).unwrap();
         assert!(json.contains("\"subtitulo\": \"Uno.\""), "{json}");
 
         narrate_con(&p, &v, &hacer).unwrap();
-        assert_eq!(llamadas.get(), 2, "a re-run speaks nothing");
+        assert_eq!(llamadas.borrow().len(), 2, "a re-run speaks nothing");
         assert_eq!(std::fs::read(p.join("voz.wav")).unwrap(), wav);
         assert_eq!(std::fs::read_to_string(p.join("voz.json")).unwrap(), json);
 
@@ -985,7 +1186,11 @@ mod pruebas {
             .replace("antes = 0.2", "antes = 0.6");
         std::fs::write(p.join("voz.toml"), &editado).unwrap();
         narrate_con(&p, &v, &hacer).unwrap();
-        assert_eq!(llamadas.get(), 2, "subtitles and pauses are not takes");
+        assert_eq!(
+            llamadas.borrow().len(),
+            2,
+            "subtitles and pauses are not takes"
+        );
 
         let tomas = p.join(TOMAS);
         let antes: Vec<String> = std::fs::read_dir(&tomas)
@@ -999,7 +1204,11 @@ mod pruebas {
         )
         .unwrap();
         narrate_con(&p, &v, &hacer).unwrap();
-        assert_eq!(llamadas.get(), 3, "only the edited line is spoken again");
+        assert_eq!(
+            llamadas.borrow().len(),
+            3,
+            "only the edited line is spoken again"
+        );
         let despues: Vec<String> = std::fs::read_dir(&tomas)
             .unwrap()
             .flatten()
@@ -1034,7 +1243,7 @@ mod pruebas {
                 "\n[voz.prosodia]\nruido_w = 0.6\nsilencio = 0.4\n\n[marca]\n",
             );
         std::fs::write(d.join("cuenta.toml"), contrato).unwrap();
-        let llamadas = Rc::new(Cell::new(0));
+        let llamadas = Rc::new(RefCell::new(Vec::new()));
         let pedidas = Rc::new(RefCell::new(Vec::new()));
         let p = d.join("post");
         narrate_con(&p, &v, &fabrica(&llamadas, &pedidas)).unwrap();
@@ -1065,7 +1274,7 @@ mod pruebas {
         let (d, v) = post("legado", &legado);
         std::fs::create_dir_all(d.join("voces/m")).unwrap();
         std::fs::write(d.join("voces/m/m.onnx"), b"").unwrap();
-        let llamadas = Rc::new(Cell::new(0));
+        let llamadas = Rc::new(RefCell::new(Vec::new()));
         let pedidas = Rc::new(RefCell::new(Vec::new()));
         let p = d.join("post");
         // a fake model: the legacy Piper fails, but it is the one that ran
@@ -1076,6 +1285,176 @@ mod pruebas {
         assert!(narrate_con(&p, &v, &fabrica(&llamadas, &pedidas)).is_err());
         assert!(pedidas.borrow().is_empty(), "no natural voice was made");
         assert!(!p.join(TOMAS).exists() && !p.join("voz.wav").exists());
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// The blocks of a parsed `voz.toml`: the ids, grouped.
+    fn bloques(g: &Guion) -> Vec<Vec<&str>> {
+        let mut out: Vec<Vec<&str>> = Vec::new();
+        for l in &g.lineas {
+            if l.bloque {
+                out.push(Vec::new());
+            }
+            out.last_mut().unwrap().push(&l.linea.id);
+        }
+        out
+    }
+
+    /// R-0019 AC7: lines with no blank line between them form a block; a
+    /// blank line (or another table, but not a blank line inside a
+    /// multi-line string) starts one; `sigue` decides over the layout; a
+    /// change of voice always starts one.
+    #[test]
+    fn los_bloques_salen_del_renglon_en_blanco_y_de_sigue() {
+        let g = leer_guion(concat!(
+            "[voz]\nmodelo = \"m\"\nprosodia = \"natural\"\n",
+            "[voces.profe]\nmodelo = \"p\"\n\n",
+            "[[linea]]\nid = \"a\"\ntexto = \"Uno.\"\n",
+            "# a comment is no blank line\n",
+            "[[linea]]\nid = \"b\"\ntexto = \"\"\"Dos.\n\nTres.\"\"\"\n",
+            "[[linea]]\nid = \"c\"\ntexto = \"Cuatro.\"\nsigue = false\n",
+            "[[linea]]\nid = \"d\"\ntexto = \"Cinco.\"\n\n",
+            "[[linea]]\nid = \"e\"\ntexto = \"Seis.\"\nsigue = true\n\n",
+            "[[ linea ]]  # spaces inside the brackets\nid = \"f\"\ntexto = \"Siete.\"\n",
+            "[[linea]]\nid = \"g\"\ntexto = \"Ocho.\"\nvoz = \"profe\"\n",
+        ))
+        .unwrap();
+        assert_eq!(
+            bloques(&g),
+            [vec!["a", "b"], vec!["c", "d", "e"], vec!["f"], vec!["g"]]
+        );
+        // the legacy voice: one line, one utterance, whatever the layout
+        let g = leer_guion(
+            "[voz]\nmodelo = \"m\"\n[[linea]]\nid = \"a\"\ntexto = \"Uno.\"\n\
+             [[linea]]\nid = \"b\"\ntexto = \"Dos.\"\n",
+        )
+        .unwrap();
+        assert_eq!(bloques(&g), [vec!["a"], vec!["b"]]);
+    }
+
+    /// R-0019 AC2, AC7: the account template's `voz.toml`, filled as `guion
+    /// reel nuevo` fills it, reads as a natural voice with the starter
+    /// lexicon, one block per line.
+    #[test]
+    fn la_plantilla_de_la_casa_se_lee() {
+        use guion_cuenta::nueva::{plan, Respuestas};
+        let mut r = Respuestas::con_defaults("Cuenta", "tema", "revisor", "materia");
+        r.fecha = "2026-11-26".into();
+        let voz = plan(&r, "")
+            .unwrap()
+            .archivos
+            .into_iter()
+            .find(|a| a.ruta.ends_with("plantillas/reel/voz.toml"))
+            .unwrap()
+            .texto
+            .replace("{{titulo}}", "¿Qué es un bit?")
+            .replace("{{fecha}}", "2026-11-26")
+            .replace("{{slug}}", "que-es-un-bit");
+        let g = leer_guion(&voz).unwrap();
+        assert_eq!(g.prosodia, Some(Preset::Natural));
+        assert_eq!(g.lexicos, [LEXICO_GUION]);
+        assert_eq!(bloques(&g), [vec!["gancho"], vec!["cierre"]]);
+    }
+
+    /// R-0019 AC7: `sigue` across voices, or without `prosodia`, fails by line.
+    #[test]
+    fn sigue_invalido_falla_por_linea() {
+        let e = leer_guion(concat!(
+            "[voz]\nmodelo = \"m\"\nprosodia = \"natural\"\n[voces.profe]\nmodelo = \"p\"\n",
+            "[[linea]]\nid = \"a\"\ntexto = \"Uno.\"\n",
+            "[[linea]]\nid = \"b\"\ntexto = \"Dos.\"\nvoz = \"profe\"\nsigue = true\n",
+        ))
+        .err()
+        .unwrap();
+        assert!(e.contains("«b»") && e.contains("otra voz"), "{e}");
+        let e = leer_guion(
+            "[voz]\nmodelo = \"m\"\n[[linea]]\nid = \"a\"\ntexto = \"Uno.\"\nsigue = true\n",
+        )
+        .err()
+        .unwrap();
+        assert!(e.contains("«a»") && e.contains("prosodia"), "{e}");
+    }
+
+    /// R-0019 AC7, AC8: a block is one take; its lines keep their own times,
+    /// joined by the voice's pause (no global `pausa` inside the block); a
+    /// line inside a block that does not end its sentence fails, naming it,
+    /// before anything is spoken.
+    #[test]
+    fn un_bloque_se_dice_de_un_tiron() {
+        let toml = "[voz]\nmodelo = \"m\"\nprosodia = \"natural\"\ninicio = 0.5\npausa = 0.3\n\n\
+            [[linea]]\nid = \"a\"\ntexto = \"Uno dos.\"\n\
+            [[linea]]\nid = \"b\"\ntexto = \"Tres.\"\n\n\
+            [[linea]]\nid = \"c\"\ntexto = \"Cuatro.\"\n";
+        let (d, v) = post("bloque", toml);
+        let p = d.join("post");
+        let llamadas = Rc::new(RefCell::new(Vec::new()));
+        let pedidas = Rc::new(RefCell::new(Vec::new()));
+        narrate_con(&p, &v, &fabrica(&llamadas, &pedidas)).unwrap();
+        assert_eq!(*llamadas.borrow(), ["Uno dos. Tres.", "Cuatro."]);
+        let json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(p.join("voz.json")).unwrap()).unwrap();
+        let t = |i: usize, k: &str| json["lineas"][i][k].as_f64().unwrap();
+        // a: 0.5 → 0.9; the voice's 0.35 s; b: 1.25 → 1.45; the global 0.3; c: 1.75
+        assert_eq!((t(0, "t0"), t(0, "t1")), (0.5, 0.9));
+        assert_eq!((t(1, "t0"), t(1, "t1")), (1.25, 1.45));
+        assert_eq!(t(2, "t0"), 1.75);
+
+        std::fs::write(
+            p.join("voz.toml"),
+            toml.replace("texto = \"Uno dos.\"", "texto = \"Uno dos:\""),
+        )
+        .unwrap();
+        let antes = llamadas.borrow().len();
+        let e = narrate_con(&p, &v, &fabrica(&llamadas, &pedidas)).unwrap_err();
+        assert!(e.contains("«a»") && e.contains("media frase"), "{e}");
+        assert_eq!(llamadas.borrow().len(), antes, "nothing spoken");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// R-0019 AC10, AC11: the voice says the text composed and through the
+    /// lexicon (the starter list, a file, `[lexico]`, a later one winning);
+    /// `voz.json` keeps what is written.
+    #[test]
+    fn el_lexico_cambia_lo_que_dice_la_voz_no_lo_escrito() {
+        let toml = "[voz]\nmodelo = \"m\"\nprosodia = \"natural\"\n\
+            lexico = [\"guion:es\", \"../lexico.toml\"]\n\n\
+            [lexico]\n\"backprop\" = \"bacprop\"\n\n\
+            [[linea]]\nid = \"a\"\ntexto = \"Cincuenta N·m con IA y backprop en el pu\u{301}blico.\"\n";
+        let (d, v) = post("lexico", toml);
+        std::fs::write(
+            d.join("lexico.toml"),
+            "[lexico]\n\"IA\" = \"inteligencia artificial\"\n\"backprop\" = \"NO\"\n",
+        )
+        .unwrap();
+        let p = d.join("post");
+        let llamadas = Rc::new(RefCell::new(Vec::new()));
+        let pedidas = Rc::new(RefCell::new(Vec::new()));
+        narrate_con(&p, &v, &fabrica(&llamadas, &pedidas)).unwrap();
+        assert_eq!(
+            llamadas.borrow()[0],
+            "Cincuenta newton metro con inteligencia artificial y bacprop en el público."
+        );
+        let json = std::fs::read_to_string(p.join("voz.json")).unwrap();
+        assert!(json.contains("Cincuenta N·m con IA y backprop"), "{json}");
+
+        // a list that cannot be read, or an entry that moves a sentence cut, fail by name
+        std::fs::write(d.join("lexico.toml"), "[lexico]\n\"etc.\" = \"etcétera\"\n").unwrap();
+        let e = narrate_con(&p, &v, &fabrica(&llamadas, &pedidas)).unwrap_err();
+        assert!(e.contains("lexico.toml") && e.contains("etc."), "{e}");
+        std::fs::write(
+            p.join("voz.toml"),
+            toml.replace("\"guion:es\"", "\"guion:en\""),
+        )
+        .unwrap();
+        let e = narrate_con(&p, &v, &fabrica(&llamadas, &pedidas)).unwrap_err();
+        assert!(e.contains("guion:en") && e.contains("guion:es"), "{e}");
+        // the legacy voice takes no lexicon
+        let e = leer_guion(
+            "[voz]\nmodelo = \"m\"\nlexico = [\"guion:es\"]\n[[linea]]\nid = \"a\"\ntexto = \"x\"\n",
+        )
+        .err()
+        .unwrap();
+        assert!(e.contains("léxico") && e.contains("prosodia"), "{e}");
         let _ = std::fs::remove_dir_all(&d);
     }
 }

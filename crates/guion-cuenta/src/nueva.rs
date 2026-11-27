@@ -487,6 +487,15 @@ pub fn plan(r: &Respuestas, prefijo: &str) -> Result<Plan, String> {
         ),
         ("fecha", r.fecha.clone()),
         ("voz_modelo", cuenta.voz.modelo.clone()),
+        // R-0019 AC11: the house's starter lexicon is Spanish
+        (
+            "voz_lexico",
+            if r.idioma == "es" {
+                "[\"guion:es\"]".into()
+            } else {
+                "[]".into()
+            },
+        ),
         ("tono", cuenta.voz.tono.clone()),
         ("trato", cuenta.voz.trato.clone()),
         ("revisor", r.revisor.clone()),
