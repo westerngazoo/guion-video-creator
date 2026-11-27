@@ -59,6 +59,9 @@ pub fn parse_duration(log: &str) -> Option<f64> {
 ///   `-color_primaries`/`-color_trc`: el cuadro RGB no trae primarios ni
 ///   transferencia, y el MP4 salía `bt709/unknown/unknown`. `setparams` las
 ///   fija en el cuadro; las banderas de salida se quedan para ffmpeg < 8.
+/// - **El píxel, cuadrado y etiquetado (`setsar=1`).** Sin él, el MP4 sale
+///   con la proporción de píxel sin definir (`N/A`), y cada plataforma la
+///   adivina al subirlo.
 /// - **`+faststart` siempre (AC3).** El índice (`moov`) va antes de los
 ///   datos (`mdat`), así el video empieza a reproducirse sin descargarse
 ///   entero. Antes solo se ponía cuando había audio.
@@ -73,7 +76,8 @@ pub const VIDEO: &[&str] = &[
     "+faststart",
     "-vf",
     "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,\
-     setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv",
+     setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv,\
+     setsar=1",
     "-colorspace",
     "bt709",
     "-color_primaries",
