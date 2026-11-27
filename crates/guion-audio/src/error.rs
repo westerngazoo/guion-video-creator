@@ -23,7 +23,8 @@ pub enum AudioError {
     },
     /// A take whose runs of exact zeros are not its sentence cuts (R-0019
     /// AC6): the voice cut sentences where guion did not (an abbreviation,
-    /// a number with a point, «…»), or left a silence inside one. Names the
+    /// a number with a point, «…», a sentence that starts in lowercase,
+    /// which espeak-ng does not cut), or left a silence inside one. Names the
     /// lines, both counts and the take, which stays in the store.
     TakeTiming {
         lines: String,
@@ -77,8 +78,9 @@ impl fmt::Display for AudioError {
             } => write!(
                 f,
                 "la toma {key} («{lines}»): se esperaban {expected} silencios entre frases y la voz \
-                 dejó {found}. Escribe con letras lo que la voz corta distinto (abreviaturas, \
-                 números con punto, «…»), o borra la toma para grabarla otra vez"
+                 dejó {found}. La voz corta distinto una abreviatura, un número con punto, «…» \
+                 o una frase que empieza con minúscula: escríbelo de otro modo, o borra la toma \
+                 para grabarla otra vez"
             ),
             AudioError::Wav(msg) => write!(f, "wav: {msg}"),
             AudioError::Resample(msg) => write!(f, "remuestreo (ffmpeg): {msg}"),
