@@ -517,8 +517,8 @@ fn externa(ruta: &Path) -> Result<CommandVoice, String> {
     let identidad = lista("identidad")?;
     if identidad.is_empty() {
         return Err(format!(
-            "{donde}: identidad está vacía: nombra los archivos que deciden una toma \
-             (la referencia, los scripts, los pesos), o una voz nueva reusaría tomas viejas"
+            "{donde}: identidad está vacía: nombra los archivos que deciden la voz \
+             (la referencia, su texto, los pesos), o una voz nueva reusaría tomas viejas"
         ));
     }
     let silencio = numero(&t, "silencio", &donde)?.ok_or(format!("{donde}: falta silencio"))?;
@@ -543,7 +543,11 @@ fn externa(ruta: &Path) -> Result<CommandVoice, String> {
 /// Both must agree before anything is spoken: «Dijo «sí.»» followed by
 /// «Tres.» is two sentences line by line and one in the joined text.
 fn frases_de_bloque(g: &Guion, utterances: &[Utterance], dichas: &[String]) -> Result<(), String> {
-    for u in utterances {
+    // only the external voice's blocks: the cast stays Piper (R-0018)
+    for u in utterances
+        .iter()
+        .filter(|u| g.lineas[u.lines.start].voz.is_none())
+    {
         let lineas = &dichas[u.lines.clone()];
         let por_linea: usize = lineas.iter().map(|d| split_sentences(d).len()).sum();
         let juntas = split_sentences(&lineas.join(" ")).len();

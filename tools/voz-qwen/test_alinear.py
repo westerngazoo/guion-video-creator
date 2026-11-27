@@ -80,6 +80,15 @@ class Alinear(unittest.TestCase):
         with self.assertRaises(A.TomaRechazada):
             A.cortes(x, SR, FRASES)
 
+    def test_a_cut_at_a_comma_of_two_long_sentences_is_rejected(self):
+        # the voice pauses at the comma and runs through the period (review of R-0020)
+        frases = ["Le das acceso a tu agenda completa, y a tu correo.",
+                  "Le pides una cita para el martes temprano."]
+        x = toma([("Le das acceso a tu agenda completa,", 0.5),
+                  ("y a tu correo. Le pides una cita para el martes temprano.", 0.0)])
+        with self.assertRaises(A.TomaRechazada):
+            A.cortes(x, SR, frases)
+
     def test_the_marks_follow_the_punctuation(self):
         ms = A.marcas(["Uno, dos.", "Tres."])
         self.assertEqual([m.fin for m in ms], [False, True])

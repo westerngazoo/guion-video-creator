@@ -39,9 +39,10 @@ PAUSA_LIBRE_S = 0.30  # an unpaired pause this long costs 1
 SALTO_COMA = 1.0  # a comma said without a pause
 FIN_MIN_S = 0.25  # a sentence end in a shorter pause pays for it
 # The checks after aligning.
-ERROR_MAX = 0.08  # a cut this far from its sentence end (or a neighbour's share, if larger): rejected
+ERROR_MAX = 0.08  # a cut this far from its sentence end: rejected (see ENSANCHE_MAX)
 RITMO = (0.5, 2.0)  # a sentence's letters per second over the take's, outside: rejected
 RITMO_LETRAS = 6  # …unless it is this short («Sí.»): one-syllable answers are drawn out
+ENSANCHE_MAX = 0.12  # the most a very short neighbour widens ERROR_MAX to
 # The edges of a zero run fade over this long (no click).
 FUNDIDO_S = 0.015
 
@@ -188,10 +189,16 @@ def cortes(x: np.ndarray, sr: int, frases: list[str]) -> list[tuple[int, int]]:
     ms = marcas(frases)
     elegidas = alinear(ms, lugar, [(b - a) / sr for a, b in runs])
     fines = [m for m in ms if m.fin]
-    parte = [letras(f) / sum(letras(g) for g in frases) for f in frases]
+    total = sum(letras(f) for f in frases)
     for i, (m, k) in enumerate(zip(fines, elegidas)):
-        # a short sentence next to the cut moves it most (its letters say little of its time)
-        if abs(lugar[k] - m.lugar) > max(ERROR_MAX, min(parte[i], parte[i + 1])):
+        # a very short sentence next to the cut («Sí.») moves it most: its letters
+        # say little of its time; the widening is capped, or a cut at a comma of
+        # two long sentences would pass
+        tol = ERROR_MAX
+        corta = min(letras(frases[i]), letras(frases[i + 1]))
+        if corta < RITMO_LETRAS:
+            tol = max(ERROR_MAX, min(corta / total, ENSANCHE_MAX))
+        if abs(lugar[k] - m.lugar) > tol:
             raise TomaRechazada(
                 f"un corte cae a {lugar[k]:.3f} del habla y la frase termina a {m.lugar:.3f}"
             )
