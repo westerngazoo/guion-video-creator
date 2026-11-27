@@ -20,7 +20,7 @@ blocks, the pronunciation lexicon, composed text and the accent battery.
 guion-audio/src/
 ├── engine.rs     # + Prosody (NATURAL «C», DETERMINISTIC), PiperEngine::with_prosody,
 │                 #   impl Voice for PiperEngine (identity: model bytes + build + prosody),
-│                 #   piper_build (piper-tts/onnxruntime release, else the binary's bytes),
+│                 #   piper_build (the piper-tts release, else the binary's bytes),
 │                 #   resample_pcm16 (public)
 ├── take.rs       # Voice (trait), Fnv (FNV-1a 64), fingerprint_file, TakeStore, TakeUse
 ├── utterance.rs  # Utterance, narrate_utterances, cut_take, LineCut, TakeNarration

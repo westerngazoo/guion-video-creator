@@ -412,13 +412,15 @@ impl Voice for PiperEngine {
     }
 }
 
-/// The Piper build, for the take key (R-0019 AC4): `piper-tts <v> +
-/// onnxruntime <v>` when `piper` is a Python launcher whose packages can be
-/// found (the PyPI build: its `dist-info` folders in the launcher's or the
-/// interpreter's environment, or in a `PYTHONPATH=` the launcher sets, as
-/// rotorf-sico's `tools/setup.sh` wrapper does); else the executable's
-/// bytes. A launcher holds its machine's paths, so hashing it would tie a
-/// committed take to one machine.
+/// The Piper build, for the take key (R-0019 AC4): `piper-tts <v>` when
+/// `piper` is a Python launcher whose package can be found (the PyPI build:
+/// its `dist-info` folder in the launcher's or the interpreter's
+/// environment, or in a `PYTHONPATH=` the launcher sets, as rotorf-sico's
+/// `tools/setup.sh` wrapper does); else the executable's bytes. A launcher
+/// holds its machine's paths, so hashing it would tie a committed take to
+/// one machine. The release pins the phonemizer and its espeak-ng data, what
+/// decides how a text is said; onnxruntime, resolved by pip per machine,
+/// only moves the numerics, so it stays out of the key.
 fn piper_build(exe: &Path) -> Result<String, AudioError> {
     let bytes =
         std::fs::read(exe).map_err(|e| AudioError::Engine(format!("{}: {e}", exe.display())))?;
@@ -432,7 +434,7 @@ fn piper_build(exe: &Path) -> Result<String, AudioError> {
     Ok(format!("bin:{:016x}", h.finish()))
 }
 
-/// The `piper-tts` (and `onnxruntime`) release a Python launcher runs.
+/// The `piper-tts` release a Python launcher runs.
 fn python_release(exe: &Path, script: &str) -> Option<String> {
     let exe = exe.canonicalize().unwrap_or_else(|_| exe.to_path_buf());
     let mut envs: Vec<PathBuf> = Vec::new();
@@ -470,25 +472,19 @@ fn python_release(exe: &Path, script: &str) -> Option<String> {
                 .map(PathBuf::from),
         );
     }
-    let release = |site: &Path, package: &str| -> Option<String> {
-        let prefix = format!("{package}-");
+    sites.iter().find_map(|site| {
         let mut found: Vec<String> = std::fs::read_dir(site)
             .ok()?
             .flatten()
             .filter_map(|e| {
                 let n = e.file_name().to_string_lossy().into_owned();
-                n.strip_prefix(&prefix)?
+                n.strip_prefix("piper_tts-")?
                     .strip_suffix(".dist-info")
                     .map(str::to_string)
             })
             .collect();
         found.sort();
-        found.pop()
-    };
-    sites.iter().find_map(|site| {
-        let piper = release(site, "piper_tts")?;
-        let ort = release(site, "onnxruntime").unwrap_or_else(|| "?".into());
-        Some(format!("piper-tts {piper} + onnxruntime {ort}"))
+        found.pop().map(|v| format!("piper-tts {v}"))
     })
 }
 
@@ -653,11 +649,12 @@ mod tests {
         )
         .unwrap();
         let venv = piper_build(&exe).unwrap();
-        assert_eq!(venv, "piper-tts 1.8.0 + onnxruntime 1.31.1");
+        assert_eq!(venv, "piper-tts 1.8.0");
         // a wrapper elsewhere, pointing at a `pip install --target` folder
+        // (with another onnxruntime: pip picks it per machine)
         let target = root.join("py");
         std::fs::create_dir_all(target.join("piper_tts-1.8.0.dist-info")).unwrap();
-        std::fs::create_dir_all(target.join("onnxruntime-1.31.1.dist-info")).unwrap();
+        std::fs::create_dir_all(target.join("onnxruntime-1.24.0.dist-info")).unwrap();
         let wrapper = root.join("piper-wrapper");
         std::fs::write(
             &wrapper,
