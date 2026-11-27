@@ -112,6 +112,13 @@ a person pastes in Instagram, refusing more than 5 hashtags or more than 2 200
 characters before writing anything. Meant for `rotorf-sico`'s
 `publicar.sh`, which still runs its own `caption` (byte-identical on its 20 captions).
 
+[R-0020](requirements/0020-voz-externa.md) (in review) adds an external
+voice: `[voz] externa` names a file with a program guion runs for each block
+(sentences on stdin, a WAV with exact zeros at the cuts back). Its takes are
+kept like Piper's, so the reel stays byte-identical. The first one is
+Qwen3-TTS, cloned from a sample the owner chose by ear
+(`tools/voz-qwen/`).
+
 [R-0019](requirements/0019-voz-natural.md) (in review) adds the natural
 voice: Piper's prosody noise on (the owner's preset «C»), each utterance
 spoken once and kept as a take in the post (`voz.tomas/`, committed) so the
