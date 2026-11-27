@@ -1,6 +1,6 @@
 # SPEC-0019 — «Voz natural»
 
-- **Status:** In progress (part 1: prosody, takes and their timing)
+- **Status:** In review (implemented in two parts, awaiting the owner's ear)
 - **Realizes:** R-0019
 - **Created:** 2026-11-26
 - **Depends on:** SPEC-0007 (cue-list narration), R-0018 (the cast)
@@ -25,10 +25,42 @@ guion-audio/src/
 ├── take.rs       # Voice (trait), Fnv (FNV-1a 64), fingerprint_file, TakeStore, TakeUse
 ├── utterance.rs  # Utterance, narrate_utterances, cut_take, LineCut, TakeNarration
 ├── lines.rs      # (R-0007) validate() and silence() shared with utterance.rs
+├── compose.rs    # compose(): NFC for the Latin letters with combining marks (part 2)
+├── lexicon.rs    # Lexicon (whole words, longest first, one pass), Lexicon::starter_es() (part 2)
 └── error.rs      # + TakeTiming
-guion-cli/src/reel/voz.rs   # prosodia, ruido, ruido_w, silencio; legado() | natural()
+guion-audio/tests/acentos.rs # the accent battery: recorded (CI) and live through Piper (part 2)
+guion-cli/src/reel/voz.rs   # prosodia, ruido, ruido_w, silencio; legado() | natural();
+                            # blocks (blank lines, sigue), [voz] lexico, [lexico] (part 2)
 guion-cuenta/src/contrato.rs # Voz.prosodia: ProsodiaCuenta { ruido, ruido_w, silencio }
 ```
+
+### Blocks (AC7)
+
+`blancos_entre_lineas(source)` reads the raw `voz.toml`: for each `[[linea]]`
+header after the first (spaces inside the brackets and a trailing comment
+allowed), whether a blank line, or another table header, came since the one
+before; lines inside a `"""`/`'''` string are skipped. Its count must match
+the parsed lines, else the file fails asking for `sigue`. A line starts a
+block when it is the first, its voice differs from the previous line's, its
+`sigue` is `false`, or (no `sigue`) a blank line precedes it.
+
+### What the voice says (AC10, AC11)
+
+`spoken = lexicon.apply(compose(text))`; `PiperEngine` composes again before
+writing stdin (idempotent) and sets `PYTHONIOENCODING=utf-8`. The lexicon is
+`[voz] lexico` in order (`"guion:es"` → `Lexicon::starter_es()`, else a TOML
+file relative to the post whose only table is `[lexico]`), then `voz.toml`'s
+`[lexico]`; later entries win. A lowercase term also matches capitalized,
+except when it maps to Piper's raw phonemes (`[[…]]`): at a sentence start
+piper-tts 1.8.0 appends a raw block to the previous sentence, which would
+lose the cut.
+
+### Phonemes (AC9)
+
+`PiperEngine::phonemes(text)` runs Piper with `--debug` and reads the last
+`phonemes=[[…], …]` of its log (Python's repr: one list per sentence, one
+code point per quoted item), composed. The C++ build logs no such line: the
+call fails saying so.
 
 ### The two paths of `guion reel voice`
 
@@ -91,11 +123,11 @@ rate from the line's start; the last sentence ends with the line.
 | AC4 | `guion-audio` `tests/takes.rs::ac4_spoken_once_then_read_back`; `engine::tests::the_build_is_the_release_not_the_launcher`; `take::tests::the_hash_is_fnv1a_64`; `reel::voz::pruebas::la_voz_natural_se_graba_una_vez` |
 | AC5 | `tests/takes.rs::ac5_the_store_is_kept_with_the_post`; `reel::voz::pruebas::la_voz_natural_se_graba_una_vez` |
 | AC6 | `tests/takes.rs::ac6_sentences_are_cut_at_the_zeros`, `ac6_a_take_that_does_not_cut_fails_by_name` |
-| AC7 | `tests/takes.rs::ac7_a_block_is_one_take_with_each_line_on_the_clock`, `ac7_a_line_mid_sentence_inside_a_block_fails_before_speaking` (the `voz.toml` syntax: part 2) |
-| AC8 | `tests/takes.rs::ac7_a_block_is_one_take_with_each_line_on_the_clock` (part 2: `voz.toml`) |
-| AC9 | part 2 |
-| AC10 | part 2 |
-| AC11 | part 2 |
+| AC7 | `tests/takes.rs::ac7_a_block_is_one_take_with_each_line_on_the_clock`, `ac7_a_line_mid_sentence_inside_a_block_fails_before_speaking`; `reel::voz::pruebas::los_bloques_salen_del_renglon_en_blanco_y_de_sigue`, `sigue_invalido_falla_por_linea`, `un_bloque_se_dice_de_un_tiron`, `la_plantilla_de_la_casa_se_lee` |
+| AC8 | `tests/takes.rs::ac7_a_block_is_one_take_with_each_line_on_the_clock`; `reel::voz::pruebas::un_bloque_se_dice_de_un_tiron` |
+| AC9 | `tests/acentos.rs::ac9_the_recorded_battery_carries_each_stress` (CI); `ac9_live_the_accents_reach_the_phonemes` (`#[ignore]`, by hand with Piper); `engine::tests::the_phoneme_log_reads_back` |
+| AC10 | `compose::tests::nfd_spanish_composes_and_nfc_passes`; `ac9_live_the_accents_reach_the_phonemes` (NFD and NFC give the same phonemes); `reel::voz::pruebas::el_lexico_cambia_lo_que_dice_la_voz_no_lo_escrito` |
+| AC11 | `lexicon::tests::*`; `reel::voz::pruebas::el_lexico_cambia_lo_que_dice_la_voz_no_lo_escrito`; `guion-cuenta` `ac2_a_new_post_asks_for_the_natural_voice` (the template's `lexico`) |
 | AC12 | `cargo test --workspace` |
 
 End to end, outside CI (Piper 1.8.0, `es-carlfm-x-low`, this Mac): a copy of
@@ -103,3 +135,10 @@ fbf's `lateral-3d` with `prosodia = "natural"` speaks 9 takes (880 kB) and a
 second run speaks none, in 0.6 s, with the same `voz.wav` and `voz.json`
 md5; the same post without `prosodia` gives the committed `voz.json` byte
 for byte and writes no takes.
+
+Part 2, by hand: the live accent battery passes with `es-carlfm-x-low`
+(espeak voice `es`), `es_MX-claude-high` and `es_AR-daniela-high` (`es-419`).
+Before/after samples of the same lines, blocks and the starter lexicon
+included, for fbf (`lateral-3d`), Rotor (`la-frenada`) and computar
+(`que-es-un-algoritmo`): every block cut at its zeros (3, 3 and 6 takes for
+9, 8 and 8 lines).

@@ -1,6 +1,6 @@
 # R-0019 — «Voz natural»: prosody, cached takes, fluent blocks, pronunciation
 
-- **Status:** In progress (part 1: prosody, takes and their timing)
+- **Status:** In review (implemented in two parts, awaiting the owner's ear)
 - **Milestone:** M2
 - **Owner:** the house (every narrated account: fbf, Rotor, computar, …)
 - **Created:** 2026-11-26
@@ -167,7 +167,8 @@ Findings that shape this requirement (measured 2026-11-26, piper-tts 1.8.0):
   written text. A term or replacement that is empty or holds `.`, `?` or
   `!` (it would move a sentence cut), or a list that cannot be read, fails
   naming the list and the term. Where espeak-ng is wrong (AC9: «mas»), the
-  starter list overrides it.
+  starter list overrides it with Piper's raw phonemes, inside a sentence
+  (a raw-phoneme entry does not match capitalized).
 
 ### Regression
 
@@ -214,7 +215,12 @@ Findings that shape this requirement (measured 2026-11-26, piper-tts 1.8.0):
 | 2026-11-26 | The block boundary is a blank line in the source, or `sigue` | The owner's rule. Every existing `voz.toml` puts a blank line between its lines, so an opted-in legacy post keeps one line per utterance until its author joins lines on purpose |
 | 2026-11-26 | A table composes the Latin letters with combining marks; the `unicode-normalization` crate is not added | Spanish needs eleven letters (á é í ó ú ü ñ and capitals, plus ç, è…); a std table covers them in a few lines with no dependency. A text with other combining marks passes as it is |
 | 2026-11-26 | Lexicon entries may not hold `.`, `?`, `!` | The voice text and the written text must cut into the same sentences: `voz.json` keeps the written sentences with the voice's times |
+| 2026-11-26 | The «mas» override is Piper's raw phonemes (`[[mas]]`), and only inside a sentence: the capitalized «Mas» is not rewritten | No spelling makes espeak-ng leave «mas» unstressed. At a sentence start piper-tts 1.8.0 appends a `[[…]]` block to the sentence before (measured: «Más o menos. [[mas]] no siempre.» came out as one sentence), which would lose the cut. The C++ build reads no `[[…]]`; the owner's Piper is the PyPI one |
+| 2026-11-26 | `sigue`, `lexico` and `[lexico]` need `prosodia` | The legacy voice must keep its bytes (AC3); a lexicon or a block is a change on purpose |
+| 2026-11-26 | Measured: espeak-ng does not end a sentence at a «.» before a lowercase word | It takes it for an abbreviation. guion cuts there, so such a take fails loudly (AC6), naming the cause; no `voz.toml` in rotorf-sico has one |
 
 ## Changelog
 
 - 2026-11-26 — created; part 1 (AC1–AC6, AC12) realized by SPEC-0019.
+- 2026-11-26 — part 2 (AC7–AC11): blocks in `voz.toml`, composed text, the
+  accent battery, the pronunciation lexicon and its starter list.
