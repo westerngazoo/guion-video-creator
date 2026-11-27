@@ -39,8 +39,9 @@ PAUSA_LIBRE_S = 0.30  # an unpaired pause this long costs 1
 SALTO_COMA = 1.0  # a comma said without a pause
 FIN_MIN_S = 0.25  # a sentence end in a shorter pause pays for it
 # The checks after aligning.
-ERROR_MAX = 0.08  # a sentence end this far from its expected place: rejected
+ERROR_MAX = 0.08  # a cut this far from its sentence end (or a neighbour's share, if larger): rejected
 RITMO = (0.5, 2.0)  # a sentence's letters per second over the take's, outside: rejected
+RITMO_LETRAS = 6  # …unless it is this short («Sí.»): one-syllable answers are drawn out
 # The edges of a zero run fade over this long (no click).
 FUNDIDO_S = 0.015
 
@@ -67,7 +68,9 @@ def letras(texto: str) -> int:
 def marcas(frases: list[str]) -> list[Marca]:
     """Every pause place in `frases`, in order, without the last sentence's end.
 
-    Precondition: no sentence is empty of letters. Each sentence's own end is
+    Preconditions: no sentence is empty of letters, and numbers come written
+    out («mil quinientos», the house rule for voz.toml), since a digit counts as
+    one letter however long it is said. Each sentence's own end is
     a `fin` mark; a , ; or : inside it, followed by more letters, is a coma mark.
     """
     total = sum(letras(f) for f in frases)
@@ -185,8 +188,10 @@ def cortes(x: np.ndarray, sr: int, frases: list[str]) -> list[tuple[int, int]]:
     ms = marcas(frases)
     elegidas = alinear(ms, lugar, [(b - a) / sr for a, b in runs])
     fines = [m for m in ms if m.fin]
-    for m, k in zip(fines, elegidas):
-        if abs(lugar[k] - m.lugar) > ERROR_MAX:
+    parte = [letras(f) / sum(letras(g) for g in frases) for f in frases]
+    for i, (m, k) in enumerate(zip(fines, elegidas)):
+        # a short sentence next to the cut moves it most (its letters say little of its time)
+        if abs(lugar[k] - m.lugar) > max(ERROR_MAX, min(parte[i], parte[i + 1])):
             raise TomaRechazada(
                 f"un corte cae a {lugar[k]:.3f} del habla y la frase termina a {m.lugar:.3f}"
             )
@@ -194,6 +199,8 @@ def cortes(x: np.ndarray, sr: int, frases: list[str]) -> list[tuple[int, int]]:
     tramos = list(zip(bordes[::2], bordes[1::2]))
     ritmo = sum(letras(f) for f in frases) / sum(b - a for a, b in tramos)
     for f, (a, b) in zip(frases, tramos):
+        if letras(f) < RITMO_LETRAS:
+            continue
         r = letras(f) / (b - a) / ritmo
         if not RITMO[0] <= r <= RITMO[1]:
             raise TomaRechazada(f"«{f}» va a {r:.2f}× el ritmo de la toma")

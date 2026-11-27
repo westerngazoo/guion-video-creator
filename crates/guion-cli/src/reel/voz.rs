@@ -82,9 +82,9 @@
 use std::path::{Path, PathBuf};
 
 use guion_audio::{
-    compose, narrate_cast, narrate_utterances, CommandVoice, Lexicon, Line, Narration,
-    NarrationEngine, Pacing, PiperEngine, Prosody, SilenceRule, TakeNarration, TakeStore,
-    Utterance,
+    compose, narrate_cast, narrate_utterances, split_sentences, CommandVoice, Lexicon, Line,
+    Narration, NarrationEngine, Pacing, PiperEngine, Prosody, SilenceRule, TakeNarration,
+    TakeStore, Utterance,
 };
 
 const SR: u32 = 48_000;
@@ -304,6 +304,9 @@ fn natural(
         .iter()
         .map(|l| lexico.apply(&compose(&l.text)))
         .collect();
+    if g.externa.is_some() {
+        frases_de_bloque(g, &utterances, &dichas)?;
+    }
     let store = TakeStore::new(post.join(TOMAS));
     let r = narrate_utterances(&lineas, &dichas, &utterances, &g.pacing, &store)
         .map_err(|e| e.to_string())?;
@@ -472,9 +475,14 @@ fn piper_natural(voice: &Voice, modelo: &str, p: Prosody) -> Result<PiperEngine,
 ///
 /// ```toml
 /// programa = "${QWEN_TTS_PYTHON}"      # ${VAR} comes from the environment
-/// argumentos = ["-I", "voz_qwen.py", "--silencio", "{silencio}", "{salida}"]
+/// argumentos = ["-I", "${GUION_REPO}/tools/voz-qwen/voz_qwen.py",
+///   "--modelo", "${QWEN_TTS_BASE}", "--referencia", "serena.wav",
+///   "--texto-referencia", "serena.txt", "--semilla", "7",
+///   "--silencio", "{silencio}", "{salida}"]
 /// silencio = 0.3                       # s of zeros between two sentences
-/// identidad = ["serena.wav", "serena.txt"]   # files whose bytes decide a take
+/// identidad = ["serena.wav", "serena.txt",   # files whose bytes decide the voice:
+///   "${QWEN_TTS_BASE}/model.safetensors"]     # the reference and the weights (not the
+///                                             # scripts: a fix to them keeps the takes)
 /// ```
 ///
 /// The program runs in the file's folder. The voice's identity is
@@ -507,6 +515,12 @@ fn externa(ruta: &Path) -> Result<CommandVoice, String> {
     let programa = texto("programa")?;
     let argumentos = lista("argumentos")?;
     let identidad = lista("identidad")?;
+    if identidad.is_empty() {
+        return Err(format!(
+            "{donde}: identidad está vacía: nombra los archivos que deciden una toma \
+             (la referencia, los scripts, los pesos), o una voz nueva reusaría tomas viejas"
+        ));
+    }
     let silencio = numero(&t, "silencio", &donde)?.ok_or(format!("{donde}: falta silencio"))?;
     let expandir = |s: &String| super::config::expand(s).map_err(|e| format!("{donde}: {e}"));
     let dir = ruta.parent().unwrap_or(Path::new(".")).to_path_buf();
@@ -522,6 +536,31 @@ fn externa(ruta: &Path) -> Result<CommandVoice, String> {
             .collect::<Result<_, _>>()?,
     )
     .map_err(|e| format!("{donde}: {e}"))
+}
+
+/// An external voice gets each block's sentences one per line, cut from the
+/// block's text (R-0020 AC1); the take is then cut by each line's own count.
+/// Both must agree before anything is spoken: «Dijo «sí.»» followed by
+/// «Tres.» is two sentences line by line and one in the joined text.
+fn frases_de_bloque(g: &Guion, utterances: &[Utterance], dichas: &[String]) -> Result<(), String> {
+    for u in utterances {
+        let lineas = &dichas[u.lines.clone()];
+        let por_linea: usize = lineas.iter().map(|d| split_sentences(d).len()).sum();
+        let juntas = split_sentences(&lineas.join(" ")).len();
+        if por_linea != juntas {
+            let ids: Vec<&str> = g.lineas[u.lines.clone()]
+                .iter()
+                .map(|l| l.linea.id.as_str())
+                .collect();
+            return Err(format!(
+                "el bloque {} tiene {por_linea} frases línea por línea y {juntas} dicho de corrido \
+                 (¿un cierre como .» seguido de otra línea?): cierra la frase fuera de las comillas \
+                 o empieza un bloque nuevo",
+                ids.join(", ")
+            ));
+        }
+    }
+    Ok(())
 }
 
 /// `<voices>/<modelo>/<modelo>.onnx`, which must exist.
@@ -1369,6 +1408,24 @@ mod pruebas {
         let _ = std::fs::remove_dir_all(&d);
     }
 
+    /// R-0020 AC1: a block whose sentences cut differently line by line and
+    /// said in one go fails before the voice speaks.
+    #[test]
+    fn un_bloque_que_corta_distinto_falla_antes_de_hablar() {
+        let (d, v) = post_externo("externa-comillas", "", EXTERNA);
+        let p = d.join("post");
+        std::fs::write(
+            p.join("voz.toml"),
+            "[voz]\nmodelo = \"serena\"\nprosodia = \"natural\"\nexterna = \"voz/externa.toml\"\n\
+             [[linea]]\nid = \"a\"\ntexto = \"Dijo «sí.»\"\n[[linea]]\nid = \"b\"\ntexto = \"Tres.\"\n",
+        )
+        .unwrap();
+        let e = narrate_con(&p, &v, &sin_piper()).unwrap_err();
+        assert!(e.contains("el bloque a, b"), "{e}");
+        assert!(!p.join("voz/llamadas.txt").exists(), "nothing was spoken");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
     /// R-0020 AC3: what an external voice cannot take fails by name.
     #[test]
     fn la_voz_externa_invalida_falla_por_nombre() {
@@ -1387,6 +1444,11 @@ mod pruebas {
                 "GUION_R0020_NO_ESTA",
             ),
             ("", format!("{EXTERNA}voz = 1\n"), "voz"),
+            (
+                "",
+                EXTERNA.replace("identidad = [\"ref.wav\"]", "identidad = []"),
+                "identidad",
+            ),
         ];
         for (i, (extra, archivo, espera)) in casos.iter().enumerate() {
             let (d, v) = post_externo(&format!("externa-mal-{i}"), extra, archivo);

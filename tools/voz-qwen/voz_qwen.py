@@ -32,7 +32,7 @@ import torch
 from qwen_tts import Qwen3TTSModel
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from alinear import TomaRechazada, a_ceros  # noqa: E402
+from alinear import TomaRechazada, a_ceros, marcas  # noqa: E402
 
 
 def main() -> int:
@@ -50,6 +50,11 @@ def main() -> int:
     frases = [l.strip() for l in sys.stdin.read().splitlines() if l.strip()]
     if not frases:
         print("voz_qwen: no sentences on stdin", file=sys.stderr)
+        return 1
+    try:
+        marcas(frases)  # before loading 2.5 GB: a sentence without letters cannot be cut
+    except ValueError as e:
+        print(f"voz_qwen: {e}: {frases}", file=sys.stderr)
         return 1
     texto_ref = Path(a.texto_referencia).read_text(encoding="utf-8").strip()
 

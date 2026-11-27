@@ -70,7 +70,9 @@ pub fn fingerprint_file(path: &Path) -> Result<u64, AudioError> {
     let mut h = Fnv::default();
     let mut buf = vec![0u8; 1 << 20];
     loop {
-        let n = f.read(&mut buf)?;
+        let n = f
+            .read(&mut buf)
+            .map_err(|e| AudioError::Engine(format!("{}: {e}", path.display())))?;
         if n == 0 {
             return Ok(h.finish());
         }

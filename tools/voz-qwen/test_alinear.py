@@ -60,6 +60,26 @@ class Alinear(unittest.TestCase):
         with self.assertRaises(A.TomaRechazada):
             A.cortes(x, SR, FRASES)
 
+    def test_a_short_last_sentence_drawn_out_is_not_rejected(self):
+        # «Sí.» said in 0.30 s: slow per letter and far, in letters, from its time
+        frases = ["Le pides una cita.", "¿Y ahora?", "Sí."]
+        x = toma([("Le pides una cita.", 0.45), ("¿Y ahora?", 0.45)])
+        si = toma([("Sí", 0.0)])
+        n = int(0.30 * SR)
+        x = np.concatenate([x, np.resize(si, n) if len(si) else np.zeros(n, np.float32)])
+        self.assertEqual(len(A.cortes(x, SR, frases)), 2)
+
+    def test_a_sentence_at_an_odd_rate_is_rejected(self):
+        # the middle sentence takes three times what its letters ask: a repeat or a stall
+        lento = toma([("Le pides una cita.", 0.0)])
+        x = np.concatenate([
+            toma([("Por eso le das manos: tu agenda, tu correo.", 0.5)]),
+            np.tile(lento, 3), np.full(int(0.5 * SR), 1e-5, np.float32),
+            toma([("Y entonces te responde: cita agendada.", 0.0)]),
+        ])
+        with self.assertRaises(A.TomaRechazada):
+            A.cortes(x, SR, FRASES)
+
     def test_the_marks_follow_the_punctuation(self):
         ms = A.marcas(["Uno, dos.", "Tres."])
         self.assertEqual([m.fin for m in ms], [False, True])

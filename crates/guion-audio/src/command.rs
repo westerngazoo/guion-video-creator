@@ -38,7 +38,7 @@ pub struct CommandVoice {
     sentence_silence: f64,
     /// What the configuration says, as written (no machine's paths in it).
     label: String,
-    /// Files whose bytes decide a take: the reference clip, the scripts,
+    /// Files whose bytes decide the voice: the reference clip, its transcript,
     /// the model's weights.
     identity_files: Vec<PathBuf>,
     identity: OnceCell<String>,
@@ -83,6 +83,64 @@ impl CommandVoice {
     }
 }
 
+impl CommandVoice {
+    /// Runs the program once, writing to `out`, and reads its take.
+    fn speak(&self, text: &str, out: &std::path::Path) -> Result<Pcm16, AudioError> {
+        let salida = out.display().to_string();
+        let silencio = self.sentence_silence.to_string();
+        let args: Vec<String> = self
+            .args
+            .iter()
+            .map(|a| {
+                a.replace("{salida}", &salida)
+                    .replace("{silencio}", &silencio)
+            })
+            .collect();
+        let mut child = Command::new(&self.program)
+            .args(&args)
+            .current_dir(&self.dir)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| AudioError::Engine(format!("{}: {e}", self.program)))?;
+        let frases = split_sentences(text).join("\n") + "\n";
+        // a program that exits without reading its stdin closes the pipe: its
+        // exit status and stderr say why, not the broken pipe; any other write
+        // error is reported after the program was waited for
+        let escrito = match child.stdin.take() {
+            Some(mut stdin) => match stdin.write_all(frases.as_bytes()) {
+                Err(e) if e.kind() != std::io::ErrorKind::BrokenPipe => Err(e),
+                _ => Ok(()),
+            },
+            None => Ok(()),
+        };
+        let done = child.wait_with_output()?;
+        if !done.status.success() {
+            let err = String::from_utf8_lossy(&done.stderr);
+            let tail: Vec<&str> = err.lines().rev().take(5).collect();
+            return Err(AudioError::Engine(format!(
+                "{} failed ({}): {}",
+                self.program,
+                done.status,
+                tail.into_iter().rev().collect::<Vec<_>>().join(" | ")
+            )));
+        }
+        escrito?;
+        let bytes = std::fs::read(out).map_err(|e| {
+            AudioError::Engine(format!("{} exited 0 but wrote no take: {e}", self.program))
+        })?;
+        let pcm = read_wav_pcm16(&bytes).map_err(|e| AudioError::Wav(format!("{salida}: {e}")))?;
+        if pcm.channels != 1 {
+            return Err(AudioError::Engine(format!(
+                "{}: {} channels, mono expected",
+                self.program, pcm.channels
+            )));
+        }
+        Ok(pcm)
+    }
+}
+
 impl Voice for CommandVoice {
     /// `label`, the silence, and each identity file's FNV-1a 64 (its name
     /// is not part of it: only its bytes). Fails when a file cannot be read.
@@ -103,55 +161,21 @@ impl Voice for CommandVoice {
     }
 
     fn take(&self, text: &str) -> Result<Pcm16, AudioError> {
-        let out = std::env::temp_dir().join(format!(
-            "guion-voz-{}-{}.wav",
+        // a private folder of its own (create_dir fails if it exists): no stale
+        // WAV of an earlier process, no file planted under a guessable name
+        let dir = std::env::temp_dir().join(format!(
+            "guion-voz-{}-{}-{}",
             std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
+            NEXT.fetch_add(1, Ordering::Relaxed),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_nanos())
         ));
-        let salida = out.display().to_string();
-        let silencio = self.sentence_silence.to_string();
-        let args: Vec<String> = self
-            .args
-            .iter()
-            .map(|a| {
-                a.replace("{salida}", &salida)
-                    .replace("{silencio}", &silencio)
-            })
-            .collect();
-        let mut child = Command::new(&self.program)
-            .args(&args)
-            .current_dir(&self.dir)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| AudioError::Engine(format!("{}: {e}", self.program)))?;
-        let frases = split_sentences(text).join("\n") + "\n";
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(frases.as_bytes())?;
-        }
-        let done = child.wait_with_output()?;
-        let read = if done.status.success() {
-            std::fs::read(&out).map_err(|e| AudioError::Engine(format!("{salida}: {e}")))
-        } else {
-            let err = String::from_utf8_lossy(&done.stderr);
-            let tail: Vec<&str> = err.lines().rev().take(5).collect();
-            Err(AudioError::Engine(format!(
-                "{} failed ({}): {}",
-                self.program,
-                done.status,
-                tail.into_iter().rev().collect::<Vec<_>>().join(" | ")
-            )))
-        };
-        let _ = std::fs::remove_file(&out);
-        let pcm = read_wav_pcm16(&read?).map_err(|e| AudioError::Wav(format!("{salida}: {e}")))?;
-        if pcm.channels != 1 {
-            return Err(AudioError::Engine(format!(
-                "{}: {} channels, mono expected",
-                self.program, pcm.channels
-            )));
-        }
-        Ok(pcm)
+        std::fs::create_dir(&dir)
+            .map_err(|e| AudioError::Engine(format!("{}: {e}", dir.display())))?;
+        let r = self.speak(text, &dir.join("toma.wav"));
+        let _ = std::fs::remove_dir_all(&dir);
+        r
     }
 
     fn sentence_silence(&self) -> f64 {
@@ -232,8 +256,43 @@ mod tests {
             vec![],
         )
         .unwrap();
-        let e = v.take("Hola.").unwrap_err().to_string();
+        // a long text: the write races the program's exit (CI saw EPIPE)
+        let e = v.take(&"Hola. ".repeat(20_000)).unwrap_err().to_string();
         assert!(e.contains("cuatro tomas rechazadas"), "{e}");
+    }
+
+    fn voz(d: &std::path::Path, script: &str) -> CommandVoice {
+        CommandVoice::new(
+            "sh",
+            vec!["-c".into(), script.into(), "{salida}".into()],
+            d,
+            0.3,
+            "t",
+            vec![],
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn a_take_that_is_missing_stereo_or_not_a_wav_is_an_error() {
+        let d = dir("rechazos");
+        write_wav_pcm16(&d.join("estereo.wav"), 24_000, &[1, 2, 3, 4]).unwrap();
+        // the stereo fixture: rewrite the header's channel count (offset 22) to 2
+        let mut b = std::fs::read(d.join("estereo.wav")).unwrap();
+        b[22] = 2;
+        b[28..32].copy_from_slice(&(24_000u32 * 4).to_le_bytes());
+        b[32] = 4;
+        std::fs::write(d.join("estereo.wav"), b).unwrap();
+        std::fs::write(d.join("texto.txt"), "no soy un wav").unwrap();
+        let casos = [
+            ("cat > /dev/null; exit 0", "wrote no take"),
+            ("cat > /dev/null; cp estereo.wav \"$0\"", "mono expected"),
+            ("cat > /dev/null; cp texto.txt \"$0\"", "toma.wav"),
+        ];
+        for (script, espera) in casos {
+            let e = voz(&d, script).take("Hola.").unwrap_err().to_string();
+            assert!(e.contains(espera), "«{script}»: «{e}» no dice «{espera}»");
+        }
     }
 
     #[test]

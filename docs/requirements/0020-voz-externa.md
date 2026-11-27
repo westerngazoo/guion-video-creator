@@ -52,8 +52,9 @@ Alternatives considered:
   that is not positive, are refused when the voice is built.
 - **AC2. Identity.** A take's key is `programa` and `argumentos` **as
   written** (unexpanded: no machine's paths), the silence, and the FNV-1a 64
-  of each `identidad` file's bytes (reference clip, transcript, scripts,
-  weights). A missing identity file is an error, never an empty hash.
+  of each `identidad` file's bytes: what decides the **voice** (reference
+  clip, transcript, weights). Not the scripts: a take already spoken stays a
+  valid take when they are fixed. A missing identity file is an error, never an empty hash.
   Same files, same takes; a new reference clip, new takes.
 - **AC3. `voz.toml`.** `[voz] externa = "<file>"`, relative to the post,
   makes the main voice external. It requires `prosodia = "natural"` (takes)
