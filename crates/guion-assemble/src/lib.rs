@@ -73,6 +73,7 @@ fn object_from_shape(shape: MrShape) -> Object {
         MrShape::Polyline(ps) => Object::polyline(ps),
         MrShape::Edges(es) => Object::edges(es),
         MrShape::Path(sub) => Object::path(sub),
+        MrShape::Mesh(m) => Object::mesh(m),
     }
 }
 
